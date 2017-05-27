@@ -14,28 +14,28 @@
 ActiveRecord::Schema.define(version: 20170506183744) do
 
   create_table "cards", force: :cascade do |t|
-    t.string  "page1"
-    t.string  "page2"
-    t.integer "deck_id"
+    t.string  "page1",   limit: 255
+    t.string  "page2",   limit: 255
+    t.integer "deck_id", limit: 4
   end
 
   create_table "decks", force: :cascade do |t|
-    t.string  "name"
-    t.integer "user_id"
+    t.string  "name",    limit: 255
+    t.integer "user_id", limit: 4
   end
 
   create_table "users", force: :cascade do |t|
-    t.string   "email"
-    t.string   "password_digest"
-    t.string   "username"
-    t.boolean  "confirmed",                   default: false
-    t.string   "email_confirmation_token"
-    t.string   "password_confirmation_token"
-    t.string   "new_password"
-    t.string   "new_email"
-    t.string   "avatar_file_extension"
-    t.boolean  "uses_cards",                  default: false
-    t.boolean  "uses_usb",                    default: false
+    t.string   "email",                       limit: 255
+    t.string   "password_digest",             limit: 255
+    t.string   "username",                    limit: 255
+    t.boolean  "confirmed",                               default: false
+    t.string   "email_confirmation_token",    limit: 255
+    t.string   "password_confirmation_token", limit: 255
+    t.string   "new_password",                limit: 255
+    t.string   "new_email",                   limit: 255
+    t.string   "avatar_file_extension",       limit: 255
+    t.boolean  "uses_cards",                              default: false
+    t.boolean  "uses_usb",                                default: false
     t.datetime "created_at"
     t.datetime "updated_at"
   end
