@@ -1,32 +1,50 @@
 class UsersController < ApplicationController
     
     def signup
+        minUsernameLength = 2
+        minPasswordLength = 7
+        
         email = params[:email]
         password = params[:password]
         username = params[:username]
         
-        error = ""
-        errorCode = 0
+        errors = Array.new
         @result = Hash.new
         
         @user = User.new(email: email, password: password, username: username)
         
         if !email || !password || !username
-            error = 'Email, password or username is null'
-            errorCode = 1
-        elsif password.length <= 7
-            error = 'Password is too short'
-            errorCode = 2
+            errors.push(Array.new(["1", "Email, password or username is null"]))
+        else
+            # If password, username and email exist
+            
+            if !validateEmail(email)
+                errors.push(Array.new(["2", "Email is not valid"]))
+            end
+            
+            if password.length <= minPasswordLength
+                errors.push(Array.new(["3", "Password is too short"]))
+            end
+            
+            if username.length <= minUsernameLength
+                errors.push(Array.new(["4", "Username is too short"]))
+            end
+            
+            if User.exists?(email: email)
+                errors.push(Array.new(["5", "Email is already taken"]))
+            end
+            
+            if User.exists?(username: username)
+                errors.push(Array.new(["6", "Username is already taken"]))
+            end
         end
         
         if @user.save
             @result["signup"] = "true"
             @result["errorCode"] = "0"
         else
-        #    @result["signup"] = "false"
-        #    @result["errorCode"] = errorCode.to_s
-        #    @result["errorMessage"] = error
-            @result = @user.errors.methods
+            @result["signup"] = "false"
+            @result["errors"] = errors
         end
         
         @result = @result.to_json
@@ -34,5 +52,15 @@ class UsersController < ApplicationController
     
     def login
         
+    end
+    
+    private
+    def sendVerificationEmail
+        
+    end
+    
+    def validateEmail(email)
+        reg = Regexp.new("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+        return (reg.match(email))? true : false
     end
 end
