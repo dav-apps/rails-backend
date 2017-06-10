@@ -18,7 +18,7 @@ class UsersController < ApplicationController
         else
             # If password, username and email exist
             
-            if !validateEmail(email)
+            if !validate_email(email)
                 errors.push(Array.new(["2", "Email is not valid"]))
             end
             
@@ -39,9 +39,12 @@ class UsersController < ApplicationController
             end
         end
         
+        @user.email_confirmation_token = generate_token
+        
         if @user.save
             @result["signup"] = "true"
             @result["errorCode"] = "0"
+            UserNotifier.send_signup_email(@user).deliver
         else
             @result["signup"] = "false"
             @result["errors"] = errors
@@ -55,11 +58,16 @@ class UsersController < ApplicationController
     end
     
     private
-    def sendVerificationEmail
+    def send_verification_email
         
     end
     
-    def validateEmail(email)
+    private
+   def generate_token
+      SecureRandom.hex(20)
+   end
+    
+    def validate_email(email)
         reg = Regexp.new("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
         return (reg.match(email))? true : false
     end
