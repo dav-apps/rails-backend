@@ -161,6 +161,7 @@ class UsersController < ApplicationController
                 if @user.confirmed
                     errors.push(Array.new([3, "Your account is already confirmed"]))
                 else
+                    # Generate email_confirmation_token and save in DB
                     @user.email_confirmation_token = generate_token
                     if @user.save
                         ok = true
@@ -174,6 +175,75 @@ class UsersController < ApplicationController
             @result["sent"] = true
         else
             @result["sent"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    def send_password_reset_email
+        email = params["email"]
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !email || email.length < 2
+            errors.push(Array.new([1, "Email is null"]))
+        else
+            @user = User.find_by_email(email)
+            
+            if !@user
+                errors.push(Array.new([2, "A user with that email does not exist"]))
+            else
+                # Generate password_confirmation_token and safe in DB
+                @user.password_confirmation_token = generate_token
+                if @user.save
+                    ok = true
+                    # Send email
+                    UserNotifier.send_password_reset_email(@user).deliver_now
+                end
+            end
+        end
+        
+        if ok
+            @result["sent"] = true
+        else
+            @result["sent"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    def check_password_confirmation_token
+        id = params["id"]
+        password_confirmation_token = params['confirmation_token']
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !id || !password_confirmation_token || id.length < 1 || password_confirmation_token.length < 2
+            errors.push(Array.new([1, "ID or Confirmation token is null"]))
+        else
+            @user = User.find_by_id(id)
+            
+            if !@user
+                errors.push(Array.new([2, "This user does not exist"]))
+            else
+                if @user.password_confirmation_token != password_confirmation_token
+                    errors.push(Array.new([3, "The password confirmation token is not correct"]))
+                else
+                    ok = true
+                end
+            end
+        end
+        
+        if ok
+            @result["checked"] = true
+        else
+            @result["checked"] = false
             @result["errors"] = errors
         end
         
