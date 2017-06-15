@@ -144,6 +144,42 @@ class UsersController < ApplicationController
         @result = @result.to_json.html_safe
     end
     
+    def send_verification_email
+        email = params[:email]
+        @user = User.find_by_email(email)
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !email || email.length < 2
+            errors.push(Array.new([1, "Email is null"]))
+        else
+            if !@user
+                errors.push(Array.new([2, "A user with that email does not exist"]))
+            else
+                if @user.confirmed
+                    errors.push(Array.new([3, "Your account is already confirmed"]))
+                else
+                    @user.email_confirmation_token = generate_token
+                    if @user.save
+                        ok = true
+                        UserNotifier.send_signup_email(@user).deliver_now
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["sent"] = true
+        else
+            @result["sent"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
     
     private
     def generate_token

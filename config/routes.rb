@@ -4,6 +4,7 @@ Rails.application.routes.draw do
   get 'user/login', to: 'users#login'
   get 'user/signup', to: 'users#signup'
   get 'user/confirm_user', to: 'users#confirm_user'
+  get 'user/send_verification_email', to: 'users#send_verification_email'
   
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
