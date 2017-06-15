@@ -1,7 +1,9 @@
 Rails.application.routes.draw do
   
+  # Authentication routes
   get 'user/login', to: 'users#login'
   get 'user/signup', to: 'users#signup'
+  get 'user/confirm_user', to: 'users#confirm_user'
   
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

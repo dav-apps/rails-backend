@@ -5,7 +5,8 @@
   </head>
   <body>
     <h1>Thanks for signing up, <%= @user.username %>!</h1>
-    <p>Thanks for joining and have a great day! Now sign in and do
-        awesome things!</p>
+    <p>You can activate your account by clicking the following link: </p>
+    <a href="<%= @activationLink %>">dav-apps.tech</a>
+    <p>If you didn’t ask to verify this address, you can ignore this email.</p>
   </body>
 </html>

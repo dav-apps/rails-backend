@@ -42,30 +42,120 @@ class UsersController < ApplicationController
         @user.email_confirmation_token = generate_token
         
         if @user.save
-            @result["signup"] = "true"
-            @result["errorCode"] = "0"
-            UserNotifier.send_signup_email(@user).deliver
+            @result["signup"] = true
+            UserNotifier.send_signup_email(@user).deliver_now
         else
-            @result["signup"] = "false"
+            @result["signup"] = false
             @result["errors"] = errors
         end
         
-        @result = @result.to_json
+        @result = @result.to_json.html_safe
     end
     
     def login
+        email = params[:email]
+        password = params[:password]
         
+        errors = Array.new
+        @result = Hash.new
+        password_correct = false
+        
+        
+        if !email || !password
+            errors.push(Array.new(["1", "Email or password is null"]))
+        else
+            @user = User.find_by(email: email)
+            
+            if !@user
+                errors.push(Array.new(["2", "User with that email does not exist"]))
+            else
+                if !@user.confirmed
+                    errors.push(Array.new(["3", "Please confirm your email to be able to login"]))
+                else
+                    if @user.password == password
+                        password_correct = true
+                    else
+                        errors.push(Array.new(["4", "The password is incorrect"]))
+                        password_correct = false
+                    end
+                end
+            end
+        end
+        
+        @result["login"] = password_correct.to_s
+        
+        if password_correct
+            # Create JWT and result
+            jwt = ""
+            @result["jwt"] = jwt
+            @result["user"] = @user.to_json
+        else
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
     end
     
-    private
-    def send_verification_email
+    # Dev routes
+    def confirm_user
+        id = params[:id]
+        confirmation_token = params[:confirmation_token]
         
+        errors = Array.new
+        @result = Hash.new
+        
+        confirmed = false
+        
+        if !id || !confirmation_token
+            errors.push(Array.new(["1", "ID or confirmation_token is null"]))
+        else
+            @user = User.find_by_id(id)
+            
+            if !@user
+                errors.push(Array.new(["2", "This user does not exist"]))
+            else
+                if @user.confirmed
+                    errors.push(Array.new(["3", "Your account is already confirmed"]))
+                elsif @user.email_confirmation_token == confirmation_token
+                    # Confirm user
+                    @user.confirmed = true
+                    if @user.save
+                        confirmed = true
+                        @user.email_confirmation_token = nil
+                        @user.save!
+                    end
+                else
+                    errors.push(Array.new(["4", "The confirmation token is not correct"]))
+                end
+            end
+        end
+        
+        if confirmed
+            @result["confirmed"] = true
+        else
+            @result["confirmed"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
     end
     
+    
     private
-   def generate_token
-      SecureRandom.hex(20)
-   end
+    def send_result(result, user, errors)
+        if user.save
+            result["confirmed"] = "true"
+        else
+            result["confirmed"] = "false"
+            result["errors"] = errors
+        end
+        
+        result = result.to_json.html_safe
+    end
+    
+    def generate_token
+        SecureRandom.hex(20)
+    end
     
     def validate_email(email)
         reg = Regexp.new("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
