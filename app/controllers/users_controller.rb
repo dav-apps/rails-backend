@@ -1,10 +1,9 @@
 class UsersController < ApplicationController
     require 'jwt'
+    minUsernameLength = 2
+    minPasswordLength = 7
     
-    def signup
-        minUsernameLength = 2
-        minPasswordLength = 7
-        
+    define_method :signup do
         email = params[:email]
         password = params[:password]
         username = params[:username]
@@ -98,6 +97,62 @@ class UsersController < ApplicationController
             @result["jwt"] = token
             @result["user"] = @user
         else
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    define_method :set_username do
+        new_username = params["new_username"]
+        jwt = params["jwt"]
+        
+        errors = Array.new
+        @result = Hash.new
+        ok = false
+        
+        if !new_username || !jwt || new_username.length < 1 || jwt.length < 2
+            errors.push(Array.new([1, "New username or JWT is null"]))
+        else
+            jwt_valid = false
+            begin
+                decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => 'HS256' }
+                jwt_valid = true
+            rescue JWT::ExpiredSignature
+                # JWT expired
+                errors.push(Array.new([2, "The JWT is expired"]))
+            rescue JWT::DecodeError
+                errors.push(Array.new([3, "The JWT is not valid"]))
+                # TODO rescue other errors
+            end
+            
+            if new_username.length <= minUsernameLength
+                errors.push(Array.new([4, "Username is too short"]))
+            end
+            
+            if jwt_valid
+                @user = User.find_by_id(decoded_jwt[0]["id"])
+                
+                if !@user
+                    errors.push(Array.new([5, "This user does not exist"]))
+                else
+                    @user.username = new_username
+                    
+                    if @user.save
+                        ok = true
+                    else
+                        @user.errors.each do |e|
+                            errors.push(Array.new([0, e]))
+                        end
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["saved"] = true
+        else
+            @result["saved"] = false
             @result["errors"] = errors
         end
         
@@ -266,12 +321,11 @@ class UsersController < ApplicationController
         @result = @result.to_json.html_safe
     end
     
-    def save_new_password
+    define_method :save_new_password do
         id = params["id"]
         confirmation_token = params["confirmation_token"]
         new_password = params["new_password"]
         ok = false
-        minPasswordLength = 7
         
         errors = Array.new
         @result = Hash.new
