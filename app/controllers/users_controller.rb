@@ -46,6 +46,10 @@ class UsersController < ApplicationController
             @result["signup"] = true
             UserNotifier.send_signup_email(@user).deliver_now
         else
+            @user.errors.each do |e|
+                errors.push(Array.new([0, e]))
+            end
+            
             @result["signup"] = false
             @result["errors"] = errors
         end
@@ -126,7 +130,11 @@ class UsersController < ApplicationController
                     if @user.save
                         confirmed = true
                         @user.email_confirmation_token = nil
-                        @user.save!
+                        @user.save
+                    else
+                        @user.errors.each do |e|
+                            errors.push(Array.new([0, e]))
+                        end
                     end
                 else
                     errors.push(Array.new([4, "The confirmation token is not correct"]))
@@ -166,6 +174,10 @@ class UsersController < ApplicationController
                     if @user.save
                         ok = true
                         UserNotifier.send_signup_email(@user).deliver_now
+                    else
+                        @user.errors.each do |e|
+                            errors.push(Array.new([0, e]))
+                        end
                     end
                 end
             end
@@ -202,6 +214,10 @@ class UsersController < ApplicationController
                     ok = true
                     # Send email
                     UserNotifier.send_password_reset_email(@user).deliver_now
+                else
+                    @user.errors.each do |e|
+                        errors.push(Array.new([0, e]))
+                    end
                 end
             end
         end
@@ -225,7 +241,7 @@ class UsersController < ApplicationController
         @result = Hash.new
         
         if !id || !password_confirmation_token || id.length < 1 || password_confirmation_token.length < 2
-            errors.push(Array.new([1, "ID or Confirmation token is null"]))
+            errors.push(Array.new([1, "ID or confirmation token is null"]))
         else
             @user = User.find_by_id(id)
             
@@ -233,7 +249,7 @@ class UsersController < ApplicationController
                 errors.push(Array.new([2, "This user does not exist"]))
             else
                 if @user.password_confirmation_token != password_confirmation_token
-                    errors.push(Array.new([3, "The password confirmation token is not correct"]))
+                    errors.push(Array.new([3, "The confirmation token is not correct"]))
                 else
                     ok = true
                 end
@@ -244,6 +260,55 @@ class UsersController < ApplicationController
             @result["checked"] = true
         else
             @result["checked"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    def save_new_password
+        id = params["id"]
+        confirmation_token = params["confirmation_token"]
+        new_password = params["new_password"]
+        ok = false
+        minPasswordLength = 7
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !id || !confirmation_token || !new_password || id.length < 1 || confirmation_token.length < 2 || new_password.length < 2
+            errors.push(Array.new([1, "ID, confirmation_token or new password is null"]))
+        else
+            if new_password.length <= minPasswordLength
+                errors.push(Array.new([2, "The password is too short"]))
+            end
+            
+            @user = User.find_by_id(id)
+            if !@user
+                errors.push(Array.new([3, "This user does not exist"]))
+            else
+                if @user.password_confirmation_token != confirmation_token
+                    errors.push(Array.new([4, "The confirmation token is not correct"]))
+                else
+                    @user.password = new_password
+                    
+                    if @user.save
+                        ok = true
+                        @user.password_confirmation_token = nil
+                        @user.save
+                    else
+                        @user.errors.each do |e|
+                            errors.push(Array.new([0, e]))
+                        end
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["saved"] = true
+        else
+            @result["saved"] = false
             @result["errors"] = errors
         end
         
