@@ -46,7 +46,11 @@ class UsersController < ApplicationController
             UserNotifier.send_signup_email(@user).deliver_now
         else
             @user.errors.each do |e|
-                errors.push(Array.new([0, e]))
+                if @user.errors[e].any?
+                    @user.errors[e].each do |errorMessage|
+                        errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                    end
+                end
             end
             
             @result["signup"] = false
@@ -76,7 +80,6 @@ class UsersController < ApplicationController
                 if !@user.confirmed
                     errors.push(Array.new([3, "Please confirm your email to be able to login"]))
                 else
-                    #if @user.password == password
                     if @user.authenticate(password)
                         password_correct = true
                     else
@@ -123,18 +126,19 @@ class UsersController < ApplicationController
                 errors.push(Array.new([2, "The JWT is expired"]))
             rescue JWT::DecodeError
                 errors.push(Array.new([3, "The JWT is not valid"]))
-                # TODO rescue other errors
+                # rescue other errors
+                errors.push(Array.new([4, "There was an error with your JWT"]))
             end
             
             if new_username.length <= minUsernameLength
-                errors.push(Array.new([4, "Username is too short"]))
+                errors.push(Array.new([5, "Username is too short"]))
             end
             
             if jwt_valid
                 @user = User.find_by_id(decoded_jwt[0]["id"])
                 
                 if !@user
-                    errors.push(Array.new([5, "This user does not exist"]))
+                    errors.push(Array.new([6, "This user does not exist"]))
                 else
                     @user.username = new_username
                     
@@ -142,7 +146,11 @@ class UsersController < ApplicationController
                         ok = true
                     else
                         @user.errors.each do |e|
-                            errors.push(Array.new([0, e]))
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
                         end
                     end
                 end
@@ -188,7 +196,11 @@ class UsersController < ApplicationController
                         @user.save
                     else
                         @user.errors.each do |e|
-                            errors.push(Array.new([0, e]))
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
                         end
                     end
                 else
@@ -231,7 +243,11 @@ class UsersController < ApplicationController
                         UserNotifier.send_signup_email(@user).deliver_now
                     else
                         @user.errors.each do |e|
-                            errors.push(Array.new([0, e]))
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
                         end
                     end
                 end
@@ -271,7 +287,11 @@ class UsersController < ApplicationController
                     UserNotifier.send_password_reset_email(@user).deliver_now
                 else
                     @user.errors.each do |e|
-                        errors.push(Array.new([0, e]))
+                        if @user.errors[e].any?
+                            @user.errors[e].each do |errorMessage|
+                                errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                            end
+                        end
                     end
                 end
             end
@@ -352,7 +372,11 @@ class UsersController < ApplicationController
                         @user.save
                     else
                         @user.errors.each do |e|
-                            errors.push(Array.new([0, e]))
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
                         end
                     end
                 end
