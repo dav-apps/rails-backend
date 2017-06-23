@@ -94,7 +94,9 @@ class UsersController < ApplicationController
         
         if password_correct
             # Create JWT and result
-            payload = {:email => @user.email, :username => @user.username, :id => @user.id}
+            expHours = 6
+            exp = Time.now.to_i + expHours * 3600
+            payload = {:email => @user.email, :username => @user.username, :id => @user.id, :exp => exp}
             token = JWT.encode payload, ENV['JWT_SECRET'], 'HS256'
             
             @result["jwt"] = token
