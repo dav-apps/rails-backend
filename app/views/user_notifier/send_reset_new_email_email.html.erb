@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
+  </head>
+  <body>
+    <h1>Hi, <%= @user.username %>!</h1>
+    <p>You changed the email of your dav account to <%= @user.email %>. If this wasn't you, please undo the change by clicking the following link and changing your password. </p>
+    <a href="<%= @link %>">dav-apps.tech</a>
+    <p>If you did change your email in the settings of your account, you can ignore this email.</p>
+  </body>
+</html>

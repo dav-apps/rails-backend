@@ -97,7 +97,7 @@ class UsersController < ApplicationController
             expHours = 6
             exp = Time.now.to_i + expHours * 3600
             payload = {:email => @user.email, :username => @user.username, :id => @user.id, :exp => exp}
-            token = JWT.encode payload, ENV['JWT_SECRET'], 'HS256'
+            token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
             
             @result["jwt"] = token
             @result["user"] = @user
@@ -110,7 +110,7 @@ class UsersController < ApplicationController
     
     define_method :set_username do
         new_username = params["new_username"]
-        jwt = params["jwt"]
+        jwt = request.headers['HTTP_AUTHORIZATION']
         
         errors = Array.new
         @result = Hash.new
@@ -121,7 +121,7 @@ class UsersController < ApplicationController
         else
             jwt_valid = false
             begin
-                decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => 'HS256' }
+                decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
                 jwt_valid = true
             rescue JWT::ExpiredSignature
                 # JWT expired
@@ -129,6 +129,7 @@ class UsersController < ApplicationController
             rescue JWT::DecodeError
                 errors.push(Array.new([3, "The JWT is not valid"]))
                 # rescue other errors
+            rescue Exception
                 errors.push(Array.new([4, "There was an error with your JWT"]))
             end
             
@@ -143,6 +144,197 @@ class UsersController < ApplicationController
                     errors.push(Array.new([6, "This user does not exist"]))
                 else
                     @user.username = new_username
+                    
+                    if @user.save
+                        ok = true
+                    else
+                        @user.errors.each do |e|
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["saved"] = true
+        else
+            @result["saved"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    def change_email
+        new_email = params["new_email"]
+        jwt = request.headers['HTTP_AUTHORIZATION']
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !new_email || !jwt || new_email.length < 2
+            errors.push(Array.new([1, "New email or JWT is null"]))
+        else
+            jwt_valid = false
+            begin
+                decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+                jwt_valid = true
+            rescue JWT::ExpiredSignature
+                # JWT expired
+                errors.push(Array.new([2, "The JWT is expired"]))
+            rescue JWT::DecodeError
+                errors.push(Array.new([3, "The JWT is not valid"]))
+                # rescue other errors
+            rescue Exception
+                errors.push(Array.new([4, "There was an error with your JWT"]))
+            end
+            
+            if !validate_email(new_email)
+                errors.push(Array.new([5, "The email is not valid"]))
+            end
+            
+            if jwt_valid
+                @user = User.find_by_id(decoded_jwt[0]["id"])
+                
+                if !@user
+                    errors.push(Array.new([6, "This user does not exist"]))
+                else
+                    @user.old_email = @user.email
+                    @user.new_email = new_email
+                    
+                    if @user.save
+                        ok = true
+                    else
+                        @user.errors.each do |e|
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["saved"] = true
+            
+            @user.email_confirmation_token = generate_token
+            @user.save
+            
+            # Send email
+            UserNotifier.send_change_email_email(@user).deliver_now
+        else
+            @result["saved"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    define_method :change_password do
+        # This method is to change the password from within the account in the settings, JWT required
+        new_password = params["new_password"]
+        jwt = request.headers['HTTP_AUTHORIZATION']
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !jwt || !new_password || jwt.length < 2 || new_password.lenght < 2
+            errors.push(Array.new([1, "JWT or new_password is null"]))
+        else
+            jwt_valid = false
+            begin
+                decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+                jwt_valid = true
+            rescue JWT::ExpiredSignature
+                # JWT expired
+                errors.push(Array.new([2, "The JWT is expired"]))
+            rescue JWT::DecodeError
+                errors.push(Array.new([3, "The JWT is not valid"]))
+            rescue Exception
+                # rescue other errors
+                errors.push(Array.new([4, "There was an error with your JWT"]))
+            end
+            
+            @user = User.find_by_id(decoded_jwt[0]["id"])
+            if !@user
+                errors.push(Array.new([5, "This user does not exist"]))
+            else
+                if new_password.length <= minPasswordLength
+                    errors.push(Array.new([6, "The password is too short"]))
+                end
+                
+                @user.new_password = new_password
+                @user.password_confirmation_token = generate_token
+                    
+                if @user.save
+                    ok = true
+                else
+                    @user.errors.each do |e|
+                        if @user.errors[e].any?
+                            @user.errors[e].each do |errorMessage|
+                                errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["saved"] = true
+            
+            # Send email
+            UserNotifier.send_change_password_email(@user).deliver_now
+        else
+            @result["saved"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    def set_avatar_file_extension
+        ext = params["ext"]
+        jwt = request.headers['HTTP_AUTHORIZATION']
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !jwt || !ext || jwt.length < 2 || ext.length < 3
+            errors.push(Array.new([1, "JWT or ext is null"]))
+        else
+            jwt_valid = false
+            begin
+                decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+                jwt_valid = true
+            rescue JWT::ExpiredSignature
+                # JWT expired
+                errors.push(Array.new([2, "The JWT is expired"]))
+            rescue JWT::DecodeError
+                errors.push(Array.new([3, "The JWT is not valid"]))
+                # rescue other errors
+            rescue Exception
+                errors.push(Array.new([4, "There was an error with your JWT"]))
+            end
+            
+            if jwt_valid
+                @user = User.find_by_id(decoded_jwt[0]["id"])
+                
+                if !@user
+                    errors.push(Array.new([5, "This user does not exist"]))
+                else
+                    @user.avatar_file_extension = ext
                     
                     if @user.save
                         ok = true
@@ -285,8 +477,6 @@ class UsersController < ApplicationController
                 @user.password_confirmation_token = generate_token
                 if @user.save
                     ok = true
-                    # Send email
-                    UserNotifier.send_password_reset_email(@user).deliver_now
                 else
                     @user.errors.each do |e|
                         if @user.errors[e].any?
@@ -301,6 +491,9 @@ class UsersController < ApplicationController
         
         if ok
             @result["sent"] = true
+            
+            # Send email
+            UserNotifier.send_password_reset_email(@user).deliver_now
         else
             @result["sent"] = false
             @result["errors"] = errors
@@ -344,6 +537,7 @@ class UsersController < ApplicationController
     end
     
     define_method :save_new_password do
+        # This method is to reset the password from outside of the account, no JWT required
         id = params["id"]
         confirmation_token = params["confirmation_token"]
         new_password = params["new_password"]
@@ -372,6 +566,155 @@ class UsersController < ApplicationController
                         ok = true
                         @user.password_confirmation_token = nil
                         @user.save
+                    else
+                        @user.errors.each do |e|
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["saved"] = true
+        else
+            @result["saved"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    def confirm_new_password
+        # Check if password confirmation token is correct and update DB with new password and nil token
+        id = params["id"]
+        confirmation_token = params["confirmation_token"]
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !id || !confirmation_token || confirmation_token.lenght < 2
+            errors.push(Array.new([1, "ID or confirmation token is null"]))
+        else
+            @user = User.find_by_id(id)
+            
+            if !@user
+                errors.push(Array.new([2, "This user does not exist"]))
+            else
+                if @user.email_confirmation_token != confirmation_token
+                    errors.push(Array.new([3, "The confirmation token is not correct"]))
+                else
+                    @user.password_confirmation_token = nil
+                    # Save new email
+                    @user.password = @user.new_password
+                    @user.new_password = nil
+                    
+                    if @user.save
+                        ok = true
+                    else
+                        @user.errors.each do |e|
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["saved"] = true
+        else
+            @result["saved"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    def confirm_new_email
+        # Save new email and send an email to old_email with reset link which says that email has changed
+        id = params["id"]
+        confirmation_token = params["confirmation_token"]
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !id || !confirmation_token || confirmation_token.length < 2
+            errors.push(Array.new([1, "ID or confirmation token is null"]))
+        else
+            @user = User.find_by_id(id)
+            
+            if !@user
+                errors.push(Array.new([2, "This user does not exist"]))
+            else
+                if @user.email_confirmation_token != confirmation_token
+                    errors.push(Array.new([3, "The confirmation token is not correct"]))
+                else
+                    @user.email_confirmation_token = nil
+                    # Save new email
+                    @user.email = @user.new_email
+                    @user.new_email = nil
+                    
+                    if @user.save
+                        ok = true
+                    else
+                        @user.errors.each do |e|
+                            if @user.errors[e].any?
+                                @user.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        if ok
+            @result["saved"] = true
+            # Send reset_new_email email
+            UserNotifier.send_reset_new_email_email(@user).deliver_now
+        else
+            @result["saved"] = false
+            @result["errors"] = errors
+        end
+        
+        @result = @result.to_json.html_safe
+    end
+    
+    def reset_new_email
+        # Save old_email as email and save new_email as null
+        id = params["id"]
+        ok = false
+        
+        errors = Array.new
+        @result = Hash.new
+        
+        if !id
+            errors.push(Array.new([1, "ID is null"]))
+        else
+            @user = User.find_by_id(id)
+            
+            if !@user
+                errors.push(Array.new([2, "This user does not exist"]))
+            else
+                if !@user.old_email || validate_email(@user.old_email)
+                    errors.push(Array.new([3, "Your old email is null or not valid"]))
+                else
+                    @user.email = old_email
+                    @user.old_email = nil
+                    
+                    if @user.save
+                        ok = true
                     else
                         @user.errors.each do |e|
                             if @user.errors[e].any?

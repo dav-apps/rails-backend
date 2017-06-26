@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170506183744) do
+ActiveRecord::Schema.define(version: 20170626165503) do
 
   create_table "cards", force: :cascade do |t|
     t.string  "page1",   limit: 255
@@ -38,6 +38,7 @@ ActiveRecord::Schema.define(version: 20170506183744) do
     t.boolean  "uses_usb",                                default: false
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "old_email",                   limit: 255
   end
 
 end
