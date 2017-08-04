@@ -248,7 +248,7 @@ class UsersController < ApplicationController
         errors = Array.new
         @result = Hash.new
         
-        if !jwt || !new_password || jwt.length < 2 || new_password.lenght < 2
+        if !jwt || !new_password || jwt.length < 2 || new_password.length < 2
             errors.push(Array.new([1, "JWT or new_password is null"]))
         else
             jwt_valid = false
@@ -294,7 +294,7 @@ class UsersController < ApplicationController
             @result["saved"] = true
             
             # Send email
-            UserNotifier.send_change_password_email(@user).deliver_now
+            UserNotifier.send_change_password_email(@user).deliver
         else
             @result["saved"] = false
             @result["errors"] = errors
@@ -323,8 +323,8 @@ class UsersController < ApplicationController
                 errors.push(Array.new([2, "The JWT is expired"]))
             rescue JWT::DecodeError
                 errors.push(Array.new([3, "The JWT is not valid"]))
-                # rescue other errors
             rescue Exception
+                # rescue other errors
                 errors.push(Array.new([4, "There was an error with your JWT"]))
             end
             
@@ -434,7 +434,6 @@ class UsersController < ApplicationController
                     @user.email_confirmation_token = generate_token
                     if @user.save
                         ok = true
-                        UserNotifier.send_signup_email(@user).deliver_now
                     else
                         @user.errors.each do |e|
                             if @user.errors[e].any?
@@ -450,6 +449,7 @@ class UsersController < ApplicationController
         
         if ok
             @result["sent"] = true
+            UserNotifier.send_signup_email(@user).deliver
         else
             @result["sent"] = false
             @result["errors"] = errors
@@ -493,7 +493,7 @@ class UsersController < ApplicationController
             @result["sent"] = true
             
             # Send email
-            UserNotifier.send_password_reset_email(@user).deliver_now
+            UserNotifier.send_password_reset_email(@user).deliver
         else
             @result["sent"] = false
             @result["errors"] = errors
@@ -598,7 +598,7 @@ class UsersController < ApplicationController
         errors = Array.new
         @result = Hash.new
         
-        if !id || !confirmation_token || confirmation_token.lenght < 2
+        if !id || !confirmation_token || confirmation_token.length < 2
             errors.push(Array.new([1, "ID or confirmation token is null"]))
         else
             @user = User.find_by_id(id)
@@ -606,7 +606,7 @@ class UsersController < ApplicationController
             if !@user
                 errors.push(Array.new([2, "This user does not exist"]))
             else
-                if @user.email_confirmation_token != confirmation_token
+                if @user.password_confirmation_token != confirmation_token
                     errors.push(Array.new([3, "The confirmation token is not correct"]))
                 else
                     @user.password_confirmation_token = nil
@@ -707,10 +707,10 @@ class UsersController < ApplicationController
             if !@user
                 errors.push(Array.new([2, "This user does not exist"]))
             else
-                if !@user.old_email || validate_email(@user.old_email)
+                if !@user.old_email || !validate_email(@user.old_email)
                     errors.push(Array.new([3, "Your old email is null or not valid"]))
                 else
-                    @user.email = old_email
+                    @user.email = @user.old_email
                     @user.old_email = nil
                     
                     if @user.save
