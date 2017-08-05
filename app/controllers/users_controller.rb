@@ -41,9 +41,9 @@ class UsersController < ApplicationController
         
         @user.email_confirmation_token = generate_token
         
-        if @user.save
+        if @user.save && errors.length == 0
             @result["signup"] = true
-            UserNotifier.send_signup_email(@user).deliver_now
+            UserNotifier.send_signup_email(@user).deliver_later
         else
             @user.errors.each do |e|
                 if @user.errors[e].any?
@@ -145,7 +145,7 @@ class UsersController < ApplicationController
                 else
                     @user.username = new_username
                     
-                    if @user.save
+                    if @user.save && errors.length == 0
                         ok = true
                     else
                         @user.errors.each do |e|
@@ -208,7 +208,7 @@ class UsersController < ApplicationController
                     @user.old_email = @user.email
                     @user.new_email = new_email
                     
-                    if @user.save
+                    if @user.save && errors.length == 0
                         ok = true
                     else
                         @user.errors.each do |e|
@@ -230,7 +230,7 @@ class UsersController < ApplicationController
             @user.save
             
             # Send email
-            UserNotifier.send_change_email_email(@user).deliver_now
+            UserNotifier.send_change_email_email(@user).deliver_later
         else
             @result["saved"] = false
             @result["errors"] = errors
@@ -272,11 +272,11 @@ class UsersController < ApplicationController
                 if new_password.length <= minPasswordLength
                     errors.push(Array.new([6, "The password is too short"]))
                 end
-                
+                puts new_password.length <= minPasswordLength
                 @user.new_password = new_password
                 @user.password_confirmation_token = generate_token
-                    
-                if @user.save
+                
+                if @user.save && errors.length == 0
                     ok = true
                 else
                     @user.errors.each do |e|
@@ -294,7 +294,7 @@ class UsersController < ApplicationController
             @result["saved"] = true
             
             # Send email
-            UserNotifier.send_change_password_email(@user).deliver
+            UserNotifier.send_change_password_email(@user).deliver_later
         else
             @result["saved"] = false
             @result["errors"] = errors
@@ -336,7 +336,7 @@ class UsersController < ApplicationController
                 else
                     @user.avatar_file_extension = ext
                     
-                    if @user.save
+                    if @user.save && errors.length == 0
                         ok = true
                     else
                         @user.errors.each do |e|
@@ -384,7 +384,7 @@ class UsersController < ApplicationController
                 elsif @user.email_confirmation_token == confirmation_token
                     # Confirm user
                     @user.confirmed = true
-                    if @user.save
+                    if @user.save && errors.length == 0
                         confirmed = true
                         @user.email_confirmation_token = nil
                         @user.save
@@ -432,7 +432,7 @@ class UsersController < ApplicationController
                 else
                     # Generate email_confirmation_token and save in DB
                     @user.email_confirmation_token = generate_token
-                    if @user.save
+                    if @user.save && errors.length == 0
                         ok = true
                     else
                         @user.errors.each do |e|
@@ -449,7 +449,7 @@ class UsersController < ApplicationController
         
         if ok
             @result["sent"] = true
-            UserNotifier.send_signup_email(@user).deliver
+            UserNotifier.send_signup_email(@user).deliver_later
         else
             @result["sent"] = false
             @result["errors"] = errors
@@ -475,7 +475,7 @@ class UsersController < ApplicationController
             else
                 # Generate password_confirmation_token and safe in DB
                 @user.password_confirmation_token = generate_token
-                if @user.save
+                if @user.save && errors.length == 0
                     ok = true
                 else
                     @user.errors.each do |e|
@@ -493,7 +493,7 @@ class UsersController < ApplicationController
             @result["sent"] = true
             
             # Send email
-            UserNotifier.send_password_reset_email(@user).deliver
+            UserNotifier.send_password_reset_email(@user).deliver_later
         else
             @result["sent"] = false
             @result["errors"] = errors
@@ -562,7 +562,7 @@ class UsersController < ApplicationController
                 else
                     @user.password = new_password
                     
-                    if @user.save
+                    if @user.save && errors.length == 0
                         ok = true
                         @user.password_confirmation_token = nil
                         @user.save
@@ -614,7 +614,7 @@ class UsersController < ApplicationController
                     @user.password = @user.new_password
                     @user.new_password = nil
                     
-                    if @user.save
+                    if @user.save && errors.length == 0
                         ok = true
                     else
                         @user.errors.each do |e|
@@ -664,7 +664,7 @@ class UsersController < ApplicationController
                     @user.email = @user.new_email
                     @user.new_email = nil
                     
-                    if @user.save
+                    if @user.save && errors.length == 0
                         ok = true
                     else
                         @user.errors.each do |e|
@@ -682,7 +682,7 @@ class UsersController < ApplicationController
         if ok
             @result["saved"] = true
             # Send reset_new_email email
-            UserNotifier.send_reset_new_email_email(@user).deliver_now
+            UserNotifier.send_reset_new_email_email(@user).deliver_later
         else
             @result["saved"] = false
             @result["errors"] = errors
@@ -713,7 +713,7 @@ class UsersController < ApplicationController
                     @user.email = @user.old_email
                     @user.old_email = nil
                     
-                    if @user.save
+                    if @user.save && errors.length == 0
                         ok = true
                     else
                         @user.errors.each do |e|
