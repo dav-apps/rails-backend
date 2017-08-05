@@ -7,4 +7,7 @@ class User < ActiveRecord::Base
             uniqueness: {case_sensitive: false},
             format: {with: VALID_EMAIL_REGEX}
     has_secure_password
+    
+    has_many :decks, dependent: :destroy
+    has_many :cards, through: :decks
 end

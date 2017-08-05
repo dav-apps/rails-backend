@@ -15,4 +15,7 @@ Rails.application.routes.draw do
   get 'user/change_password', to: 'users#change_password'
   get 'user/confirm_new_password', to: 'users#confirm_new_password'
   get 'user/set_avatar_file_extension', to: 'users#set_avatar_file_extension'
+  
+  # Cards routes
+  get 'cards/get_all_decks_and_cards', to: 'cards#get_all_decks_and_cards'
 end
