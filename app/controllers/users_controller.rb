@@ -1,6 +1,7 @@
 class UsersController < ApplicationController
     require 'jwt'
-    minUsernameLength = 2
+    minUsernameLength = 3
+    maxUsernameLength = 25
     minPasswordLength = 7
     
     define_method :signup do
@@ -30,12 +31,16 @@ class UsersController < ApplicationController
                 errors.push(Array.new([4, "Username is too short"]))
             end
             
+            if username.length > maxUsernameLength
+                errors.push(Array.new([5, "Username is too long"]))
+            end
+            
             if User.exists?(email: email)
-                errors.push(Array.new([5, "Email is already taken"]))
+                errors.push(Array.new([6, "Email is already taken"]))
             end
             
             if User.exists?(username: username)
-                errors.push(Array.new([6, "Username is already taken"]))
+                errors.push(Array.new([7, "Username is already taken"]))
             end
         end
         
@@ -137,11 +142,15 @@ class UsersController < ApplicationController
                 errors.push(Array.new([5, "Username is too short"]))
             end
             
+            if new_username.length > maxUsernameLength
+                errors.push(Array.new([6, "Username is too long"]))
+            end
+            
             if jwt_valid
                 @user = User.find_by_id(decoded_jwt[0]["id"])
                 
                 if !@user
-                    errors.push(Array.new([6, "This user does not exist"]))
+                    errors.push(Array.new([7, "This user does not exist"]))
                 else
                     @user.username = new_username
                     
