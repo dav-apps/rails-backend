@@ -19,5 +19,6 @@ Rails.application.routes.draw do
   # Cards routes
   get 'cards/get_all_decks_and_cards', to: 'cards#get_all_decks_and_cards'
   get 'cards/create_deck', to: 'cards#create_deck'
+  get 'cards/update_deck', to: 'cards#update_deck'
   get 'cards/create_card', to: 'cards#create_card'
 end
