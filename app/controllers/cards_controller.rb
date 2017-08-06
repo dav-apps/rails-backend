@@ -448,4 +448,75 @@ class CardsController < ApplicationController
       
       @result = @result.to_json.html_safe
    end
+   
+   def delete_card
+      card_id = params["card_id"]
+      jwt = request.headers['HTTP_AUTHORIZATION']
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !jwt || !card_id || jwt.length < 2
+         errors.push(Array.new([1, "JWT or card_id is null"]))
+      else
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([2, "The JWT is expired"]))
+         rescue JWT::DecodeError
+            errors.push(Array.new([3, "The JWT is not valid"]))
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([4, "There was an error with your JWT"]))
+         end
+         
+         if jwt_valid
+            @user = User.find_by_id(decoded_jwt[0]["id"])
+            @card = Card.find_by_id(card_id)
+            
+            if !@user
+               errors.push(Array.new([5, "This user does not exist"]))
+            else
+               if !@card
+                  errors.push(Array.new([6, "This card does not exist"]))
+               else
+                  @deck = Deck.find_by_id(@card.deck_id)
+                  
+                  if !@deck
+                     errors.push(Array.new([7, "The deck of this card does not exist"]))
+                  else
+                     if @deck.user_id != @user.id
+                        errors.push(Array.new([8, "You don't own the deck of this card"]))
+                     else
+                        if @card.destroy && errors.length == 0
+                           ok = true
+                        else
+                           @card.errors.each do |e|
+                              if @card.errors[e].any?
+                                 @card.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                 end
+                              end
+                           end
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok
+         @result["deleted"] = true
+      else
+         @result["deleted"] = false
+         @result["errors"] = errors
+      end
+      
+      @result = @result.to_json.html_safe
+   end
 end

@@ -23,4 +23,5 @@ Rails.application.routes.draw do
   get 'cards/delete_deck', to: 'cards#delete_deck'
   get 'cards/create_card', to: 'cards#create_card'
   get 'cards/update_card', to: 'cards#update_card'
+  get 'cards/delete_card', to: 'cards#delete_card'
 end
