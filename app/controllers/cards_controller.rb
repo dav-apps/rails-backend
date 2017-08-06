@@ -122,7 +122,7 @@ class CardsController < ApplicationController
      
       @result = @result.to_json.html_safe
    end
-      
+   
    define_method :update_deck do
       deck_id = params["deck_id"]
       name = params["name"]
@@ -285,6 +285,102 @@ class CardsController < ApplicationController
          @result["errors"] = errors
       end
      
+      @result = @result.to_json.html_safe
+   end
+   
+   define_method :update_card do
+      card_id = params["card_id"]
+      deck_id = params["deck_id"]
+      page1 = params["page1"]
+      page2 = params["page2"]
+      jwt = request.headers['HTTP_AUTHORIZATION']
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !jwt || !card_id || !deck_id || !page1 || !page2 || jwt.length < 2 || page1.length < 1 || page2.length < 1
+         errors.push(Array.new([1, "JWT, deck_id, card_id, page1 or page2 is null"]))
+      else
+         jwt_valid = false
+         begin
+             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+             jwt_valid = true
+         rescue JWT::ExpiredSignature
+             # JWT expired
+             errors.push(Array.new([2, "The JWT is expired"]))
+         rescue JWT::DecodeError
+             errors.push(Array.new([3, "The JWT is not valid"]))
+             # rescue other errors
+         rescue Exception
+             errors.push(Array.new([4, "There was an error with your JWT"]))
+         end
+         
+         if page1.length < min_card_page_length
+            errors.push(Array.new([5, "Page1 is too short"]))
+         end
+         
+         if page2.length < min_card_page_length
+            errors.push(Array.new([6, "Page2 is too short"]))
+         end
+         
+         if page1.length > max_card_page_length
+            errors.push(Array.new([7, "Page1 is too long"]))
+         end
+         
+         if page2.length > max_card_page_length
+            errors.push(Array.new([8, "Page2 is too long"]))
+         end
+         
+         if jwt_valid
+            @user = User.find_by_id(decoded_jwt[0]["id"])
+            
+            if !@user
+               errors.push(Array.new([9, "This user does not exist"]))
+            else
+               @card = Card.find_by_id(card_id)
+               
+               if !@card
+                  errors.push(Array.new([10, "This Card does not exist"]))
+               else
+                  @deck = Deck.find_by_id(deck_id)
+               
+                  if !@deck
+                     errors.push(Array.new([11, "This Deck does not exist"]))
+                  else
+                     if @deck.user_id != @user.id
+                        errors.push(Array.new([12, "You don't own this deck"]))
+                     else
+                        @card.deck_id = deck_id
+                        @card.page1 = page1
+                        @card.page2 = page2
+                        
+                        if @card.save && errors.length == 0
+                           ok = true
+                        else
+                           @card.errors.each do |e|
+                              if @card.errors[e].any?
+                                 @card.errors[e].each do |errorMessage|
+                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
+                                 end
+                              end
+                           end
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok
+         @result["saved"] = true
+         @result["card"] = @card
+      else
+         @result["saved"] = false
+         @result["errors"] = errors
+      end
+      
       @result = @result.to_json.html_safe
    end
 end
