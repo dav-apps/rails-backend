@@ -24,4 +24,8 @@ Rails.application.routes.draw do
   get 'cards/create_card', to: 'cards#create_card'
   get 'cards/update_card', to: 'cards#update_card'
   get 'cards/delete_card', to: 'cards#delete_card'
+  
+  # Analytics routes
+  # post '/v1/analytics/event', to: 'analytics#create'
+  match '/v1/analytics/event', to: 'analytics#create', via: 'post'
 end
