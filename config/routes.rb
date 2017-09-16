@@ -28,4 +28,8 @@ Rails.application.routes.draw do
   # Analytics routes
   # post '/v1/analytics/event', to: 'analytics#create'
   match '/v1/analytics/event', to: 'analytics#create', via: 'post'
+  
+  # Apps routes
+  match '/v1/apps/object', to: 'apps#create_object', via: 'post'
+  match '/v1/apps/table', to: 'apps#get_table', via: 'get'
 end
