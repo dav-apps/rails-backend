@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170911190446) do
+ActiveRecord::Schema.define(version: 20170922142629) do
 
   create_table "apps", force: :cascade do |t|
     t.string  "name",        limit: 255
@@ -35,6 +35,7 @@ ActiveRecord::Schema.define(version: 20170911190446) do
     t.integer "user_id",    limit: 4
     t.string  "api_key",    limit: 255
     t.string  "secret_key", limit: 255
+    t.string  "uuid",       limit: 255
   end
 
   create_table "event_logs", force: :cascade do |t|
