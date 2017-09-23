@@ -1,4 +1,4 @@
 class Event < ActiveRecord::Base
    belongs_to :app
-   has_many :event_logs
+   has_many :event_logs, dependent: :destroy
 end

@@ -1,6 +1,6 @@
 class Dev < ActiveRecord::Base
    belongs_to :user
-   has_many :apps
+   has_many :apps, dependent: :destroy
    
    before_save { generate_keys }
    
