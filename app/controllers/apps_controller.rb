@@ -627,8 +627,73 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   
+   # finished
    def delete_table
+      table_id = params["table_id"]
       
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !table_id
+         errors.push(Array.new([0000, "Missing field: table_name"]))
+         status = 400
+      end
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([0000, "Missing field: auth"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         dev = Dev.find_by(api_key: api_key)
+         
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+            status = 400
+         else
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([0000, "Authentication failed"]))
+               status = 401
+            else
+               table = Table.find_by_id(table_id)
+               
+               if !table
+                  errors.push(Array.new([0000, "Resource does not exist: Table"]))
+                  status = 400
+               else
+                  app = App.find_by_id(table.app_id)
+                  
+                  if !app
+                     errors.push(Array.new([0000, "Resource does not exist: App"]))
+                     status = 400
+                  else
+                     if app.dev_id != dev.id
+                        errors.push(Array.new([0000, "Action not allowed"]))
+                        status = 403
+                     else
+                        # Delete the table
+                        table.destroy!
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         @result = result
+         status = 200
+      else
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
    end
 end
