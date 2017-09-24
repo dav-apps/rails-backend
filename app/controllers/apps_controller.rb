@@ -1,8 +1,14 @@
 class AppsController < ApplicationController
+   max_table_name_length = 15
+   min_table_name_length = 2
+   max_property_name_length = 20
+   min_property_name_length = 2
+   max_property_value_length = 20
+   min_property_value_length = 2
    
    # TableObject methods
    # finished
-   def create_object
+   define_method :create_object do
       table_name = params["table_name"]
       app_id = params["app_id"]
       
@@ -16,19 +22,19 @@ class AppsController < ApplicationController
       @result = Hash.new
       ok = false
       
-      if !table_name || table_name.length < 2
+      if !table_name || table_name.length < 1
          errors.push(Array.new([0000, "Missing field: table_name"]))
          status = 400
-      end
-      
-      if !auth || auth.length < 2
-         errors.push(Array.new([0000, "Missing field: auth"]))
-         status = 401
       end
       
       if !app_id
          errors.push(Array.new([0000, "Missing field: app_id"]))
          status = 400
+      end
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([0000, "Missing field: auth"]))
+         status = 401
       end
       
       if errors.length == 0
@@ -59,25 +65,50 @@ class AppsController < ApplicationController
                         table = Table.find_by(name: table_name)
                         
                         if !table
+                           # Check if table_name is too long or too short
+                           if table_name.length > max_table_name_length
+                              errors.push(Array.new([0000, "Field too long: table_name"]))
+                              status = 400
+                           end
+                           
+                           if table_name.length < min_table_name_length
+                              errors.push(Array.new([0000, "Field too short: table_name"]))
+                              status = 400
+                           end
+                           
+                           if table_name.include? " "
+                              errors.push(Array.new([0000, "Field contains not allowed characters: table_name"]))
+                              status = 400
+                           end
+                           
                            # Create a new table
                            table = Table.new(app_id: app.id, name: table_name)
-                           table.save
+                           if !table.save
+                              errors.push(Array.new([0000, "Unknown validation error"]))
+                              status = 403
+                           end
                         end
                         
-                        obj = TableObject.create(table_id: table.id, name: table_name)
-                        
-                        # Get the body of the request
-                        object = request.request_parameters
-                        
-                        result = Hash.new
-                        result["id"] = obj.id
-                        
-                        object.each do |key, value|
-                           property = Property.create(table_object_id: obj.id, name: key, value: value)
-                           result[key] = value
+                        if errors.length == 0
+                           obj = TableObject.create(table_id: table.id, name: table_name)
+                           
+                           # Get the body of the request
+                           object = request.request_parameters
+                           
+                           result = Hash.new
+                           result["id"] = obj.id
+                           
+                           object.each do |key, value|
+                              if !Property.create(table_object_id: obj.id, name: key, value: value)
+                                 errors.push(Array.new([0000, "Unknown validation error"]))
+                                 status = 500
+                              else
+                                 result[key] = value
+                              end
+                           end
+                           
+                           ok = true
                         end
-                        
-                        ok = true
                      end
                   end
                end
@@ -85,7 +116,7 @@ class AppsController < ApplicationController
          end
       end
       
-      if ok
+      if ok && errors.length == 0
          @result = result
          status = 201
       else
@@ -114,7 +145,7 @@ class AppsController < ApplicationController
          status = 400
       end
       
-      if !auth || auth.length < 2
+      if !auth || auth.length < 1
          errors.push(Array.new([0000, "Missing field: auth"]))
          status = 401
       end
@@ -134,7 +165,7 @@ class AppsController < ApplicationController
                obj = TableObject.find_by_id(object_id)
                
                if !obj
-                  errors.push(Array.new([0000, "Resource does not exist: Object"]))
+                  errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
                   status = 404
                else
                   table = Table.find_by_id(obj.table_id)
@@ -172,7 +203,7 @@ class AppsController < ApplicationController
       end
       
       
-      if ok
+      if ok && errors.length == 0
          @result = result
          status = 200
       else
@@ -182,8 +213,133 @@ class AppsController < ApplicationController
       render json: @result, status: status if status
    end
 
-   def update_object
+   define_method :update_object do
+      object_id = params["object_id"]
       
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !object_id
+         errors.push(Array.new([0000, "Missing field: object_id"]))
+         status = 400
+      end
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([0000, "Missing field: auth"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         dev = Dev.find_by(api_key: api_key)
+         
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+            status = 400
+         else
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([0000, "Authentication failed"]))
+               status = 401
+            else
+               obj = TableObject.find_by_id(object_id)
+               
+               if !obj
+                  errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
+                  status = 400
+               else
+                  table = Table.find_by_id(obj.table_id)
+                  
+                  if !table
+                     errors.push(Array.new([0000, "Resource does not exist: Table"]))
+                     status = 400
+                  else
+                     app = App.find_by_id(table.app_id)
+                     
+                     if !app
+                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                        status = 400
+                     else
+                        if app.dev_id != dev.id    # Check if the app belongs to the dev
+                           errors.push(Array.new([0000, "Action not allowed"]))
+                           status = 403
+                        else
+                           # Update the properties of the object
+                           # Get the body of the request
+                           object = request.request_parameters
+                           
+                           result = Hash.new
+                           result["id"] = obj.id
+                           
+                           object.each do |key, value|
+                              # Validate the length of the properties
+                              if key.length > max_property_name_length
+                                 errors.push(Array.new([0000, "Field too long: Property.name"]))
+                                 status = 400
+                              end
+                              
+                              if key.length < min_property_name_length
+                                 errors.push(Array.new([0000, "Field too short: Property.name"]))
+                                 status = 400
+                              end
+                              
+                              if value.length > max_property_value_length
+                                 errors.push(Array.new([0000, "Field too long: Property.value"]))
+                                 status = 400
+                              end
+                              
+                              if value.length < min_property_value_length
+                                 errors.push(Array.new([0000, "Field too short: Property.value"]))
+                                 status = 400
+                              end
+                              
+                              if errors.length == 0
+                                 prop = Property.find_by(name: key, table_object_id: obj.id)
+                                 
+                                 # If the property does not exist, create it
+                                 if !prop
+                                    new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+                                    
+                                    if !new_prop.save
+                                       errors.push(Array.new([0000, "Unknown validation error"]))
+                                       status = 500
+                                    else
+                                       result[key] = value
+                                    end
+                                 else
+                                    prop.update(name: key, value: value)
+                                    if !prop.save
+                                       errors.push(Array.new([0000, "Unknown validation error"]))
+                                       status = 500
+                                    else
+                                       result[key] = value
+                                    end
+                                 end
+                              end
+                           end
+                           
+                           ok = true
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         @result = result
+         status = 200
+      else
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
    end
    
    def delete_object
@@ -191,8 +347,100 @@ class AppsController < ApplicationController
    end
    
    # Table methods
-   def create_table
+   #finished
+   define_method :create_table do
+      table_name = params["table_name"]
+      app_id = params["app_id"]
       
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !table_name || table_name.length < 1
+         errors.push(Array.new([0000, "Missing field: table_name"]))
+         status = 400
+      end
+      
+      if !app_id
+         errors.push(Array.new([0000, "Missing field: app_id"]))
+         status = 400
+      end
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([0000, "Missing field: auth"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         dev = Dev.find_by(api_key: api_key)
+         
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+            status = 400
+         else
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([0000, "Authentication failed"]))
+               status = 401
+            else
+               app = App.find_by_id(app_id)
+               # Check if the app exists
+               if !app
+                  errors.push(Array.new([0000, "Resource does not exist: App"]))
+                  status = 400
+               else
+                  table = Table.find_by(name: table_name)
+                  
+                  if table
+                     errors.push(Array.new([0000, "Resource already exists"]))
+                     status = 202
+                  else
+                     # Check if table_name is too long or too short
+                     if table_name.length > max_table_name_length
+                        errors.push(Array.new([0000, "Field too long: table_name"]))
+                        status = 400
+                     end
+                     
+                     if table_name.length < min_table_name_length
+                        errors.push(Array.new([0000, "Field too short: table_name"]))
+                        status = 400
+                     end
+                     
+                     if table_name.include? " "
+                        errors.push(Array.new([0000, "Field contains not allowed characters: table_name"]))
+                        status = 400
+                     end
+                     
+                     if errors.length == 0
+                        # Create the new table and return it
+                        table = Table.new(name: table_name.capitalize, app_id: app.id)
+                        if !table.save
+                           errors.push(Array.new([0000, "Unknown validation error"]))
+                           status = 500
+                        else
+                           result = table
+                           ok = true
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         @result = result
+         status = 201
+      else
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
    end
    # finished
    def get_table
@@ -214,12 +462,12 @@ class AppsController < ApplicationController
          status = 400
       end
       
-      if !table_name || table_name.length < 2
+      if !table_name || table_name.length < 1
          errors.push(Array.new([0000, "Missing field: table_name"]))
          status = 400
       end
       
-      if !auth || auth.length < 2
+      if !auth || auth.length < 1
          errors.push(Array.new([0000, "Missing field: auth"]))
          status = 401
       end
@@ -270,7 +518,7 @@ class AppsController < ApplicationController
          end
       end
       
-      if ok
+      if ok && errors.length == 0
          @result["result"] = array
          status = 200
       else
