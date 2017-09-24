@@ -7,7 +7,6 @@ class AppsController < ApplicationController
    min_property_value_length = 2
    
    # TableObject methods
-   # finished
    define_method :create_object do
       table_name = params["table_name"]
       app_id = params["app_id"]
@@ -125,7 +124,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # Finished
+   
    def get_object
       object_id = params["object_id"]
       
@@ -212,7 +211,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    define_method :update_object do
       object_id = params["object_id"]
       
@@ -343,11 +342,83 @@ class AppsController < ApplicationController
    end
    
    def delete_object
+      object_id = params["object_id"]
       
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !object_id
+         errors.push(Array.new([0000, "Missing field: object"]))
+         status = 400
+      end
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([0000, "Missing field: auth"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         dev = Dev.find_by(api_key: api_key)
+         
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+            status = 400
+         else
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([0000, "Authentication failed"]))
+               status = 401
+            else
+               obj = TableObject.find_by_id(object_id)
+               
+               if !obj
+                  errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
+                  status = 400
+               else
+                  table = Table.find_by_id(obj.table_id)
+                  
+                  if !table
+                     errors.push(Array.new([0000, "Resource does not exist: Table"]))
+                     status = 400
+                  else
+                     app = App.find_by_id(table.app_id)
+                     
+                     if !app
+                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                        status = 400
+                     else
+                        if app.dev_id != dev.id
+                           errors.push(Array.new([0000, "Action not allowed"]))
+                           status = 403
+                        else
+                           obj.destroy!
+                           result = {}
+                           ok = true
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         @result = result
+         status = 200
+      else
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
    end
    
    # Table methods
-   #finished
    define_method :create_table do
       table_name = params["table_name"]
       app_id = params["app_id"]
@@ -400,31 +471,36 @@ class AppsController < ApplicationController
                      errors.push(Array.new([0000, "Resource already exists"]))
                      status = 202
                   else
-                     # Check if table_name is too long or too short
-                     if table_name.length > max_table_name_length
-                        errors.push(Array.new([0000, "Field too long: table_name"]))
-                        status = 400
-                     end
-                     
-                     if table_name.length < min_table_name_length
-                        errors.push(Array.new([0000, "Field too short: table_name"]))
-                        status = 400
-                     end
-                     
-                     if table_name.include? " "
-                        errors.push(Array.new([0000, "Field contains not allowed characters: table_name"]))
-                        status = 400
-                     end
-                     
-                     if errors.length == 0
-                        # Create the new table and return it
-                        table = Table.new(name: table_name.capitalize, app_id: app.id)
-                        if !table.save
-                           errors.push(Array.new([0000, "Unknown validation error"]))
-                           status = 500
-                        else
-                           result = table
-                           ok = true
+                     if app.dev_id != dev.id
+                        errors.push(Array.new([0000, "Action not allowed"]))
+                        status = 403
+                     else
+                        # Check if table_name is too long or too short
+                        if table_name.length > max_table_name_length
+                           errors.push(Array.new([0000, "Field too long: table_name"]))
+                           status = 400
+                        end
+                        
+                        if table_name.length < min_table_name_length
+                           errors.push(Array.new([0000, "Field too short: table_name"]))
+                           status = 400
+                        end
+                        
+                        if table_name.include? " "
+                           errors.push(Array.new([0000, "Field contains not allowed characters: table_name"]))
+                           status = 400
+                        end
+                        
+                        if errors.length == 0
+                           # Create the new table and return it
+                           table = Table.new(name: table_name.capitalize, app_id: app.id)
+                           if !table.save
+                              errors.push(Array.new([0000, "Unknown validation error"]))
+                              status = 500
+                           else
+                              result = table
+                              ok = true
+                           end
                         end
                      end
                   end
@@ -442,7 +518,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    def get_table
       app_id = params["app_id"]
       table_name = params["table_name"]
@@ -527,7 +603,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    define_method :update_table do
       table_id = params["table_id"]
       table_name = params["table_name"]
@@ -627,7 +703,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    def delete_table
       table_id = params["table_id"]
       
@@ -680,6 +756,8 @@ class AppsController < ApplicationController
                      else
                         # Delete the table
                         table.destroy!
+                        result = {}
+                        ok = true
                      end
                   end
                end
