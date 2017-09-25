@@ -39,4 +39,9 @@ Rails.application.routes.draw do
   match '/v1/apps/table', to: 'apps#get_table', via: 'get'
   match '/v1/apps/table', to: 'apps#update_table', via: 'put'
   match '/v1/apps/table', to: 'apps#delete_table', via: 'delete'
+  
+  match '/v1/apps/app', to: 'apps#create_app', via: 'post'
+  match '/v1/apps/app', to: 'apps#get_app', via: 'get'
+  match '/v1/apps/app', to: 'apps#update_app', via: 'put'
+  match '/v1/apps/app', to: 'apps#delete_app', via: 'delete'
 end
