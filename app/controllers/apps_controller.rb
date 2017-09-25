@@ -160,7 +160,106 @@ class AppsController < ApplicationController
    end
    
    define_method :update_app do
+      app_id = params["app_id"]
+      name = params["name"]
+      desc = params["desc"]
       
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !app_id
+         errors.push(Array.new([0000, "Missing field: app_id"]))
+         status = 400
+      end
+      
+      if !name || name.length < 1
+         errors.push(Array.new([0000, "Missing field: name"]))
+         status = 400
+      end
+      
+      if !desc || desc.length < 1
+         errors.push(Array.new([0000, "Missing field: desc"]))
+         status = 400
+      end
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([0000, "Missing field: auth"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         dev = Dev.find_by(api_key: api_key)
+            
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+            status = 400
+         else
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([0000, "Authentication failed"]))
+               status = 401
+            else
+               app = App.find_by_id(app_id)
+               
+               if !app
+                  errors.push(Array.new([0000, "Resource does not exist: App"]))
+                  status = 400
+               else
+                  if app.dev_id != dev.id
+                     errors.push(Array.new([0000, "Action not allowed"]))
+                     status = 403
+                  else
+                     if name.length < min_app_name_length
+                        errors.push(Array.new([0000, "Field too short: name"]))
+                        status = 400
+                     end
+                     
+                     if name.length > max_app_name_length
+                        errors.push(Array.new([0000, "Field too long: name"]))
+                        status = 400
+                     end
+                     
+                     if name.length < min_app_desc_length
+                        errors.push(Array.new([0000, "Field too short: desc"]))
+                        status = 400
+                     end
+                     
+                     if name.length > max_app_desc_length
+                        errors.push(Array.new([0000, "Field too long: desc"]))
+                        status = 400
+                     end
+                     
+                     if errors.length == 0
+                        # Update app
+                        app.update(name: name, description: desc)
+                        if !app.save
+                           errors.push(Array.new([0000, "Unknown validation error"]))
+                           status = 500
+                        else
+                           result = app
+                           ok = true
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         @result = result
+         status = 201
+      else
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
    end
    
    define_method :delete_app do
