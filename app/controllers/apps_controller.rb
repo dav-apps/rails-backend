@@ -622,7 +622,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   
+   # finished
    define_method :update_object do
       object_id = params["object_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
@@ -775,66 +775,89 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   
+   # finished
    def delete_object
       object_id = params["object_id"]
       
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
       
       errors = Array.new
       @result = Hash.new
       ok = false
       
       if !object_id
-         errors.push(Array.new([0000, "Missing field: object"]))
+         errors.push(Array.new([0000, "Missing field: object_id"]))
          status = 400
       end
       
-      if !auth || auth.length < 1
-         errors.push(Array.new([0000, "Missing field: auth"]))
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
          status = 401
       end
       
       if errors.length == 0
-         dev = Dev.find_by(api_key: api_key)
+         jwt_valid = false
+         begin
+             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+             jwt_valid = true
+         rescue JWT::ExpiredSignature
+             # JWT expired
+             errors.push(Array.new([0000, "JWT: expired"]))
+         rescue JWT::DecodeError
+             errors.push(Array.new([0000, "JWT: not valid"]))
+             # rescue other errors
+         rescue Exception
+             errors.push(Array.new([0000, "JWT: unknown error"]))
+         end
          
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([0000, "Authentication failed"]))
-               status = 401
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
             else
-               obj = TableObject.find_by_id(object_id)
+               dev = Dev.find_by_id(dev_id)
                
-               if !obj
-                  errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
+               if !dev     # Check if the dev exists
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  table = Table.find_by_id(obj.table_id)
-                  
-                  if !table
-                     errors.push(Array.new([0000, "Resource does not exist: Table"]))
+                  obj = TableObject.find_by_id(object_id)
+               
+                  if !obj
+                     errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
                      status = 400
                   else
-                     app = App.find_by_id(table.app_id)
-                     
-                     if !app
-                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                     table = Table.find_by_id(obj.table_id)
+                  
+                     if !table
+                        errors.push(Array.new([0000, "Resource does not exist: Table"]))
                         status = 400
                      else
-                        if app.dev_id != dev.id
-                           errors.push(Array.new([0000, "Action not allowed"]))
-                           status = 403
+                        app = App.find_by_id(table.app_id)
+                     
+                        if !app
+                           errors.push(Array.new([0000, "Resource does not exist: App"]))
+                           status = 400
                         else
-                           obj.destroy!
-                           result = {}
-                           ok = true
+                           if app.dev_id != dev.id    # Check if the app belongs to the dev
+                              errors.push(Array.new([0000, "Action not allowed"]))
+                              status = 403
+                           else
+                              # Check if the user is allowed to access the data
+                              if obj.user_id != user.id
+                                 errors.push(Array.new([0000, "Action not allowed"]))
+                                 status = 403
+                              else
+                                 obj.destroy!
+                                 result = {}
+                                 ok = true
+                              end
+                           end
                         end
                      end
                   end
