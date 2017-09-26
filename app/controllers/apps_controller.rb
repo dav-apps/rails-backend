@@ -329,15 +329,11 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   
+   # finished
    define_method :delete_app do
       app_id = params["app_id"]
       
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
       
       errors = Array.new
       @result = Hash.new
@@ -348,36 +344,61 @@ class AppsController < ApplicationController
          status = 400
       end
       
-      if !auth || auth.length < 1
-         errors.push(Array.new([0000, "Missing field: auth"]))
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
          status = 401
       end
       
       if errors.length == 0
-         dev = Dev.find_by(api_key: api_key)
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+         rescue JWT::DecodeError
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+         end
+         
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
             
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([0000, "Authentication failed"]))
-               status = 401
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
             else
-               app = App.find_by_id(app_id)
+               dev = Dev.find_by_id(dev_id)
                
-               if !app
-                  errors.push(Array.new([0000, "Resource does not exist: App"]))
+               if !dev
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  if app.dev_id != dev.id
-                     errors.push(Array.new([0000, "Action not allowed"]))
-                     status = 403
+                  app = App.find_by_id(app_id)
+                  
+                  if !app
+                     errors.push(Array.new([0000, "Resource does not exist: App"]))
+                     status = 400
                   else
-                     # Delete the app
-                     app.destroy!
-                     result = {}
-                     ok = true
+                     if app.dev_id != dev.id # Check if the app belongs to the dev
+                        errors.push(Array.new([0000, "Action not allowed"]))
+                        status = 403
+                     else
+                        if dev.user_id != user.id # Check if the user is the dev
+                           errors.push(Array.new([0000, "Action not allowed"]))
+                           status = 403
+                        else
+                           app.destroy!
+                           result = {}
+                           ok = true
+                        end
+                     end
                   end
                end
             end
