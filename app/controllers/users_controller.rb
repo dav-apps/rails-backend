@@ -65,53 +65,84 @@ class UsersController < ApplicationController
         @result = @result.to_json.html_safe
     end
     
-    def login
-        email = params[:email]
-        password = params[:password]
+   def login
+      email = params[:email]
+      password = params[:password]
         
-        errors = Array.new
-        @result = Hash.new
-        password_correct = false
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
         
+      errors = Array.new
+      result = Hash.new
+      ok = false
         
-        if !email || !password || email.length < 2 || password.length < 2
-            errors.push(Array.new([1, "Email or password is null"]))
-        else
-            @user = User.find_by(email: email)
-            
-            if !@user
-                errors.push(Array.new([2, "User with that email does not exist"]))
+      if !email || email.length < 1
+         errors.push(Array.new([0000, "Missing field: email"]))
+         status = 400
+      end
+        
+      if !password || password.length < 1
+         errors.push(Array.new([0000, "Missing field: password"]))
+         status = 400
+      end
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([0000, "Missing field: auth"]))
+         status = 401
+      end
+        
+      if errors.length == 0
+         dev = Dev.find_by(api_key: api_key)
+         
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+            status = 400
+         else
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([0000, "Authentication failed"]))
+               status = 401
             else
-                if !@user.confirmed
-                    errors.push(Array.new([3, "Please confirm your email to be able to login"]))
-                else
-                    if @user.authenticate(password)
-                        password_correct = true
-                    else
-                        errors.push(Array.new([4, "The password is incorrect"]))
-                        password_correct = false
-                    end
-                end
+               user = User.find_by(email: email)
+               
+               if !user
+                  errors.push(Array.new([0000, "Resource does not exist: User"]))
+                  status = 400
+               else
+                  if !user.authenticate(password)
+                     errors.push(Array.new([0000, "Password is incorrect"]))
+                     status = 401
+                  else
+                     if !user.confirmed
+                        errors.push(Array.new([0000, "User is not confirmed"]))
+                        status = 400
+                     else
+                        ok = true
+                     end
+                  end
+               end
             end
-        end
-        
-        @result["login"] = password_correct
-        
-        if password_correct
-            # Create JWT and result
-            expHours = 6
-            exp = Time.now.to_i + expHours * 3600
-            payload = {:email => @user.email, :username => @user.username, :id => @user.id, :exp => exp}
-            token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
-            
-            @result["jwt"] = token
-            @result["user"] = @user
-        else
-            @result["errors"] = errors
-        end
-        
-        @result = @result.to_json.html_safe
-    end
+         end
+      end
+      
+      if ok && errors.length == 0
+         # Create JWT and result
+         expHours = 6
+         exp = Time.now.to_i + expHours * 3600
+         payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
+         token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
+         result["jwt"] = token
+         
+         @result = result
+         status = 200
+      else
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
     
     define_method :set_username do
         new_username = params["new_username"]

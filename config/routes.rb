@@ -1,8 +1,8 @@
 Rails.application.routes.draw do
   
   # Authentication routes
-  get 'user/login', to: 'users#login'
-  get 'user/signup', to: 'users#signup'
+  # get 'user/login', to: 'users#login'
+  # get 'user/signup', to: 'users#signup'
   get 'user/set_username', to: 'users#set_username'
   get 'user/confirm_user', to: 'users#confirm_user'
   get 'user/send_verification_email', to: 'users#send_verification_email'
@@ -28,6 +28,10 @@ Rails.application.routes.draw do
   # Analytics routes
   # post '/v1/analytics/event', to: 'analytics#create'
   match '/v1/analytics/event', to: 'analytics#create', via: 'post'
+  
+  # User routes
+  match '/v1/users/login', to: 'users#login', via: 'post'
+  match '/v1/users/signup', to: 'users#signup', via: 'post'
   
   # Apps routes
   match '/v1/apps/object', to: 'apps#create_object', via: 'post'
