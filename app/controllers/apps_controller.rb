@@ -348,15 +348,12 @@ class AppsController < ApplicationController
    end
    
    # TableObject methods
+   # finished
    define_method :create_object do
       table_name = params["table_name"]
       app_id = params["app_id"]
       
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
       
       errors = Array.new
       @result = Hash.new
@@ -372,82 +369,134 @@ class AppsController < ApplicationController
          status = 400
       end
       
-      if !auth || auth.length < 1
-         errors.push(Array.new([0000, "Missing field: auth"]))
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
          status = 401
       end
       
       if errors.length == 0
-         if request.headers["Content-Type"] != "application/json"
-            errors.push(Array.new([0000, "Content-type not supported"]))
-            status = 415
-         else
-            dev = Dev.find_by(api_key: api_key)
-            
-            if !dev     # Check if the dev exists
-               errors.push(Array.new([0000, "Resource does not exist: Dev"]))
-               status = 400
+         jwt_valid = false
+         begin
+             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+             jwt_valid = true
+         rescue JWT::ExpiredSignature
+             # JWT expired
+             errors.push(Array.new([0000, "JWT: expired"]))
+         rescue JWT::DecodeError
+             errors.push(Array.new([0000, "JWT: not valid"]))
+             # rescue other errors
+         rescue Exception
+             errors.push(Array.new([0000, "JWT: unknown error"]))
+         end
+         
+         if jwt_valid
+            if request.headers["Content-Type"] != "application/json"
+               errors.push(Array.new([0000, "Content-type not supported"]))
+               status = 415
             else
-               if !check_authorization(api_key, sig)
-                  errors.push(Array.new([0000, "Authentication failed"]))
-                  status = 401
+               user_id = decoded_jwt[0]["user_id"]
+               dev_id = decoded_jwt[0]["dev_id"]
+               
+               user = User.find_by_id(user_id)
+            
+               if !user
+                  errors.push(Array.new([0000, "Resource does not exist: User"]))
+                  status = 400
                else
-                  app = App.find_by_id(app_id)
-                  # Check if the app exists
-                  if !app
-                     errors.push(Array.new([0000, "Resource does not exist: App"]))
+                  dev = Dev.find_by_id(dev_id)
+                  
+                  if !dev
+                     errors.push(Array.new([0000, "Resource does not exist: Dev"]))
                      status = 400
                   else
-                     if app.dev_id != dev.id       # Check if the app belongs to the dev
-                        errors.push(Array.new([0000, "Action not allowed"]))
-                        status = 403
+                     app = App.find_by_id(app_id)
+                     # Check if the app exists
+                     if !app
+                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                        status = 400
                      else
-                        table = Table.find_by(name: table_name)
+                        if app.dev_id != dev.id       # Check if the app belongs to the dev
+                           errors.push(Array.new([0000, "Action not allowed"]))
+                           status = 403
+                        else
+                           table = Table.find_by(name: table_name)
                         
-                        if !table
-                           # Check if table_name is too long or too short
-                           if table_name.length > max_table_name_length
-                              errors.push(Array.new([0000, "Field too long: table_name"]))
-                              status = 400
-                           end
-                           
-                           if table_name.length < min_table_name_length
-                              errors.push(Array.new([0000, "Field too short: table_name"]))
-                              status = 400
-                           end
-                           
-                           if table_name.include? " "
-                              errors.push(Array.new([0000, "Field contains not allowed characters: table_name"]))
-                              status = 400
-                           end
-                           
-                           # Create a new table
-                           table = Table.new(app_id: app.id, name: table_name)
-                           if !table.save
-                              errors.push(Array.new([0000, "Unknown validation error"]))
-                              status = 500
-                           end
-                        end
-                        
-                        if errors.length == 0
-                           obj = TableObject.create(table_id: table.id, name: table_name)
-                           
-                           # Get the body of the request
-                           object = request.request_parameters
-                           
-                           result = Hash.new
-                           result["id"] = obj.id
-                           
-                           object.each do |key, value|
-                              if !Property.create(table_object_id: obj.id, name: key, value: value)
-                                 errors.push(Array.new([0000, "Unknown validation error"]))
-                                 status = 500
+                           if !table
+                              # Only create the table when the dev is logged in
+                              if dev.user_id != user.id
+                                 errors.push(Array.new([0000, "Resource does not exist: Table"]))
+                                 status = 400
                               else
-                                 result[key] = value
+                                 # Check if table_name is too long or too short
+                                 if table_name.length > max_table_name_length
+                                    errors.push(Array.new([0000, "Field too long: table_name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if table_name.length < min_table_name_length
+                                    errors.push(Array.new([0000, "Field too short: table_name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if table_name.include? " "
+                                    errors.push(Array.new([0000, "Field contains not allowed characters: table_name"]))
+                                    status = 400
+                                 end
+                                 
+                                 # Create a new table
+                                 table = Table.new(app_id: app.id, name: table_name)
+                                 if !table.save
+                                    errors.push(Array.new([0000, "Unknown validation error"]))
+                                    status = 500
+                                 end
                               end
                            end
                            
-                           ok = true
+                           if errors.length == 0
+                              obj = TableObject.create(table_id: table.id, user_id: user.id)
+                              
+                              # Get the body of the request
+                              object = request.request_parameters
+                              
+                              result = Hash.new
+                              result["id"] = obj.id
+                              
+                              object.each do |key, value|
+                                 # Validate the length of the properties
+                                 if key.length > max_property_name_length
+                                    errors.push(Array.new([0000, "Field too long: Property.name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if key.length < min_property_name_length
+                                    errors.push(Array.new([0000, "Field too short: Property.name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if value.length > max_property_value_length
+                                    errors.push(Array.new([0000, "Field too long: Property.value"]))
+                                    status = 400
+                                 end
+                                 
+                                 if value.length < min_property_value_length
+                                    errors.push(Array.new([0000, "Field too short: Property.value"]))
+                                    status = 400
+                                 end
+                              end
+                              
+                              if errors.length == 0
+                                 object.each do |key, value|
+                                    if !Property.create(table_object_id: obj.id, name: key, value: value)
+                                       errors.push(Array.new([0000, "Unknown validation error"]))
+                                       status = 500
+                                    else
+                                       result[key] = value
+                                    end
+                                 end
+                              end
+                              
+                              ok = true
+                           end
                         end
                      end
                   end
@@ -465,75 +514,96 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   
+   # finished
    def get_object
       object_id = params["object_id"]
       
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
       
       errors = Array.new
-      @result = Hash.new
+      result = Hash.new
       ok = false
-      
       
       if !object_id
          errors.push(Array.new([0000, "Missing field: object_id"]))
          status = 400
       end
       
-      if !auth || auth.length < 1
-         errors.push(Array.new([0000, "Missing field: auth"]))
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
          status = 401
       end
       
-      if errors.length == 0   # No errors
-         dev = Dev.find_by(api_key: api_key)
+      if errors.length == 0 
+         jwt_valid = false
+         begin
+             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+             jwt_valid = true
+         rescue JWT::ExpiredSignature
+             # JWT expired
+             errors.push(Array.new([0000, "JWT: expired"]))
+         rescue JWT::DecodeError
+             errors.push(Array.new([0000, "JWT: not valid"]))
+             # rescue other errors
+         rescue Exception
+             errors.push(Array.new([0000, "JWT: unknown error"]))
+         end
          
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([0000, "Authentication failed"]))
-               status = 401
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
             else
-               # Check if the object exists
-               obj = TableObject.find_by_id(object_id)
+               dev = Dev.find_by_id(dev_id)
                
-               if !obj
-                  errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
-                  status = 404
+               if !dev     # Check if the dev exists
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+                  status = 400
                else
-                  table = Table.find_by_id(obj.table_id)
+                  # Check if the object exists
+                  obj = TableObject.find_by_id(object_id)
                   
-                  if !table
-                     errors.push(Array.new([0000, "Resource does not exist: Table"]))
-                     status = 400
+                  if !obj
+                     errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
+                     status = 404
                   else
-                     app = App.find_by_id(table.app_id)
-                     
-                     if !app
-                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                     table = Table.find_by_id(obj.table_id)
+                  
+                     if !table
+                        errors.push(Array.new([0000, "Resource does not exist: Table"]))
                         status = 400
                      else
-                        # Check if the table of the object belongs to the dev
-                        if app.dev_id != dev.id
-                           errors.push(Array.new([0000, "Action not allowed"]))
-                           status = 403
+                        app = App.find_by_id(table.app_id)
+                     
+                        if !app
+                           errors.push(Array.new([0000, "Resource does not exist: App"]))
+                           status = 400
                         else
-                           # Anythink is ok
-                           result = Hash.new
-                           result["id"] = obj.id
-                           
-                           obj.properties.each do |prop|
-                              result[prop.name] = prop.value
+                           # Check if the app belongs to the dev
+                           if app.dev_id != dev.id
+                              errors.push(Array.new([0000, "Action not allowed"]))
+                              status = 403
+                           else
+                              if obj.user_id != user.id   # If the object belongs to the user
+                                 errors.push(Array.new([0000, "Action not allowed"]))
+                                 status = 403
+                              else
+                                 # Anythink is ok
+                                 result = Hash.new
+                                 result["id"] = obj.id
+                                 
+                                 obj.properties.each do |prop|
+                                    result[prop.name] = prop.value
+                                 end
+                                 
+                                 ok = true
+                              end
                            end
-                           
-                           ok = true
                         end
                      end
                   end
@@ -555,12 +625,7 @@ class AppsController < ApplicationController
    
    define_method :update_object do
       object_id = params["object_id"]
-      
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
       
       errors = Array.new
       @result = Hash.new
@@ -571,99 +636,128 @@ class AppsController < ApplicationController
          status = 400
       end
       
-      if !auth || auth.length < 1
-         errors.push(Array.new([0000, "Missing field: auth"]))
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
          status = 401
       end
       
       if errors.length == 0
-         dev = Dev.find_by(api_key: api_key)
+         jwt_valid = false
+         begin
+             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+             jwt_valid = true
+         rescue JWT::ExpiredSignature
+             # JWT expired
+             errors.push(Array.new([0000, "JWT: expired"]))
+         rescue JWT::DecodeError
+             errors.push(Array.new([0000, "JWT: not valid"]))
+             # rescue other errors
+         rescue Exception
+             errors.push(Array.new([0000, "JWT: unknown error"]))
+         end
          
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([0000, "Authentication failed"]))
-               status = 401
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
             else
-               obj = TableObject.find_by_id(object_id)
+               dev = Dev.find_by_id(dev_id)
                
-               if !obj
-                  errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
+               if !dev     # Check if the dev exists
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  table = Table.find_by_id(obj.table_id)
-                  
-                  if !table
-                     errors.push(Array.new([0000, "Resource does not exist: Table"]))
+                  obj = TableObject.find_by_id(object_id)
+               
+                  if !obj
+                     errors.push(Array.new([0000, "Resource does not exist: TableObject"]))
                      status = 400
                   else
-                     app = App.find_by_id(table.app_id)
-                     
-                     if !app
-                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                     table = Table.find_by_id(obj.table_id)
+                  
+                     if !table
+                        errors.push(Array.new([0000, "Resource does not exist: Table"]))
                         status = 400
                      else
-                        if app.dev_id != dev.id    # Check if the app belongs to the dev
-                           errors.push(Array.new([0000, "Action not allowed"]))
-                           status = 403
+                        app = App.find_by_id(table.app_id)
+                     
+                        if !app
+                           errors.push(Array.new([0000, "Resource does not exist: App"]))
+                           status = 400
                         else
-                           # Update the properties of the object
-                           # Get the body of the request
-                           object = request.request_parameters
-                           
-                           result = Hash.new
-                           result["id"] = obj.id
-                           
-                           object.each do |key, value|
-                              # Validate the length of the properties
-                              if key.length > max_property_name_length
-                                 errors.push(Array.new([0000, "Field too long: Property.name"]))
-                                 status = 400
-                              end
-                              
-                              if key.length < min_property_name_length
-                                 errors.push(Array.new([0000, "Field too short: Property.name"]))
-                                 status = 400
-                              end
-                              
-                              if value.length > max_property_value_length
-                                 errors.push(Array.new([0000, "Field too long: Property.value"]))
-                                 status = 400
-                              end
-                              
-                              if value.length < min_property_value_length
-                                 errors.push(Array.new([0000, "Field too short: Property.value"]))
-                                 status = 400
-                              end
-                              
-                              if errors.length == 0
-                                 prop = Property.find_by(name: key, table_object_id: obj.id)
+                           if app.dev_id != dev.id    # Check if the app belongs to the dev
+                              errors.push(Array.new([0000, "Action not allowed"]))
+                              status = 403
+                           else
+                              # Check if the user is allowed to access the data
+                              if obj.user_id != user.id
+                                 errors.push(Array.new([0000, "Action not allowed"]))
+                                 status = 403
+                              else
+                                 # Update the properties of the object
+                                 # Get the body of the request
+                                 object = request.request_parameters
                                  
-                                 # If the property does not exist, create it
-                                 if !prop
-                                    new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+                                 result = Hash.new
+                                 result["id"] = obj.id
+                                 
+                                 object.each do |key, value|
+                                    # Validate the length of the properties
+                                    if key.length > max_property_name_length
+                                       errors.push(Array.new([0000, "Field too long: Property.name"]))
+                                       status = 400
+                                    end
                                     
-                                    if !new_prop.save
-                                       errors.push(Array.new([0000, "Unknown validation error"]))
-                                       status = 500
-                                    else
-                                       result[key] = value
+                                    if key.length < min_property_name_length
+                                       errors.push(Array.new([0000, "Field too short: Property.name"]))
+                                       status = 400
                                     end
-                                 else
-                                    prop.update(name: key, value: value)
-                                    if !prop.save
-                                       errors.push(Array.new([0000, "Unknown validation error"]))
-                                       status = 500
-                                    else
-                                       result[key] = value
+                                    
+                                    if value.length > max_property_value_length
+                                       errors.push(Array.new([0000, "Field too long: Property.value"]))
+                                       status = 400
                                     end
+                                    
+                                    if value.length < min_property_value_length
+                                       errors.push(Array.new([0000, "Field too short: Property.value"]))
+                                       status = 400
+                                    end
+                                 end
+                                 
+                                 if errors.length == 0
+                                    object.each do |key, value|
+                                       prop = Property.find_by(name: key, table_object_id: obj.id)
+                                       
+                                       # If the property does not exist, create it
+                                       if !prop
+                                          new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+                                          
+                                          if !new_prop.save
+                                             errors.push(Array.new([0000, "Unknown validation error"]))
+                                             status = 500
+                                          else
+                                             result[key] = value
+                                          end
+                                       else
+                                          prop.update(name: key, value: value)
+                                          if !prop.save
+                                             errors.push(Array.new([0000, "Unknown validation error"]))
+                                             status = 500
+                                          else
+                                             result[key] = value
+                                          end
+                                       end
+                                    end
+                                    
+                                    ok = true
                                  end
                               end
                            end
-                           
-                           ok = true
                         end
                      end
                   end
