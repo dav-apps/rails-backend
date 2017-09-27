@@ -1044,7 +1044,7 @@ class AppsController < ApplicationController
                      table = Table.find_by(name: table_name, app_id: app.id)
                      
                      if table
-                        errors.push(Array.new([0000, "Resource already exists"]))
+                        errors.push(Array.new([0000, "Resource already exists: Table"]))
                         status = 202
                      else
                         if app.dev_id != dev.id    # Check if the app belongs to the dev

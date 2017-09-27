@@ -1,70 +1,90 @@
 class UsersController < ApplicationController
-    require 'jwt'
-    minUsernameLength = 3
-    maxUsernameLength = 25
-    minPasswordLength = 7
-    
-    define_method :signup do
-        email = params[:email]
-        password = params[:password]
-        username = params[:username]
+   require 'jwt'
+   min_username_length = 2
+   max_username_length = 25
+   min_password_length = 7
+   max_password_length = 25
+   
+   # Finished
+   define_method :signup do
+      email = params[:email]
+      password = params[:password]
+      username = params[:username]
         
-        errors = Array.new
-        @result = Hash.new
-        
-        @user = User.new(email: email, password: password, username: username)
-        
-        if !email || !password || !username || email.length < 2 || password.length < 2 || username.length < 2
-            errors.push(Array.new([1, "Email, password or username is null"]))
-        else
-            # If password, username and email exist
-            
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !email || email.length < 1
+         errors.push(Array.new([0000, "Missing field: email"]))
+         status = 400
+      end
+      
+      if !password || password.length < 1
+         errors.push(Array.new([0000, "Missing field: password"]))
+         status = 400
+      end
+      
+      if !username || username.length < 1
+         errors.push(Array.new([0000, "Missing field: username"]))
+         status = 400
+      end
+      
+      if errors.length == 0
+         if User.exists?(email: email)
+            errors.push(Array.new([0000, "Field already taken: email"]))
+            status = 400
+         else
+            # Validate the fields
             if !validate_email(email)
-                errors.push(Array.new([2, "Email is not valid"]))
+               errors.push(Array.new([0000, "Field not valid: email"]))
             end
             
-            if password.length <= minPasswordLength
-                errors.push(Array.new([3, "Password is too short"]))
+            if password.length < min_password_length
+               errors.push(Array.new([0000, "Field too short: password"]))
             end
             
-            if username.length <= minUsernameLength
-                errors.push(Array.new([4, "Username is too short"]))
+            if password.length > max_password_length
+               errors.push(Array.new([0000, "Field too long: password"]))
             end
             
-            if username.length > maxUsernameLength
-                errors.push(Array.new([5, "Username is too long"]))
+            if username.length < min_username_length
+               errors.push(Array.new([0000, "Field too short: username"]))
             end
             
-            if User.exists?(email: email)
-                errors.push(Array.new([6, "Email is already taken"]))
+            if username.length > max_username_length
+               errors.push(Array.new([0000, "Field too long: username"]))
             end
             
             if User.exists?(username: username)
-                errors.push(Array.new([7, "Username is already taken"]))
-            end
-        end
-        
-        @user.email_confirmation_token = generate_token
-        
-        if @user.save && errors.length == 0
-            @result["signup"] = true
-            UserNotifier.send_signup_email(@user).deliver_later
-        else
-            @user.errors.each do |e|
-                if @user.errors[e].any?
-                    @user.errors[e].each do |errorMessage|
-                        errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
-                    end
-                end
+               errors.push(Array.new([0000, "Field already taken: username"]))
             end
             
-            @result["signup"] = false
-            @result["errors"] = errors
-        end
-        
-        @result = @result.to_json.html_safe
-    end
-    
+            if errors.length == 0
+               # Save the new user
+               @user.email_confirmation_token = generate_token
+      
+               if !@user.save
+                  errors.push(Array.new([0000, "Unknown validation error"]))
+                  status = 500
+               else
+                  UserNotifier.send_signup_email(@user).deliver_later
+                  ok = true
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 201
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   # Finished
    def login
       email = params[:email]
       password = params[:password]

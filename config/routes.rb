@@ -31,7 +31,7 @@ Rails.application.routes.draw do
   
   # User routes
   match '/v1/users/login', to: 'users#login', via: 'post'
-  match '/v1/users/signup', to: 'users#signup', via: 'get'  # TODO CHANGE TO POST!
+  match '/v1/users/signup', to: 'users#signup', via: 'post'  # TODO CHANGE TO POST!
   
   # Apps routes
   match '/v1/apps/object', to: 'apps#create_object', via: 'post'
