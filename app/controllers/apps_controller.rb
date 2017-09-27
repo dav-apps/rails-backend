@@ -40,16 +40,19 @@ class AppsController < ApplicationController
       if errors.length == 0
          jwt_valid = false
          begin
-             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-             jwt_valid = true
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
          rescue JWT::ExpiredSignature
-             # JWT expired
-             errors.push(Array.new([0000, "JWT: expired"]))
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
-             errors.push(Array.new([0000, "JWT: not valid"]))
-             # rescue other errors
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
          rescue Exception
-             errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -100,7 +103,7 @@ class AppsController < ApplicationController
                            errors.push(Array.new([0000, "Unknown validation error"]))
                            status = 500
                         else
-                           result = app
+                           @result = app
                            ok = true
                         end
                      end
@@ -111,9 +114,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 201
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -141,16 +144,19 @@ class AppsController < ApplicationController
       if errors.length == 0
          jwt_valid = false
          begin
-             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-             jwt_valid = true
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
          rescue JWT::ExpiredSignature
-             # JWT expired
-             errors.push(Array.new([0000, "JWT: expired"]))
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
-             errors.push(Array.new([0000, "JWT: not valid"]))
-             # rescue other errors
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
          rescue Exception
-             errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -184,7 +190,7 @@ class AppsController < ApplicationController
                            errors.push(Array.new([0000, "Action not allowed"]))
                            status = 403
                         else
-                           result = app
+                           @result = app
                            ok = true
                         end
                      end
@@ -195,9 +201,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 201
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -238,16 +244,19 @@ class AppsController < ApplicationController
       if errors.length == 0
          jwt_valid = false
          begin
-             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-             jwt_valid = true
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
          rescue JWT::ExpiredSignature
-             # JWT expired
-             errors.push(Array.new([0000, "JWT: expired"]))
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
-             errors.push(Array.new([0000, "JWT: not valid"]))
-             # rescue other errors
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
          rescue Exception
-             errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -308,7 +317,7 @@ class AppsController < ApplicationController
                                  errors.push(Array.new([0000, "Unknown validation error"]))
                                  status = 500
                               else
-                                 result = app
+                                 @result = app
                                  ok = true
                               end
                            end
@@ -321,9 +330,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 201
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -357,11 +366,14 @@ class AppsController < ApplicationController
          rescue JWT::ExpiredSignature
             # JWT expired
             errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
             errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
             # rescue other errors
          rescue Exception
             errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -395,7 +407,7 @@ class AppsController < ApplicationController
                            status = 403
                         else
                            app.destroy!
-                           result = {}
+                           @result = {}
                            ok = true
                         end
                      end
@@ -406,9 +418,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 200
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -445,16 +457,19 @@ class AppsController < ApplicationController
       if errors.length == 0
          jwt_valid = false
          begin
-             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-             jwt_valid = true
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
          rescue JWT::ExpiredSignature
-             # JWT expired
-             errors.push(Array.new([0000, "JWT: expired"]))
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
-             errors.push(Array.new([0000, "JWT: not valid"]))
-             # rescue other errors
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
          rescue Exception
-             errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -526,8 +541,7 @@ class AppsController < ApplicationController
                               # Get the body of the request
                               object = request.request_parameters
                               
-                              result = Hash.new
-                              result["id"] = obj.id
+                              @result["id"] = obj.id
                               
                               object.each do |key, value|
                                  # Validate the length of the properties
@@ -558,7 +572,7 @@ class AppsController < ApplicationController
                                        errors.push(Array.new([0000, "Unknown validation error"]))
                                        status = 500
                                     else
-                                       result[key] = value
+                                       @result[key] = value
                                     end
                                  end
                               end
@@ -574,9 +588,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 201
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -589,7 +603,7 @@ class AppsController < ApplicationController
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
       
       errors = Array.new
-      result = Hash.new
+      @result = Hash.new
       ok = false
       
       if !object_id
@@ -605,16 +619,19 @@ class AppsController < ApplicationController
       if errors.length == 0 
          jwt_valid = false
          begin
-             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-             jwt_valid = true
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
          rescue JWT::ExpiredSignature
-             # JWT expired
-             errors.push(Array.new([0000, "JWT: expired"]))
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
-             errors.push(Array.new([0000, "JWT: not valid"]))
-             # rescue other errors
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
          rescue Exception
-             errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -662,11 +679,11 @@ class AppsController < ApplicationController
                                  status = 403
                               else
                                  # Anythink is ok
-                                 result = Hash.new
-                                 result["id"] = obj.id
+                                 @result = Hash.new
+                                 @result["id"] = obj.id
                                  
                                  obj.properties.each do |prop|
-                                    result[prop.name] = prop.value
+                                    @result[prop.name] = prop.value
                                  end
                                  
                                  ok = true
@@ -682,9 +699,9 @@ class AppsController < ApplicationController
       
       
       if ok && errors.length == 0
-         @result = result
          status = 200
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -712,16 +729,19 @@ class AppsController < ApplicationController
       if errors.length == 0
          jwt_valid = false
          begin
-             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-             jwt_valid = true
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
          rescue JWT::ExpiredSignature
-             # JWT expired
-             errors.push(Array.new([0000, "JWT: expired"]))
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
-             errors.push(Array.new([0000, "JWT: not valid"]))
-             # rescue other errors
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
          rescue Exception
-             errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -771,8 +791,8 @@ class AppsController < ApplicationController
                                  # Get the body of the request
                                  object = request.request_parameters
                                  
-                                 result = Hash.new
-                                 result["id"] = obj.id
+                                 @result = Hash.new
+                                 @result["id"] = obj.id
                                  
                                  object.each do |key, value|
                                     # Validate the length of the properties
@@ -809,7 +829,7 @@ class AppsController < ApplicationController
                                              errors.push(Array.new([0000, "Unknown validation error"]))
                                              status = 500
                                           else
-                                             result[key] = value
+                                             @result[key] = value
                                           end
                                        else
                                           prop.update(name: key, value: value)
@@ -817,7 +837,7 @@ class AppsController < ApplicationController
                                              errors.push(Array.new([0000, "Unknown validation error"]))
                                              status = 500
                                           else
-                                             result[key] = value
+                                             @result[key] = value
                                           end
                                        end
                                     end
@@ -835,9 +855,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 200
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -871,11 +891,14 @@ class AppsController < ApplicationController
          rescue JWT::ExpiredSignature
              # JWT expired
              errors.push(Array.new([0000, "JWT: expired"]))
+             status = 401
          rescue JWT::DecodeError
              errors.push(Array.new([0000, "JWT: not valid"]))
+             status = 401
              # rescue other errors
          rescue Exception
              errors.push(Array.new([0000, "JWT: unknown error"]))
+             status = 401
          end
          
          if jwt_valid
@@ -922,7 +945,7 @@ class AppsController < ApplicationController
                                  status = 403
                               else
                                  obj.destroy!
-                                 result = {}
+                                 @result = {}
                                  ok = true
                               end
                            end
@@ -935,9 +958,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 200
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -974,16 +997,19 @@ class AppsController < ApplicationController
       if errors.length == 0
          jwt_valid = false
          begin
-             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-             jwt_valid = true
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
          rescue JWT::ExpiredSignature
-             # JWT expired
-             errors.push(Array.new([0000, "JWT: expired"]))
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
-             errors.push(Array.new([0000, "JWT: not valid"]))
-             # rescue other errors
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
          rescue Exception
-             errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -1018,7 +1044,7 @@ class AppsController < ApplicationController
                            errors.push(Array.new([0000, "Action not allowed"]))
                            status = 403
                         else
-                           if dev.user_id != user.id
+                           if dev.user_id != user.id # Check if the user is the dev
                               errors.push(Array.new([0000, "Action not allowed"]))
                               status = 403
                            else
@@ -1045,7 +1071,7 @@ class AppsController < ApplicationController
                                     errors.push(Array.new([0000, "Unknown validation error"]))
                                     status = 500
                                  else
-                                    result = table
+                                    @result = table
                                     ok = true
                                  end
                               end
@@ -1059,24 +1085,20 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 201
       else
+         @result.clear
          @result["errors"] = errors
       end
       
       render json: @result, status: status if status
    end
-   
+   # finished
    def get_table
       app_id = params["app_id"]
       table_name = params["table_name"]
       
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
       
       errors = Array.new
       @result = Hash.new
@@ -1092,50 +1114,80 @@ class AppsController < ApplicationController
          status = 400
       end
       
-      if !auth || auth.length < 1
-         errors.push(Array.new([0000, "Missing field: auth"]))
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
          status = 401
       end
       
-      if errors.length == 0   # No errors
-         dev = Dev.find_by(api_key: api_key)
+      if errors.length == 0
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
+         end
          
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([0000, "Authentication failed"]))
-               status = 401
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
             else
-               app = App.find_by_id(app_id)
-               if !app     # Check if the app exist
-                  errors.push(Array.new([0000, "Resource not found: App"]))
+               dev = Dev.find_by_id(dev_id)
+               
+               if !dev     # Check if the dev exists
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  table = Table.find_by(app_id: app_id, name: table_name)
-                  if !table
-                     errors.push(Array.new([0000, "Resource does not exist: Table"]))
-                     status = 404
+                  app = App.find_by_id(app_id)
+                  # Check if the app exists
+                  if !app
+                     errors.push(Array.new([0000, "Resource does not exist: App"]))
+                     status = 400
                   else
-                     # Check if the table belongs to the dev
-                     if app.dev_id != dev.id
-                        errors.push(Array.new([0000, "Action not allowed"]))
-                        status = 403
+                     table = Table.find_by(name: table_name, app_id: app.id)
+                     # Check if the table exists
+                     if !table
+                        errors.push(Array.new([0000, "Resource does not exist: Table"]))
+                        status = 404
                      else
-                        array = Array.new
-                        
-                        table.table_objects.each do |table_object|
-                           object = Hash.new
-                           object["id"] = table_object.id
+                        if app.dev_id != dev.id # Check if the app belongs to the dev
+                           errors.push(Array.new([0000, "Action not allowed"]))
+                           status = 403
+                        else
+                           @result["table"] = table
                            
-                           table_object.properties.each do |property|
-                              object[property.name] = property.value
+                           array = Array.new
+                           
+                           table.table_objects.each do |table_object|
+                              if table_object.user_id == user.id
+                                 object = Hash.new
+                                 object["id"] = table_object.id
+                                 
+                                 table_object.properties.each do |property|
+                                    object[property.name] = property.value
+                                 end
+                                 array.push(object)
+                              end
                            end
-                           array.push(object)
+                           
+                           @result["entries"] = array
+                           ok = true
                         end
-                        
-                        ok = true
                      end
                   end
                end
@@ -1144,9 +1196,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result["result"] = array
          status = 200
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -1232,7 +1284,7 @@ class AppsController < ApplicationController
                               errors.push(Array.new([0000, "Unknown validation error"]))
                               status = 500
                            else
-                              result = table
+                              @result = table
                               ok = true
                            end
                         end
@@ -1244,9 +1296,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 200
       else
+         @result.clear
          @result["errors"] = errors
       end
       
@@ -1305,7 +1357,7 @@ class AppsController < ApplicationController
                      else
                         # Delete the table
                         table.destroy!
-                        result = {}
+                        @result = {}
                         ok = true
                      end
                   end
@@ -1315,9 +1367,9 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         @result = result
          status = 200
       else
+         @result.clear
          @result["errors"] = errors
       end
       

@@ -74,7 +74,7 @@ class UsersController < ApplicationController
          api_key = auth.split(",")[0]
          sig = auth.split(",")[1]
       end
-        
+      
       errors = Array.new
       result = Hash.new
       ok = false
