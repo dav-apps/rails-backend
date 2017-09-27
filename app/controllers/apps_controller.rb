@@ -190,7 +190,14 @@ class AppsController < ApplicationController
                            errors.push(Array.new([0000, "Action not allowed"]))
                            status = 403
                         else
-                           @result = app
+                           tables = Array.new
+                           
+                           app.tables.each do |table|
+                              tables.push(table)
+                           end
+                           
+                           @result["app"] = app.attributes
+                           @result["app"]["tables"] = tables
                            ok = true
                         end
                      end
@@ -1169,7 +1176,7 @@ class AppsController < ApplicationController
                            errors.push(Array.new([0000, "Action not allowed"]))
                            status = 403
                         else
-                           @result["table"] = table
+                           @result["table"] = table.attributes
                            
                            array = Array.new
                            
@@ -1185,7 +1192,7 @@ class AppsController < ApplicationController
                               end
                            end
                            
-                           @result["entries"] = array
+                           @result["table"]["entries"] = array
                            ok = true
                         end
                      end
