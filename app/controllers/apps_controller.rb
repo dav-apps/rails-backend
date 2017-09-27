@@ -1204,16 +1204,12 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   
+   # finished
    define_method :update_table do
       table_id = params["table_id"]
       table_name = params["table_name"]
       
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
       
       errors = Array.new
       @result = Hash.new
@@ -1229,63 +1225,93 @@ class AppsController < ApplicationController
          status = 400
       end
       
-      if !auth || auth.length < 1
-         errors.push(Array.new([0000, "Missing field: auth"]))
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
          status = 401
       end
       
       if errors.length == 0
-         dev = Dev.find_by(api_key: api_key)
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
+         end
          
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([0000, "Authentication failed"]))
-               status = 401
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
             else
-               table = Table.find_by_id(table_id)
+               dev = Dev.find_by_id(dev_id)
                
-               if !table
-                  errors.push(Array.new([0000, "Resource does not exist: Table"]))
+               if !dev     # Check if the dev exists
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  app = App.find_by_id(table.app_id)
-                  
-                  if !app
-                     errors.push(Array.new([0000, "Resource does not exist: App"]))
+                  table = Table.find_by_id(table_id)
+               
+                  if !table
+                     errors.push(Array.new([0000, "Resource does not exist: Table"]))
                      status = 400
                   else
-                     # Check if the app belongs to the dev
-                     if app.dev_id != dev.id
-                        errors.push(Array.new([0000, "Action not allowed"]))
-                        status = 403
+                     app = App.find_by_id(table.app_id)
+                     
+                     if !app
+                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                        status = 400
                      else
-                        # Validate the table name
-                        if table_name.length > max_table_name_length
-                           errors.push(Array.new([0000, "Field too long: table_name"]))
-                           status = 400
-                        end
-                        
-                        if table_name.length < min_table_name_length
-                           errors.push(Array.new([0000, "Field too short: table_name"]))
-                           status = 400
-                        end
-                        
-                        if table_name.include? " "
-                           errors.push(Array.new([0000, "Field contains not allowed characters: table_name"]))
-                           status = 400
-                        end
-                        
-                        if errors.length == 0
-                           # Update the table and send it back
-                           if !table.update(name: (table_name[0].upcase + table_name[1..-1]))
-                              errors.push(Array.new([0000, "Unknown validation error"]))
-                              status = 500
+                        # Check if the app belongs to the dev
+                        if app.dev_id != dev.id
+                           errors.push(Array.new([0000, "Action not allowed"]))
+                           status = 403
+                        else
+                           # Check if the user is the dev
+                           if dev.user_id != user.id
+                              errors.push(Array.new([0000, "Action not allowed"]))
+                              status = 403
                            else
-                              @result = table
-                              ok = true
+                              # Validate the table name
+                              if table_name.length > max_table_name_length
+                                 errors.push(Array.new([0000, "Field too long: table_name"]))
+                                 status = 400
+                              end
+                              
+                              if table_name.length < min_table_name_length
+                                 errors.push(Array.new([0000, "Field too short: table_name"]))
+                                 status = 400
+                              end
+                              
+                              if table_name.include? " "
+                                 errors.push(Array.new([0000, "Field contains not allowed characters: table_name"]))
+                                 status = 400
+                              end
+                              
+                              if errors.length == 0
+                                 # Update the table and send it back
+                                 if !table.update(name: (table_name[0].upcase + table_name[1..-1]))
+                                    errors.push(Array.new([0000, "Unknown validation error"]))
+                                    status = 500
+                                 else
+                                    @result = table
+                                    ok = true
+                                 end
+                              end
                            end
                         end
                      end
