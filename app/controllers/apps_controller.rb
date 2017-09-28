@@ -16,7 +16,7 @@ class AppsController < ApplicationController
       name = params["name"]
       desc = params["desc"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -125,7 +125,7 @@ class AppsController < ApplicationController
    # finished
    define_method :get_app do
       app_id = params["app_id"]
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -222,7 +222,7 @@ class AppsController < ApplicationController
       name = params["name"]
       desc = params["desc"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -349,7 +349,7 @@ class AppsController < ApplicationController
    define_method :delete_app do
       app_id = params["app_id"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -440,7 +440,7 @@ class AppsController < ApplicationController
       table_name = params["table_name"]
       app_id = params["app_id"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -480,7 +480,8 @@ class AppsController < ApplicationController
          end
          
          if jwt_valid
-            if request.headers["Content-Type"] != "application/json"
+            if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
+               puts request.headers["Content-Type"]
                errors.push(Array.new([0000, "Content-type not supported"]))
                status = 415
             else
@@ -607,7 +608,7 @@ class AppsController < ApplicationController
    def get_object
       object_id = params["object_id"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -717,7 +718,7 @@ class AppsController < ApplicationController
    # finished
    define_method :update_object do
       object_id = params["object_id"]
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -874,7 +875,7 @@ class AppsController < ApplicationController
    def delete_object
       object_id = params["object_id"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -980,7 +981,7 @@ class AppsController < ApplicationController
       table_name = params["table_name"]
       app_id = params["app_id"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -1105,7 +1106,7 @@ class AppsController < ApplicationController
       app_id = params["app_id"]
       table_name = params["table_name"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -1216,7 +1217,7 @@ class AppsController < ApplicationController
       table_id = params["table_id"]
       table_name = params["table_name"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
@@ -1341,7 +1342,7 @@ class AppsController < ApplicationController
    def delete_table
       table_id = params["table_id"]
       
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
