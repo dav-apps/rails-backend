@@ -172,10 +172,6 @@ class UsersController < ApplicationController
    end
    
    define_method :update_user do
-      # 1. get id
-      # 2. validate jwt
-      # 3. validate new values and make sure some values can only be changed when it was changed on the website!
-      # 4. If validation errors, throw 400
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
@@ -341,6 +337,78 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
+   
+   def delete_user
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
+         end
+         
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
+            else
+               dev = Dev.find_by_id(dev_id)
+               
+               if !dev
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+                  status = 400
+               else
+                  if dev_id != 1    # If this call wasn't from the website or a 1st party app
+                     errors.push(Array.new([0000, "Action not allowed"]))
+                     status = 403
+                  else
+                     # Delete the user
+                     user.destroy!
+                     @result = {}
+                     ok = true
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
+   
    
    
    

@@ -10,6 +10,6 @@ class User < ActiveRecord::Base
     
     has_many :decks, dependent: :destroy
     has_many :cards, through: :decks
-    has_one :dev
-    has_many :table_objects
+    has_one :dev, dependent: :destroy
+    has_many :table_objects, dependent: :destroy
 end
