@@ -11,7 +11,6 @@ class AppsController < ApplicationController
    min_app_desc_length = 3
    
    # App methods
-   # finished
    define_method :create_app do
       name = params["name"]
       desc = params["desc"]
@@ -122,7 +121,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    define_method :get_app do
       app_id = params["app_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
@@ -216,7 +215,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    define_method :update_app do
       app_id = params["app_id"]
       name = params["name"]
@@ -345,7 +344,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    define_method :delete_app do
       app_id = params["app_id"]
       
@@ -435,7 +434,6 @@ class AppsController < ApplicationController
    end
    
    # TableObject methods
-   # finished
    define_method :create_object do
       table_name = params["table_name"]
       app_id = params["app_id"]
@@ -510,7 +508,7 @@ class AppsController < ApplicationController
                            errors.push(Array.new([0000, "Action not allowed"]))
                            status = 403
                         else
-                           table = Table.find_by(name: table_name)
+                           table = Table.find_by(name: table_name, app_id: app_id)
                         
                            if !table
                               # Only create the table when the dev is logged in
@@ -583,9 +581,8 @@ class AppsController < ApplicationController
                                        @result[key] = value
                                     end
                                  end
+                                 ok = true
                               end
-                              
-                              ok = true
                            end
                         end
                      end
@@ -604,7 +601,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    def get_object
       object_id = params["object_id"]
       
@@ -715,7 +712,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    define_method :update_object do
       object_id = params["object_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
@@ -871,7 +868,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    def delete_object
       object_id = params["object_id"]
       
@@ -976,7 +973,6 @@ class AppsController < ApplicationController
    end
    
    # Table methods
-   # finished
    define_method :create_table do
       table_name = params["table_name"]
       app_id = params["app_id"]
@@ -1101,7 +1097,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    def get_table
       app_id = params["app_id"]
       table_name = params["table_name"]
@@ -1212,7 +1208,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    define_method :update_table do
       table_id = params["table_id"]
       table_name = params["table_name"]
@@ -1338,7 +1334,7 @@ class AppsController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    def delete_table
       table_id = params["table_id"]
       
@@ -1382,7 +1378,7 @@ class AppsController < ApplicationController
             
             user = User.find_by_id(user_id)
             
-             if !user
+            if !user
                errors.push(Array.new([0000, "Resource does not exist: User"]))
                status = 400
             else

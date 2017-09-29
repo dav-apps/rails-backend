@@ -61,6 +61,7 @@ class UsersController < ApplicationController
             end
             
             if errors.length == 0
+               @user = User.new(email: email, password: password, username: username)
                # Save the new user
                @user.email_confirmation_token = generate_token
       
@@ -89,14 +90,14 @@ class UsersController < ApplicationController
       email = params[:email]
       password = params[:password]
         
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s : request.headers['HTTP_AUTHORIZATION'].to_s
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       if auth
          api_key = auth.split(",")[0]
          sig = auth.split(",")[1]
       end
-      
+      puts auth
       errors = Array.new
-      result = Hash.new
+      @result = Hash.new
       ok = false
         
       if !email || email.length < 1
@@ -121,15 +122,15 @@ class UsersController < ApplicationController
             errors.push(Array.new([0000, "Resource does not exist: Dev"]))
             status = 400
          else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([0000, "Authentication failed"]))
-               status = 401
+            user = User.find_by(email: email)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
             else
-               user = User.find_by(email: email)
-               
-               if !user
-                  errors.push(Array.new([0000, "Resource does not exist: User"]))
-                  status = 400
+               if !check_authorization(api_key, sig)
+                  errors.push(Array.new([0000, "Authentication failed"]))
+                  status = 401
                else
                   if !user.authenticate(password)
                      errors.push(Array.new([0000, "Password is incorrect"]))
@@ -149,15 +150,15 @@ class UsersController < ApplicationController
       
       if ok && errors.length == 0
          # Create JWT and result
-         expHours = 6
+         expHours = 900000000
          exp = Time.now.to_i + expHours * 3600
          payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
          token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
-         result["jwt"] = token
+         @result["jwt"] = token
          
-         @result = result
          status = 200
       else
+         @result.clear
          @result["errors"] = errors
       end
       
