@@ -10,7 +10,7 @@ class UsersController < ApplicationController
       email = params[:email]
       password = params[:password]
       username = params[:username]
-        
+      
       errors = Array.new
       @result = Hash.new
       ok = false
@@ -38,26 +38,32 @@ class UsersController < ApplicationController
             # Validate the fields
             if !validate_email(email)
                errors.push(Array.new([0000, "Field not valid: email"]))
+               status = 400
             end
             
             if password.length < min_password_length
                errors.push(Array.new([0000, "Field too short: password"]))
+               status = 400
             end
             
             if password.length > max_password_length
                errors.push(Array.new([0000, "Field too long: password"]))
+               status = 400
             end
             
             if username.length < min_username_length
                errors.push(Array.new([0000, "Field too short: username"]))
+               status = 400
             end
             
             if username.length > max_username_length
                errors.push(Array.new([0000, "Field too long: username"]))
+               status = 400
             end
             
             if User.exists?(username: username)
                errors.push(Array.new([0000, "Field already taken: username"]))
+               status = 400
             end
             
             if errors.length == 0
@@ -89,7 +95,7 @@ class UsersController < ApplicationController
    def login
       email = params[:email]
       password = params[:password]
-        
+      
       auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       if auth
          api_key = auth.split(",")[0]
@@ -164,7 +170,180 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
-    
+   
+   define_method :update_user do
+      # 1. get id
+      # 2. validate jwt
+      # 3. validate new values and make sure some values can only be changed when it was changed on the website!
+      # 4. If validation errors, throw 400
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
+         end
+         
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
+            else
+               dev = Dev.find_by_id(dev_id)
+               
+               if !dev
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+                  status = 400
+               else
+                  if dev_id != 1    # If this call wasn't from the website or an 1st party app
+                     errors.push(Array.new([0000, "Action not allowed"]))
+                     status = 403
+                  else
+                     if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
+                        puts request.headers["Content-Type"]
+                        errors.push(Array.new([0000, "Content-type not supported"]))
+                        status = 415
+                     else
+                        email_changed = false
+                        password_changed = false
+                        object = request.request_parameters
+                        
+                        email = object["email"]
+                        if email && email.length > 0
+                           if !validate_email(email)
+                              errors.push(Array.new([0000, "Field not valid: email"]))
+                              status = 400
+                           end
+                           
+                           if errors.length == 0
+                              # Set email_confirmation_token and send email
+                              user.old_email = user.email
+                              user.new_email = email
+                              user.email_confirmation_token = generate_token
+                              email_changed = true
+                           end
+                        end
+                        
+                        username = object["username"]
+                        if username && username.length > 0
+                           if username.length < min_username_length
+                              errors.push(Array.new([0000, "Field too short: username"]))
+                              status = 400
+                           end
+                           
+                           if username.length > max_username_length
+                              errors.push(Array.new([0000, "Field too long: username"]))
+                              status = 400
+                           end
+                           
+                           if User.exists?(username: username)
+                              errors.push(Array.new([0000, "Field already taken: username"]))
+                              status = 400
+                           end
+                           
+                           if errors.length == 0
+                              user.username = username
+                           end
+                        end
+                        
+                        password = object["password"]
+                        if password && password.length > 0
+                           if password.length < min_password_length
+                              errors.push(Array.new([0000, "Field too short: password"]))
+                              status = 400
+                           end
+                           
+                           if password.length > max_password_length
+                              errors.push(Array.new([0000, "Field too long: password"]))
+                              status = 400
+                           end
+                           
+                           if errors.length == 0
+                              # Set password_confirmation_token and send email
+                              user.new_password = password
+                              user.password_confirmation_token = generate_token
+                              password_changed = true
+                           end
+                        end
+                        
+                        confirmed = object["confirmed"]
+                        if !confirmed.nil?
+                           if errors.length == 0
+                              user.confirmed = confirmed
+                           end
+                        end
+                        
+                        avatar_file_extension = object["avatar_file_extension"]
+                        if avatar_file_extension && avatar_file_extension.length > 0
+                           if errors.length == 0
+                              user.avatar_file_extension = avatar_file_extension
+                           end
+                        end
+                        
+                        
+                        if errors.length == 0
+                           # Update user with new properties
+                           if !user.save
+                              errors.push(Array.new([0000, "Unknown validation error"]))
+                              status = 500
+                           else
+                              @result = user
+                              ok = true
+                              
+                              if email_changed
+                                 UserNotifier.send_change_email_email(user).deliver_later
+                              end
+                              
+                              if password_changed
+                                 UserNotifier.send_change_password_email(user).deliver_later
+                              end
+                           end
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
+   
+   
     define_method :set_username do
         new_username = params["new_username"]
         jwt = request.headers['HTTP_AUTHORIZATION']

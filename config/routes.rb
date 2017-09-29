@@ -32,6 +32,7 @@ Rails.application.routes.draw do
   # User routes
   match '/v1/users/login', to: 'users#login', via: 'get'
   match '/v1/users/signup', to: 'users#signup', via: 'post'
+  match '/v1/users/:id', to: 'users#update_user', via: 'put'
   
   # Apps routes
   match '/v1/apps/object', to: 'apps#create_object', via: 'post'
