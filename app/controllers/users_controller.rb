@@ -488,7 +488,7 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # Finished
+   
    def send_verification_email
       email = params["email"]
       
@@ -534,7 +534,7 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # finished
+   
    def send_password_reset_email
       email = params["email"]
       
@@ -576,10 +576,8 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # Finished
+   
    def save_new_password
-      # 1. Check the password_confirmation_token
-      # 2. Set old_password to the current password, set the current password to the new_password and set new_password to nil
       user_id = params["id"]
       password_confirmation_token = params["password_confirmation_token"]
       
@@ -609,12 +607,14 @@ class UsersController < ApplicationController
                status = 400
             else
                if user.new_password == nil || user.new_password.length < 1
-                  errors.push(Array.new([0000, "new_password is nil"]))
+                  errors.push(Array.new([0000, "new_password is empty"]))
                   status = 400
                else
                   # Save new password
                   user.password = user.new_password
                   user.new_password = nil
+                  
+                  user.password_confirmation_token = nil
                   
                   if !user.save
                      errors.push(Array.new([0000, "Unknown validation error"]))
@@ -636,211 +636,117 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
-
-    
-    define_method :save_new_password_old do
-        # This method is to reset the password from outside of the account, no JWT required
-        id = params["id"]
-        confirmation_token = params["confirmation_token"]
-        new_password = params["new_password"]
-        ok = false
-        
-        errors = Array.new
-        @result = Hash.new
-        
-        if !id || !confirmation_token || !new_password || id.length < 1 || confirmation_token.length < 2 || new_password.length < 2
-            errors.push(Array.new([1, "ID, confirmation_token or new password is null"]))
-        else
-            if new_password.length <= minPasswordLength
-                errors.push(Array.new([2, "The password is too short"]))
-            end
-            
-            @user = User.find_by_id(id)
-            if !@user
-                errors.push(Array.new([3, "This user does not exist"]))
+   
+   def save_new_email
+      user_id = params["id"]
+      email_confirmation_token = params["email_confirmation_token"]
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !user_id
+         errors.push(Array.new([0000, "Missing field: id"]))
+         status = 400
+      end
+      
+      if !email_confirmation_token || email_confirmation_token.length < 1
+         errors.push(Array.new([0000, "Missing field: email_confirmation_token"]))
+         status = 400
+      end
+      
+      if errors.length == 0
+         user = User.find_by_id(user_id)
+         
+         if !user
+            errors.push(Array.new([0000, "Resource does not exist: User"]))
+            status = 400
+         else
+            if email_confirmation_token != user.email_confirmation_token
+               errors.push(Array.new([0000, "Email confirmation token is not correct"]))
+               status = 400
             else
-                if @user.password_confirmation_token != confirmation_token
-                    errors.push(Array.new([4, "The confirmation token is not correct"]))
-                else
-                    @user.password = new_password
-                    
-                    if @user.save && errors.length == 0
-                        ok = true
-                        @user.password_confirmation_token = nil
-                        @user.save
-                    else
-                        @user.errors.each do |e|
-                            if @user.errors[e].any?
-                                @user.errors[e].each do |errorMessage|
-                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
-                                end
-                            end
-                        end
-                    end
-                end
+               if user.new_email == nil || user.new_email.length < 1
+                  errors.push(Array.new([0000, "new_email is empty"]))
+                  status = 400
+               else
+                  # Save new password
+                  user.old_email = user.email
+                  user.email = user.new_email
+                  user.new_email = nil
+                  
+                  user.email_confirmation_token = nil
+                  
+                  if !user.save
+                     errors.push(Array.new([0000, "Unknown validation error"]))
+                     status = 500
+                  else
+                     ok = true
+                  end
+               end
             end
-        end
-        
-        if ok
-            @result["saved"] = true
-        else
-            @result["saved"] = false
-            @result["errors"] = errors
-        end
-        
-        @result = @result.to_json.html_safe
-    end
-    
-    def confirm_new_password
-        # Check if password confirmation token is correct and update DB with new password and nil token
-        id = params["id"]
-        confirmation_token = params["confirmation_token"]
-        ok = false
-        
-        errors = Array.new
-        @result = Hash.new
-        
-        if !id || !confirmation_token || confirmation_token.length < 2
-            errors.push(Array.new([1, "ID or confirmation token is null"]))
-        else
-            @user = User.find_by_id(id)
-            
-            if !@user
-                errors.push(Array.new([2, "This user does not exist"]))
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+         UserNotifier.send_reset_new_email_email(@user).deliver_later
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
+   def reset_new_email
+      # This method exists to reset the new email, when the email change was not intended by the account owner
+      user_id = params["id"]
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !user_id
+         errors.push(Array.new([0000, "Missing field: id"]))
+         status = 400
+      end
+      
+      if errors.length == 0
+         user = User.find_by_id(user_id)
+         
+         if !user
+            errors.push(Array.new([0000, "Resource does not exist: User"]))
+            status = 400
+         else
+            if !user.old_email || user.old_email.length < 1
+               errors.push(Array.new([0000, "old_email is empty"]))
+               status = 400
             else
-                if @user.password_confirmation_token != confirmation_token
-                    errors.push(Array.new([3, "The confirmation token is not correct"]))
-                else
-                    @user.password_confirmation_token = nil
-                    # Save new email
-                    @user.password = @user.new_password
-                    @user.new_password = nil
-                    
-                    if @user.save && errors.length == 0
-                        ok = true
-                    else
-                        @user.errors.each do |e|
-                            if @user.errors[e].any?
-                                @user.errors[e].each do |errorMessage|
-                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
-                                end
-                            end
-                        end
-                    end
-                end
+               # set new_email to email and email to old_email
+               user.email = old_email
+               user.old_email = nil
+               
+               if !user.save
+                  errors.push(Array.new([0000, "Unknown validation error"]))
+                  status = 500
+               else
+                  ok = true
+               end
             end
-        end
-        
-        if ok
-            @result["saved"] = true
-        else
-            @result["saved"] = false
-            @result["errors"] = errors
-        end
-        
-        @result = @result.to_json.html_safe
-    end
-    
-    def confirm_new_email
-        # Save new email and send an email to old_email with reset link which says that email has changed
-        id = params["id"]
-        confirmation_token = params["confirmation_token"]
-        ok = false
-        
-        errors = Array.new
-        @result = Hash.new
-        
-        if !id || !confirmation_token || confirmation_token.length < 2
-            errors.push(Array.new([1, "ID or confirmation token is null"]))
-        else
-            @user = User.find_by_id(id)
-            
-            if !@user
-                errors.push(Array.new([2, "This user does not exist"]))
-            else
-                if @user.email_confirmation_token != confirmation_token
-                    errors.push(Array.new([3, "The confirmation token is not correct"]))
-                else
-                    @user.email_confirmation_token = nil
-                    # Save new email
-                    @user.email = @user.new_email
-                    @user.new_email = nil
-                    
-                    if @user.save && errors.length == 0
-                        ok = true
-                    else
-                        @user.errors.each do |e|
-                            if @user.errors[e].any?
-                                @user.errors[e].each do |errorMessage|
-                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        
-        if ok
-            @result["saved"] = true
-            # Send reset_new_email email
-            UserNotifier.send_reset_new_email_email(@user).deliver_later
-        else
-            @result["saved"] = false
-            @result["errors"] = errors
-        end
-        
-        @result = @result.to_json.html_safe
-    end
-    
-    def reset_new_email
-        # Save old_email as email and save new_email as null
-        id = params["id"]
-        ok = false
-        
-        errors = Array.new
-        @result = Hash.new
-        
-        if !id
-            errors.push(Array.new([1, "ID is null"]))
-        else
-            @user = User.find_by_id(id)
-            
-            if !@user
-                errors.push(Array.new([2, "This user does not exist"]))
-            else
-                if !@user.old_email || !validate_email(@user.old_email)
-                    errors.push(Array.new([3, "Your old email is null or not valid"]))
-                else
-                    @user.email = @user.old_email
-                    @user.old_email = nil
-                    
-                    if @user.save && errors.length == 0
-                        ok = true
-                    else
-                        @user.errors.each do |e|
-                            if @user.errors[e].any?
-                                @user.errors[e].each do |errorMessage|
-                                    errors.push(Array.new([0, e.to_s + " " + errorMessage.to_s]))
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-        
-        if ok
-            @result["saved"] = true
-        else
-            @result["saved"] = false
-            @result["errors"] = errors
-        end
-        
-        @result = @result.to_json.html_safe
-    end
-    
-    
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
    private
    def generate_token
       SecureRandom.hex(20)
