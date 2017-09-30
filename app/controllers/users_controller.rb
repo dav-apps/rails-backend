@@ -5,7 +5,6 @@ class UsersController < ApplicationController
    min_password_length = 7
    max_password_length = 25
    
-   # Finished
    define_method :signup do
       email = params[:email]
       password = params[:password]
@@ -91,7 +90,7 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
-   # Finished
+   
    def login
       email = params[:email]
       password = params[:password]
@@ -162,6 +161,81 @@ class UsersController < ApplicationController
          token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
          @result["jwt"] = token
          
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
+   def get_user
+      requested_user_id = params["id"]
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !requested_user_id
+         errors.push(Array.new([0000, "Missing field: user_id"]))
+         status = 400
+      end
+      
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
+         end
+         
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
+            else
+               requested_user = User.find_by_id(requested_user_id)
+               
+               if !requested_user
+                  errors.push(Array.new([0000, "Resource does not exist: User"]))
+                  status = 404
+               else
+                  # Check if the logged in user is the requested user
+                  if requested_user.id != user.id
+                     errors.push(Array.new([0000, "Action not allowed"]))
+                     status = 403
+                  else
+                     @result = requested_user
+                     ok = true
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
          status = 200
       else
          @result.clear
