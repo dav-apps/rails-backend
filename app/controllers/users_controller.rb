@@ -576,45 +576,69 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
-    
-    
-    
-    
-    def check_password_confirmation_token
-        id = params["id"]
-        password_confirmation_token = params['confirmation_token']
-        ok = false
-        
-        errors = Array.new
-        @result = Hash.new
-        
-        if !id || !password_confirmation_token || id.length < 1 || password_confirmation_token.length < 2
-            errors.push(Array.new([1, "ID or confirmation token is null"]))
-        else
-            @user = User.find_by_id(id)
-            
-            if !@user
-                errors.push(Array.new([2, "This user does not exist"]))
+   # Finished
+   def save_new_password
+      # 1. Check the password_confirmation_token
+      # 2. Set old_password to the current password, set the current password to the new_password and set new_password to nil
+      user_id = params["id"]
+      password_confirmation_token = params["password_confirmation_token"]
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !user_id
+         errors.push(Array.new([0000, "Missing field: id"]))
+         status = 400
+      end
+      
+      if !password_confirmation_token || password_confirmation_token.length < 1
+         errors.push(Array.new([0000, "Missing field: password_confirmation_token"]))
+         status = 400
+      end
+      
+      if errors.length == 0
+         user = User.find_by_id(user_id)
+         
+         if !user
+            errors.push(Array.new([0000, "Resource does not exist: User"]))
+            status = 400
+         else
+            if password_confirmation_token != user.password_confirmation_token
+               errors.push(Array.new([0000, "Password confirmation token is not correct"]))
+               status = 400
             else
-                if @user.password_confirmation_token != password_confirmation_token
-                    errors.push(Array.new([3, "The confirmation token is not correct"]))
-                else
-                    ok = true
-                end
+               if user.new_password == nil || user.new_password.length < 1
+                  errors.push(Array.new([0000, "new_password is nil"]))
+                  status = 400
+               else
+                  # Save new password
+                  user.password = user.new_password
+                  user.new_password = nil
+                  
+                  if !user.save
+                     errors.push(Array.new([0000, "Unknown validation error"]))
+                     status = 500
+                  else
+                     ok = true
+                  end
+               end
             end
-        end
-        
-        if ok
-            @result["checked"] = true
-        else
-            @result["checked"] = false
-            @result["errors"] = errors
-        end
-        
-        @result = @result.to_json.html_safe
-    end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+
     
-    define_method :save_new_password do
+    define_method :save_new_password_old do
         # This method is to reset the password from outside of the account, no JWT required
         id = params["id"]
         confirmation_token = params["confirmation_token"]
