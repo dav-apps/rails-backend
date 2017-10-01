@@ -1,45 +1,196 @@
 class AnalyticsController < ApplicationController
    
-   def create
+   min_event_name_length = 2
+   max_event_name_length = 15
+   
+   define_method :create_event_log do
       name = params["name"]
-      app_id = params["app_id"]  # TODO change this later to api key
+      app_id = params["app_id"]
       
       errors = Array.new
       @result = Hash.new
       ok = false
       
-      if !name || name.length < 2
-         errors.push(Array.new([1200, "Name is null"]))
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+      
+      if !name || name.length < 1
+         errors.push(Array.new([0000, "Missing field: name"]))
          status = 400
-      else
-         app = App.find_by_id(app_id)
+      end
+      
+      if !app_id
+         errors.push(Array.new([0000, "Missing field: app_id"]))
+         status = 400
+      end
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([0000, "Missing field: auth"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         dev = Dev.find_by(api_key: api_key)
          
-         if !app
-            errors.push(Array.new([1102, "The app does not exist"]))
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+            status = 400
          else
-            # Find the event with the name
-            event = Event.find_by(name: name, app_id: app_id)
-            
-            if !event
-               event = Event.new(name: name, app_id: app_id)
-               if !event.save
-                  errors.push(Array.new([1103, "Unexpected error"]))
-               end
-            end
-            
-            log = EventLog.new(event_id: event.id)
-            if log.save
-               ok = true
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([0000, "Authentication failed"]))
+               status = 401
             else
-               errors.push(Array.new([1103, "Unexpected error"]))
+               # Check if the app exists
+               app = App.find_by_id(app_id)
+               
+               if !app
+                  errors.push(Array.new([0000, "Resource does not exist: App"]))
+                  status = 400
+               else
+                  # Check if the event with the name already exists
+                  event = Event.find_by(name: name, app_id: app_id)
+                  
+                  if !event
+                     # Validate properties
+                     if name.length > max_event_name_length
+                        errors.push(Array.new([0000, "Field too long: Event.name"]))
+                        status = 400
+                     end
+                     
+                     if name.length < min_event_name_length
+                        errors.push(Array.new([0000, "Field too short: Event.name"]))
+                        status = 400
+                     end
+                     
+                     if errors.length == 0
+                        # Create event with that name
+                        event = Event.new(name: name, app_id: app_id)
+                        
+                        if !event.save
+                           errors.push(Array.new([0000, "Unknown validation error"]))
+                           status = 500
+                        end
+                     end
+                  end
+                  
+                  if errors.length == 0
+                     # Create event_log
+                     event_log = EventLog.new(event_id: event.id)
+                     
+                     if !event_log.save
+                        errors.push(Array.new([0000, "Unknown validation error"]))
+                        status = 500
+                     else
+                        @result = event_log
+                        ok = true
+                     end
+                  end
+               end
             end
          end
       end
       
-      if ok
-         @result = log
+      if ok && errors.length == 0
          status = 201
       else
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
+   def get_event
+      event_id = params["id"]
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !event_id
+         errors.push(Array.new([0000, "Missing field: id"]))
+         status = 400
+      end
+      
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([0000, "Missing field: jwt"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([0000, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([0000, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([0000, "JWT: unknown error"]))
+            status = 401
+         end
+         
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               status = 400
+            else
+               dev = Dev.find_by_id(dev_id)
+               
+               if !dev
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+                  status = 400
+               else
+                  # Get the app of the event
+                  event = Event.find_by_id(event_id)
+                  
+                  if !event
+                     errors.push(Array.new([0000, "Resource does not exist: Event"]))
+                     status = 400
+                  else
+                     app = App.find_by_id(event.app_id)
+                     
+                     if !app
+                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                        status = 400
+                     else
+                        if app.dev_id != dev.id # Check if the app belongs to the dev
+                           errors.push(Array.new([0000, "Action not allowed"]))
+                           status = 403
+                        else
+                           @result["event"] = event.attributes
+                           
+                           logs = Array.new
+                           
+                           event.event_logs.each { |log| logs.push(log.attributes) }
+                           
+                           @result["event"]["logs"] = logs
+                           ok = true
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
          @result["errors"] = errors
       end
       

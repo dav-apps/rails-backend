@@ -100,7 +100,7 @@ class UsersController < ApplicationController
          api_key = auth.split(",")[0]
          sig = auth.split(",")[1]
       end
-      puts auth
+      
       errors = Array.new
       @result = Hash.new
       ok = false
@@ -219,7 +219,7 @@ class UsersController < ApplicationController
                dev = Dev.find_by_id(dev_id)
                
                if !dev
-                  errors.push(Array.new([0000, "Resource does not exist: User"]))
+                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
                   status = 400
                else
                   requested_user = User.find_by_id(requested_user_id)

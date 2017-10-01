@@ -39,5 +39,6 @@ Rails.application.routes.draw do
   match '/v1/apps/app', to: 'apps#delete_app', via: 'delete'
   
   # Analytics routes
-  match '/v1/analytics/event', to: 'analytics#create', via: 'post'
+  match '/v1/analytics/event', to: 'analytics#create_event_log', via: 'post'
+  match '/v1/analytics/event/:id', to: 'analytics#get_event', via: 'get'
 end
