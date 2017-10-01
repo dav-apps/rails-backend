@@ -41,4 +41,6 @@ Rails.application.routes.draw do
   # Analytics routes
   match '/v1/analytics/event', to: 'analytics#create_event_log', via: 'post'
   match '/v1/analytics/event/:id', to: 'analytics#get_event', via: 'get'
+  match '/v1/analytics/event/:id', to: 'analytics#update_event', via: 'put'
+  match '/v1/analytics/event/:id', to: 'analytics#delete_event', via: 'delete'
 end
