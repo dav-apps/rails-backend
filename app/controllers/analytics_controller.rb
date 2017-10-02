@@ -18,17 +18,17 @@ class AnalyticsController < ApplicationController
       end
       
       if !name || name.length < 1
-         errors.push(Array.new([0000, "Missing field: name"]))
+         errors.push(Array.new([2111, "Missing field: name"]))
          status = 400
       end
       
       if !app_id
-         errors.push(Array.new([0000, "Missing field: app_id"]))
+         errors.push(Array.new([2110, "Missing field: app_id"]))
          status = 400
       end
       
       if !auth || auth.length < 1
-         errors.push(Array.new([0000, "Missing field: auth"]))
+         errors.push(Array.new([2101, "Missing field: auth"]))
          status = 401
       end
       
@@ -36,18 +36,18 @@ class AnalyticsController < ApplicationController
          dev = Dev.find_by(api_key: api_key)
          
          if !dev     # Check if the dev exists
-            errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+            errors.push(Array.new([2802, "Resource does not exist: Dev"]))
             status = 400
          else
             if !check_authorization(api_key, sig)
-               errors.push(Array.new([0000, "Authentication failed"]))
+               errors.push(Array.new([1101, "Authentication failed"]))
                status = 401
             else
                # Check if the app exists
                app = App.find_by_id(app_id)
                
                if !app
-                  errors.push(Array.new([0000, "Resource does not exist: App"]))
+                  errors.push(Array.new([2803, "Resource does not exist: App"]))
                   status = 400
                else
                   # Check if the event with the name already exists
@@ -56,12 +56,12 @@ class AnalyticsController < ApplicationController
                   if !event
                      # Validate properties
                      if name.length > max_event_name_length
-                        errors.push(Array.new([0000, "Field too long: Event.name"]))
+                        errors.push(Array.new([2308, "Field too long: Event.name"]))
                         status = 400
                      end
                      
                      if name.length < min_event_name_length
-                        errors.push(Array.new([0000, "Field too short: Event.name"]))
+                        errors.push(Array.new([2206, "Field too short: Event.name"]))
                         status = 400
                      end
                      
@@ -70,7 +70,7 @@ class AnalyticsController < ApplicationController
                         event = Event.new(name: name, app_id: app_id)
                         
                         if !event.save
-                           errors.push(Array.new([0000, "Unknown validation error"]))
+                           errors.push(Array.new([1103, "Unknown validation error"]))
                            status = 500
                         end
                      end
@@ -81,7 +81,7 @@ class AnalyticsController < ApplicationController
                      event_log = EventLog.new(event_id: event.id)
                      
                      if !event_log.save
-                        errors.push(Array.new([0000, "Unknown validation error"]))
+                        errors.push(Array.new([1103, "Unknown validation error"]))
                         status = 500
                      else
                         @result = event_log
@@ -111,12 +111,12 @@ class AnalyticsController < ApplicationController
       ok = false
       
       if !event_id
-         errors.push(Array.new([0000, "Missing field: id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
       if !jwt || jwt.length < 1
-         errors.push(Array.new([0000, "Missing field: jwt"]))
+         errors.push(Array.new([2102, "Missing field: jwt"]))
          status = 401
       end
       
@@ -127,14 +127,14 @@ class AnalyticsController < ApplicationController
             jwt_valid = true
          rescue JWT::ExpiredSignature
             # JWT expired
-            errors.push(Array.new([0000, "JWT: expired"]))
+            errors.push(Array.new([1301, "JWT: expired"]))
             status = 401
          rescue JWT::DecodeError
-            errors.push(Array.new([0000, "JWT: not valid"]))
+            errors.push(Array.new([1302, "JWT: not valid"]))
             status = 401
             # rescue other errors
          rescue Exception
-            errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([1303, "JWT: unknown error"]))
             status = 401
          end
          
@@ -145,30 +145,30 @@ class AnalyticsController < ApplicationController
             user = User.find_by_id(user_id)
             
             if !user
-               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
                status = 400
             else
                dev = Dev.find_by_id(dev_id)
                
                if !dev
-                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
                   # Get the app of the event
                   event = Event.find_by_id(event_id)
                   
                   if !event
-                     errors.push(Array.new([0000, "Resource does not exist: Event"]))
+                     errors.push(Array.new([2807, "Resource does not exist: Event"]))
                      status = 400
                   else
                      app = App.find_by_id(event.app_id)
                      
                      if !app
-                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                        errors.push(Array.new([2803, "Resource does not exist: App"]))
                         status = 400
                      else
                         if app.dev_id != dev.id #&& dev.id != 1 # Check if the app belongs to the dev
-                           errors.push(Array.new([0000, "Action not allowed"]))
+                           errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
                            @result["event"] = event.attributes
@@ -207,17 +207,17 @@ class AnalyticsController < ApplicationController
       ok = false
       
       if !event_id
-         errors.push(Array.new([0000, "Missing field: id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
       if !name || name.length < 1
-         errors.push(Array.new([0000, "Missing field: name"]))
+         errors.push(Array.new([2111, "Missing field: name"]))
          status = 400
       end
       
       if !jwt || jwt.length < 1
-         errors.push(Array.new([0000, "Missing field: jwt"]))
+         errors.push(Array.new([2102, "Missing field: jwt"]))
          status = 401
       end
       
@@ -228,14 +228,14 @@ class AnalyticsController < ApplicationController
             jwt_valid = true
          rescue JWT::ExpiredSignature
             # JWT expired
-            errors.push(Array.new([0000, "JWT: expired"]))
+            errors.push(Array.new([1301, "JWT: expired"]))
             status = 401
          rescue JWT::DecodeError
-            errors.push(Array.new([0000, "JWT: not valid"]))
+            errors.push(Array.new([1302, "JWT: not valid"]))
             status = 401
             # rescue other errors
          rescue Exception
-            errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([1303, "JWT: unknown error"]))
             status = 401
          end
          
@@ -246,52 +246,52 @@ class AnalyticsController < ApplicationController
             user = User.find_by_id(user_id)
             
             if !user
-               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
                status = 400
             else
                dev = Dev.find_by_id(dev_id)
                
                if !dev
-                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
                   # Get the app of the event
                   event = Event.find_by_id(event_id)
                   
                   if !event
-                     errors.push(Array.new([0000, "Resource does not exist: Event"]))
+                     errors.push(Array.new([2807, "Resource does not exist: Event"]))
                      status = 400
                   else
                      app = App.find_by_id(event.app_id)
                      
                      if !app
-                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                        errors.push(Array.new([2803, "Resource does not exist: App"]))
                         status = 400
                      else
                         if app.dev_id != dev.id #&& dev.id != 1 # Check if the app belongs to the dev
-                           errors.push(Array.new([0000, "Action not allowed"]))
+                           errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
                            # Validate properties
                            if name.length > max_event_name_length
-                              errors.push(Array.new([0000, "Field too long: Event.name"]))
+                              errors.push(Array.new([2308, "Field too long: Event.name"]))
                               status = 400
                            end
                            
                            if name.length < min_event_name_length
-                              errors.push(Array.new([0000, "Field too short: Event.name"]))
+                              errors.push(Array.new([2206, "Field too short: Event.name"]))
                               status = 400
                            end
                            
                            if Event.exists?(name: name, app_id: app.id) && event.name != name
-                              errors.push(Array.new([0000, "Field already taken: name"]))
+                              errors.push(Array.new([2703, "Field already taken: name"]))
                               status = 400
                            end
                            
                            if errors.length == 0
                               event.name = name
                               if !event.save
-                                 errors.push(Array.new([0000, "Unknown validation error"]))
+                                 errors.push(Array.new([1103, "Unknown validation error"]))
                                  status = 500
                               else
                                  @result = event
@@ -325,12 +325,12 @@ class AnalyticsController < ApplicationController
       ok = false
       
       if !event_id
-         errors.push(Array.new([0000, "Missing field: id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
       if !jwt || jwt.length < 1
-         errors.push(Array.new([0000, "Missing field: jwt"]))
+         errors.push(Array.new([2102, "Missing field: jwt"]))
          status = 401
       end
       
@@ -341,14 +341,14 @@ class AnalyticsController < ApplicationController
             jwt_valid = true
          rescue JWT::ExpiredSignature
             # JWT expired
-            errors.push(Array.new([0000, "JWT: expired"]))
+            errors.push(Array.new([1301, "JWT: expired"]))
             status = 401
          rescue JWT::DecodeError
-            errors.push(Array.new([0000, "JWT: not valid"]))
+            errors.push(Array.new([1302, "JWT: not valid"]))
             status = 401
             # rescue other errors
          rescue Exception
-            errors.push(Array.new([0000, "JWT: unknown error"]))
+            errors.push(Array.new([1303, "JWT: unknown error"]))
             status = 401
          end
          
@@ -359,30 +359,30 @@ class AnalyticsController < ApplicationController
             user = User.find_by_id(user_id)
             
             if !user
-               errors.push(Array.new([0000, "Resource does not exist: User"]))
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
                status = 400
             else
                dev = Dev.find_by_id(dev_id)
                
                if !dev
-                  errors.push(Array.new([0000, "Resource does not exist: Dev"]))
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
                   # Get the app of the event
                   event = Event.find_by_id(event_id)
                   
                   if !event
-                     errors.push(Array.new([0000, "Resource does not exist: Event"]))
+                     errors.push(Array.new([2807, "Resource does not exist: Event"]))
                      status = 400
                   else
                      app = App.find_by_id(event.app_id)
                      
                      if !app
-                        errors.push(Array.new([0000, "Resource does not exist: App"]))
+                        errors.push(Array.new([2803, "Resource does not exist: App"]))
                         status = 400
                      else
                         if app.dev_id != dev.id #&& dev.id != 1 # Check if the app belongs to the dev
-                           errors.push(Array.new([0000, "Action not allowed"]))
+                           errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
                            event.destroy!

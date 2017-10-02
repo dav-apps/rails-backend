@@ -1,13 +1,13 @@
 Rails.application.routes.draw do
   
   # Cards routes
-  get 'cards/get_all_decks_and_cards', to: 'cards#get_all_decks_and_cards'
-  get 'cards/create_deck', to: 'cards#create_deck'
-  get 'cards/update_deck', to: 'cards#update_deck'
-  get 'cards/delete_deck', to: 'cards#delete_deck'
-  get 'cards/create_card', to: 'cards#create_card'
-  get 'cards/update_card', to: 'cards#update_card'
-  get 'cards/delete_card', to: 'cards#delete_card'
+  #get 'cards/get_all_decks_and_cards', to: 'cards#get_all_decks_and_cards'
+  #get 'cards/create_deck', to: 'cards#create_deck'
+  #get 'cards/update_deck', to: 'cards#update_deck'
+  #get 'cards/delete_deck', to: 'cards#delete_deck'
+  #get 'cards/create_card', to: 'cards#create_card'
+  #get 'cards/update_card', to: 'cards#update_card'
+  #get 'cards/delete_card', to: 'cards#delete_card'
   
   # User routes
   match '/v1/users/login', to: 'users#login', via: 'get'
