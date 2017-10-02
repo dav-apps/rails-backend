@@ -1,0 +1,14 @@
+sherlock:
+   username: Sherlock
+   email: sherlock@web.de
+   password: sherlocked
+
+matt:
+   username: matt
+   email: matt@test.de
+   password: matted
+
+cato:
+   username: cato
+   email: cato@test.de
+   password: 123456

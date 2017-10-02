@@ -1,0 +1,7 @@
+card:
+   name: Card
+   app_id: 1
+   
+note:
+   name: Note
+   app_id: 2

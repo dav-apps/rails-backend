@@ -1,0 +1,9 @@
+Cards:
+   name: Cards
+   description: This is a vocabulary app.
+   dev_id: 1
+   
+TestApp:
+   name: TestApp
+   description: This is a app for testing the API.
+   dev_id: 2
