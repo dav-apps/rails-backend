@@ -1,14 +1,14 @@
 sherlock:
    username: Sherlock
+   confirmed: true
    email: sherlock@web.de
-   password: sherlocked
 
 matt:
    username: matt
+   confirmed: true
    email: matt@test.de
-   password: matted
 
 cato:
    username: cato
+   confirmed: true
    email: cato@test.de
-   password: 123456

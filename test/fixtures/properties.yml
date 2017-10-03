@@ -1,49 +1,49 @@
 first1:
     name: page1
     value: Hallo Welt
-    table_object_id: 1
+    table_object: first
     
 second1:
     name: page2
     value: Hello World
-    table_object_id: 1
+    table_object: first
     
 first2:
     name: page1
     value: Sonne
-    table_object_id: 2
+    table_object: second
     
 second2:
     name: page2
     value: sun
-    table_object_id: 2
+    table_object: second
     
 first3:
     name: page1
     value: Guten Tag
-    table_object_id: 3
+    table_object: third
     
 second3:
     name: page2
     value: Good day
-    table_object_id: 3
+    table_object: third
     
 first4:
     name: title
     value: Erste Notiz
-    table_object_id: 4
+    table_object: 4th
 
 second4:
     name: content
     value: Hallo. Dies ist meine erste Notiz!
-    table_object_id: 4
+    table_object: 4th
     
 first5:
     name: title
     value: Zweite Notiz
-    table_object_id: 5
+    table_object: 5th
 
 second5:
     name: content
     value: Das ist meine zweite Notiz
-    table_object_id: 5
+    table_object: 5th

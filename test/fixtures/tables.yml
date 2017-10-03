@@ -1,7 +1,7 @@
 card:
    name: Card
-   app_id: 1
+   app: Cards
    
 note:
    name: Note
-   app_id: 2
+   app: TestApp

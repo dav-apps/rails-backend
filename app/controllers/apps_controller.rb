@@ -123,7 +123,7 @@ class AppsController < ApplicationController
    end
    
    define_method :get_app do
-      app_id = params["app_id"]
+      app_id = params["id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
@@ -131,7 +131,7 @@ class AppsController < ApplicationController
       ok = false
       
       if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
@@ -217,7 +217,7 @@ class AppsController < ApplicationController
    end
    
    define_method :update_app do
-      app_id = params["app_id"]
+      app_id = params["id"]
       name = params["name"]
       desc = params["desc"]
       
@@ -228,7 +228,7 @@ class AppsController < ApplicationController
       ok = false
       
       if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
@@ -346,7 +346,7 @@ class AppsController < ApplicationController
    end
    
    define_method :delete_app do
-      app_id = params["app_id"]
+      app_id = params["id"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -355,7 +355,7 @@ class AppsController < ApplicationController
       ok = false
       
       if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       

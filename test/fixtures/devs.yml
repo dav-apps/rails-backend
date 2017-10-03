@@ -1,5 +1,5 @@
 sherlock:
-   user_id: 1
+   user: sherlock
 
 matt:
-   user_id: 2
+   user: matt

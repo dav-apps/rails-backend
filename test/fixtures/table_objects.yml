@@ -1,19 +1,19 @@
 first:
-    table_id: 1
-    user_id: 2
+    table: card
+    user: matt
     
 second:
-    table_id: 1
-    user_id: 2
+    table: card
+    user: matt
     
 third:
-    table_id: 1
-    user_id: 1
+    table: card
+    user: matt
     
 4th:
-    table_id: 2
-    user_id: 3
+    table: note
+    user: cato
     
 5th:
-    table_id: 2
-    user_id: 1
+    table: note
+    user: cato
