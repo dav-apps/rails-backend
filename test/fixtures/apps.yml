@@ -7,3 +7,8 @@ TestApp:
    name: TestApp
    description: This is a app for testing the API.
    dev: matt
+   
+davApp:
+   name: davApp
+   description: dav Test app
+   dev: dav

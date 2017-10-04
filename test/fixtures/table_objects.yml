@@ -17,3 +17,7 @@ third:
 5th:
     table: note
     user: cato
+    
+6th:
+    table: card
+    user: sherlock

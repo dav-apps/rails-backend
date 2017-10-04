@@ -13,25 +13,25 @@ Rails.application.routes.draw do
   match '/v1/users/login', to: 'users#login', via: 'get'
   match '/v1/users/signup', to: 'users#signup', via: 'post'
   match '/v1/users/:id', to: 'users#get_user', via: 'get'
-  match '/v1/users/:id', to: 'users#update_user', via: 'put'
-  match '/v1/users/:id', to: 'users#delete_user', via: 'delete'
+  match '/v1/users', to: 'users#update_user', via: 'put'
+  match '/v1/users', to: 'users#delete_user', via: 'delete'
   
-  match '/v1/users/send_password_reset_email', to: 'users#send_password_reset_email', via: 'post'
   match '/v1/users/send_verification_email', to: 'users#send_verification_email', via: 'post'
+  match '/v1/users/send_password_reset_email', to: 'users#send_password_reset_email', via: 'post'
   match '/v1/users/:id/save_new_password/:password_confirmation_token', to: 'users#save_new_password', via: 'post'
   match '/v1/users/:id/save_new_email/:email_confirmation_token', to: 'users#save_new_email', via: 'post'
   match '/v1/users/:id/reset_new_email', to: 'users#reset_new_email', via: 'post'
   
   # Apps routes
   match '/v1/apps/object', to: 'apps#create_object', via: 'post'
-  match '/v1/apps/object', to: 'apps#get_object', via: 'get'
-  match '/v1/apps/object', to: 'apps#update_object', via: 'put'
-  match '/v1/apps/object', to: 'apps#delete_object', via: 'delete'
+  match '/v1/apps/object/:id', to: 'apps#get_object', via: 'get'
+  match '/v1/apps/object/:id', to: 'apps#update_object', via: 'put'
+  match '/v1/apps/object/:id', to: 'apps#delete_object', via: 'delete'
   
   match '/v1/apps/table', to: 'apps#create_table', via: 'post'
   match '/v1/apps/table', to: 'apps#get_table', via: 'get'
-  match '/v1/apps/table', to: 'apps#update_table', via: 'put'
-  match '/v1/apps/table', to: 'apps#delete_table', via: 'delete'
+  match '/v1/apps/table/:id', to: 'apps#update_table', via: 'put'
+  match '/v1/apps/table/:id', to: 'apps#delete_table', via: 'delete'
   
   match '/v1/apps/app', to: 'apps#create_app', via: 'post'
   match '/v1/apps/app/:id', to: 'apps#get_app', via: 'get'

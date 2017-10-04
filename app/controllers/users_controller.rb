@@ -10,6 +10,12 @@ class UsersController < ApplicationController
       password = params[:password]
       username = params[:username]
       
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+      
       errors = Array.new
       @result = Hash.new
       ok = false
@@ -29,53 +35,75 @@ class UsersController < ApplicationController
          status = 400
       end
       
+      if !auth || auth.length < 1
+         errors.push(Array.new([2101, "Missing field: auth"]))
+         status = 401
+      end
+      
       if errors.length == 0
-         if User.exists?(email: email)
-            errors.push(Array.new([2702, "Field already taken: email"]))
+         dev = Dev.find_by(api_key: api_key)
+         
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([2802, "Resource does not exist: Dev"]))
             status = 400
          else
-            # Validate the fields
-            if !validate_email(email)
-               errors.push(Array.new([2401, "Field not valid: email"]))
-               status = 400
-            end
-            
-            if password.length < min_password_length
-               errors.push(Array.new([2202, "Field too short: password"]))
-               status = 400
-            end
-            
-            if password.length > max_password_length
-               errors.push(Array.new([2302, "Field too long: password"]))
-               status = 400
-            end
-            
-            if username.length < min_username_length
-               errors.push(Array.new([2201, "Field too short: username"]))
-               status = 400
-            end
-            
-            if username.length > max_username_length
-               errors.push(Array.new([2301, "Field too long: username"]))
-               status = 400
-            end
-            
-            if User.exists?(username: username)
-               errors.push(Array.new([2701, "Field already taken: username"]))
-               status = 400
-            end
-            
-            if errors.length == 0
-               @user = User.new(email: email, password: password, username: username)
-               # Save the new user
-               @user.email_confirmation_token = generate_token
-      
-               if !@user.save
-                  errors.push(Array.new([1103, "Unknown validation error"]))
-                  status = 500
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([1101, "Authentication failed"]))
+               status = 401
+            else
+               if dev.user_id != Dev.first.user_id
+                  errors.push(Array.new([1102, "Action not allowed"]))
+                  status = 403
                else
-                  UserNotifier.send_signup_email(@user).deliver_later
-                  ok = true
+                  if User.exists?(email: email)
+                     errors.push(Array.new([2702, "Field already taken: email"]))
+                     status = 400
+                  else
+                     # Validate the fields
+                     if !validate_email(email)
+                        errors.push(Array.new([2401, "Field not valid: email"]))
+                        status = 400
+                     end
+                     
+                     if password.length < min_password_length
+                        errors.push(Array.new([2202, "Field too short: password"]))
+                        status = 400
+                     end
+                     
+                     if password.length > max_password_length
+                        errors.push(Array.new([2302, "Field too long: password"]))
+                        status = 400
+                     end
+                     
+                     if username.length < min_username_length
+                        errors.push(Array.new([2201, "Field too short: username"]))
+                        status = 400
+                     end
+                     
+                     if username.length > max_username_length
+                        errors.push(Array.new([2301, "Field too long: username"]))
+                        status = 400
+                     end
+                     
+                     if User.exists?(username: username)
+                        errors.push(Array.new([2701, "Field already taken: username"]))
+                        status = 400
+                     end
+                     
+                     if errors.length == 0
+                        @user = User.new(email: email, password: password, username: username)
+                        # Save the new user
+                        @user.email_confirmation_token = generate_token
+               
+                        if !@user.save
+                           errors.push(Array.new([1103, "Unknown validation error"]))
+                           status = 500
+                        else
+                           UserNotifier.send_signup_email(@user).deliver_later
+                           ok = true
+                        end
+                     end
+                  end
                end
             end
          end
@@ -298,7 +326,8 @@ class UsersController < ApplicationController
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  if dev_id != 1    # If this call wasn't from the website or an 1st party app
+                  # Check if the call was made from the website
+                  if dev != Dev.first
                      errors.push(Array.new([1102, "Action not allowed"]))
                      status = 403
                   else
@@ -465,7 +494,8 @@ class UsersController < ApplicationController
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  if dev.id != 1    # If this call wasn't from the website or a 1st party app
+                  # Check if the call was send from the website
+                  if dev != Dev.first
                      errors.push(Array.new([1102, "Action not allowed"]))
                      status = 403
                   else

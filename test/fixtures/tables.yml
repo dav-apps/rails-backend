@@ -5,3 +5,7 @@ card:
 note:
    name: Note
    app: TestApp
+
+davTable:
+   name: davTable
+   app: davApp

@@ -70,8 +70,8 @@ class AppsController < ApplicationController
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  # Check if the user is the dev
-                  if dev.user_id != user.id
+                  # Make sure this is only called from the website
+                  if !((dev == Dev.first) && (app.dev == user.dev))
                      errors.push(Array.new([1102, "Action not allowed"]))
                      status = 403
                   else
@@ -180,12 +180,12 @@ class AppsController < ApplicationController
                      errors.push(Array.new([2803, "Resource does not exist: App"]))
                      status = 404
                   else
-                     if app.dev_id != dev.id
+                     if app.dev_id != dev.id # Check if the app belongs to the dev
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
-                        # Check if the dev is logged in, and is not a generic user
-                        if dev.user_id != user.id
+                        # Make sure this is called from the website or from the associated dev
+                        if !(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev)
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
@@ -207,7 +207,7 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         status = 201
+         status = 200
       else
          @result.clear
          @result["errors"] = errors
@@ -291,8 +291,8 @@ class AppsController < ApplicationController
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
-                        # Check if the user is the dev
-                        if dev.user_id != user.id
+                        # Make sure this is only called from the website
+                        if !((dev == Dev.first) && (app.dev == user.dev))
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
@@ -408,7 +408,7 @@ class AppsController < ApplicationController
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
-                        if dev.user_id != user.id # Check if the user is the dev
+                        if !((dev == Dev.first) && (app.dev == user.dev)) # Make sure this is only called from the website
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
@@ -603,7 +603,7 @@ class AppsController < ApplicationController
    end
    
    def get_object
-      object_id = params["object_id"]
+      object_id = params["id"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -612,7 +612,7 @@ class AppsController < ApplicationController
       ok = false
       
       if !object_id
-         errors.push(Array.new([2115, "Missing field: object_id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
@@ -714,7 +714,7 @@ class AppsController < ApplicationController
    end
    
    define_method :update_object do
-      object_id = params["object_id"]
+      object_id = params["id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
@@ -722,7 +722,7 @@ class AppsController < ApplicationController
       ok = false
       
       if !object_id
-         errors.push(Array.new([2115, "Missing field: object_id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
@@ -870,7 +870,7 @@ class AppsController < ApplicationController
    end
    
    def delete_object
-      object_id = params["object_id"]
+      object_id = params["id"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -879,7 +879,7 @@ class AppsController < ApplicationController
       ok = false
       
       if !object_id
-         errors.push(Array.new([2115, "Missing field: object_id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
@@ -940,7 +940,7 @@ class AppsController < ApplicationController
                            errors.push(Array.new([2803, "Resource does not exist: App"]))
                            status = 400
                         else
-                           if app.dev_id != dev.id    # Check if the app belongs to the dev
+                           if (app.dev_id != dev.id)    # Check if the app belongs to the dev
                               errors.push(Array.new([1102, "Action not allowed"]))
                               status = 403
                            else
@@ -1038,15 +1038,15 @@ class AppsController < ApplicationController
                      errors.push(Array.new([2803, "Resource does not exist: App"]))
                      status = 400
                   else
-                     table = Table.find_by(name: table_name, app_id: app.id)
-                     
-                     if table
-                        errors.push(Array.new([2904, "Resource already exists: Table"]))
-                        status = 202
+                     if !(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev)  # Von Webseite oder als Dev & Nutzer
+                        errors.push(Array.new([1102, "Action not allowed"]))
+                        status = 403
                      else
-                        if app.dev_id != dev.id    # Check if the app belongs to the dev
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
+                        table = Table.find_by(name: table_name, app_id: app.id)
+                        
+                        if table
+                           errors.push(Array.new([2904, "Resource already exists: Table"]))
+                           status = 202
                         else
                            if dev.user_id != user.id # Check if the user is the dev
                               errors.push(Array.new([1102, "Action not allowed"]))
@@ -1181,6 +1181,7 @@ class AppsController < ApplicationController
                               if table_object.user_id == user.id
                                  object = Hash.new
                                  object["id"] = table_object.id
+                                 object["user_id"] = table_object.user_id
                                  
                                  table_object.properties.each do |property|
                                     object[property.name] = property.value
@@ -1210,7 +1211,7 @@ class AppsController < ApplicationController
    end
    
    define_method :update_table do
-      table_id = params["table_id"]
+      table_id = params["id"]
       table_name = params["table_name"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
@@ -1220,7 +1221,7 @@ class AppsController < ApplicationController
       ok = false
       
       if !table_id
-         errors.push(Array.new([2114, "Missing field: table_id"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
@@ -1280,8 +1281,8 @@ class AppsController < ApplicationController
                         errors.push(Array.new([2803, "Resource does not exist: App"]))
                         status = 400
                      else
-                        # Check if the app belongs to the dev
-                        if app.dev_id != dev.id
+                        # Make sure this is only called from the website
+                        if !((dev == Dev.first) && (app.dev == user.dev))
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
@@ -1336,7 +1337,7 @@ class AppsController < ApplicationController
    end
    
    def delete_table
-      table_id = params["table_id"]
+      table_id = params["id"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -1345,7 +1346,7 @@ class AppsController < ApplicationController
       ok = false
       
       if !table_id
-         errors.push(Array.new([2113, "Missing field: table_name"]))
+         errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
@@ -1405,8 +1406,8 @@ class AppsController < ApplicationController
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Check if the user is the dev
-                           if dev.user_id != user.id
+                           # Make sure this is only called from the website
+                           if !((dev == Dev.first) && (app.dev == user.dev))
                               errors.push(Array.new([1102, "Action not allowed"]))
                               status = 403
                            else

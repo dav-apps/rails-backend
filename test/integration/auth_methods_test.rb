@@ -81,25 +81,194 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(resp["errors"][0][0], 1101)
    end
    
+   # Data access tests
+   test "can access only own table data" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=Card&jwt=" + matts_jwt
+      entries = (JSON.parse response.body)["table"]["entries"].to_a
+      
+      # Check the id of each entry and make sure it belongs to the user
+      entries.each do |entry|
+         assert_same(entry["user_id"], matt.id)
+      end
+   end
    
+   test "can access only own table data as a dev" do
+      save_users_and_devs
+      
+      sherlock = users(:sherlock)
+      
+      sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=Card&jwt=" + sherlocks_jwt
+      entries = (JSON.parse response.body)["table"]["entries"]
+      
+      # Check the id of each entry and make sure it belongs to the user
+      entries.each do |entry|
+         assert_same(entry["user_id"], sherlock.id)
+      end
+   end
+   
+   test "can't access table data of apps of other devs" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=Card&jwt=" + matts_jwt
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp["errors"][0][0], 1102)
+   end
+   
+   test "can access the own apps" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/apps/app/#{apps(:TestApp).id}?jwt=" + matts_jwt
+      
+      assert_response 200
+   end
+   
+   test "can't access the apps of another dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/apps/app/#{apps(:Cards).id}?jwt=" + matts_jwt
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp["errors"][0][0], 1102)
+   end
+   
+   test "can delete a table of an own app from the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      delete "/v1/apps/table/#{tables(:card).id}?jwt=" + matts_jwt
+      
+      assert_response 200
+   end
+   
+   test "can't delete a table of an app of another user from the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      delete "/v1/apps/table/#{tables(:note).id}?jwt=" + matts_jwt
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp["errors"][0][0], 1102)
+   end
+   
+   test "can't delete a table from outside the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      delete "/v1/apps/table/#{tables(:note).id}?jwt=" + matts_jwt
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp["errors"][0][0], 1102)
+   end
+   
+   test "can't delete an app from outside the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      delete "/v1/apps/app/#{apps(:Cards).id}?jwt=" + matts_jwt
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp["errors"][0][0], 1102)
+   end
+   
+   test "can't delete a dev from outside the website" do
+      save_users_and_devs
+   end
+   
+   test "can't delete the table of another dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      delete "/v1/apps/table/#{tables(:card).id}?jwt=" + matts_jwt
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp["errors"][0][0], 1102)
+   end
+   
+   test "can't delete the app of another dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      delete "/v1/apps/app/#{apps(:Cards).id}?jwt=" + matts_jwt
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp["errors"][0][0], 1102)
+   end
+   
+   test "can't delete another dev" do
+      save_users_and_devs
+   end
+   
+   test "can't delete another user" do
+      save_users_and_devs
+   end
    
    
    
    def save_users_and_devs
-      sherlock = users(:sherlock)
-      sherlock.password = "sherlocked"
-      sherlock.save
+      dav = users(:dav)
+      dav.password = "raspberry"
+      dav.save
       
       matt = users(:matt)
       matt.password = "schachmatt"
       matt.save
       
+      sherlock = users(:sherlock)
+      sherlock.password = "sherlocked"
+      sherlock.save
+      
       cato = users(:cato)
       cato.password = "123456"
       cato.save
       
-      devs(:sherlock).save
+      devs(:dav).save
       devs(:matt).save
+      devs(:sherlock).save
+   end
+   
+   def login_user(user, password, dev)
+      get "/v1/users/login?email=#{user.email}&password=#{password}&auth=" + generate_auth_token(dev)
+      response
    end
    
    def generate_auth_token(dev)

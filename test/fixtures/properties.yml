@@ -47,3 +47,11 @@ second5:
     name: content
     value: Das ist meine zweite Notiz
     table_object: 5th
+    
+first6:
+    name: page1
+    value: Karte von Sherlock
+
+second6:
+    name: page2
+    value: Card of Sherlock
