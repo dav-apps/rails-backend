@@ -568,8 +568,336 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End delete_object tests
    
+   # create_table tests
+   test "Missing fields in create_table" do
+      save_users_and_devs
+      
+      post "/v1/apps/table"
+      resp = JSON.parse response.body
+      
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2113, resp["errors"][0][0])
+      assert_same(2110, resp["errors"][1][0])
+      assert_same(2102, resp["errors"][2][0])
+   end
    
+   test "Can't create a table for the app of another dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:davApp).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
    
+   test "Can create a table for an app that the dev owns" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:TestApp).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_same(apps(:TestApp).id, resp["app_id"])
+      assert_not_nil(resp["name"])
+      assert_not_nil(resp["id"])
+   end
+   
+   test "Can create a table from the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:TestApp).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_same(apps(:TestApp).id, resp["app_id"])
+   end
+   
+   test "Can't create a table for an app of the first dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:Cards).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't create a table with too long table_name" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=#{"n"*26}&app_id=#{apps(:TestApp).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2305, resp["errors"][0][0])
+   end
+   
+   test "Can't a table with too short table_name" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=n&app_id=#{apps(:TestApp).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2205, resp["errors"][0][0])
+   end
+   
+   test "Can't create a table with invalid table_name" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=Hello World&app_id=#{apps(:TestApp).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2501, resp["errors"][0][0])
+   end
+   # End create_table tests
+   
+   # get_table tests
+   test "Missing fields in get_table" do
+      get "/v1/apps/table"
+      resp = JSON.parse response.body
+      
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2110, resp["errors"][0][0])
+      assert_same(2113, resp["errors"][1][0])
+      assert_same(2102, resp["errors"][2][0])
+   end
+   
+   test "Can't get the table of the app of another dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/apps/table?table_name=#{tables(:davTable).name}&app_id=#{apps(:davApp).id}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't get the table of the app of another dev from the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/table?table_name=#{tables(:davTable).name}&app_id=#{apps(:davApp).id}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can get the table and only the entries of the current user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_same(apps(:Cards).id, resp["table"]["app_id"])
+      resp["table"]["entries"].each do |e|
+         assert_same(users(:matt).id, e["user_id"])
+      end
+   end
+   
+   test "Can get the table of the app of the own dev from the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/table?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+   # End get_table tests
+   
+   # update_table tests
+   test "Missing fields in update_table" do
+      put "/v1/apps/table/#{tables(:card).id}"
+      resp = JSON.parse response.body
+      
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2113, resp["errors"][0][0])
+      assert_same(2102, resp["errors"][1][0])
+   end
+   
+   test "update_table can't be called from outside the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=Test"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't update the table of the app of another dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}&table_name=Test"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't update a table with too long table name" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=#{"n"*30}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2305, resp["errors"][0][0])
+   end
+   
+   test "Can't update a table with too short table name" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=n"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2205, resp["errors"][0][0])
+   end
+   
+   test "Can't update a table with invalid table name" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=Test Name"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2501, resp["errors"][0][0])
+   end
+   
+   test "Can get the table properties after updating" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=TestName"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_same(tables(:note).id, resp["id"])
+   end
+   
+   test "Can't update a table of the first dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/table/#{tables(:card).id}?jwt=#{matts_jwt}&table_name=Test"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   # End update_table tests
+   
+   # delete_table tests
+   test "delete_table can't be called from outside the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      delete "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't delete the table of an app of another user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      delete "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Table gets deleted" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      table_id = tables(:note).id
+      
+      delete "/v1/apps/table/#{table_id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_nil(Table.find_by_id(table_id))
+   end
+   
+   test "Can't delete tables of the first dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      delete "/v1/apps/table/#{tables(:card).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   # End delete_table tests
    
    
    

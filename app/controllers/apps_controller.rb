@@ -1031,7 +1031,7 @@ class AppsController < ApplicationController
                      errors.push(Array.new([2803, "Resource does not exist: App"]))
                      status = 400
                   else
-                     if !(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev)  # Von Webseite oder als Dev & Nutzer
+                     if !(((dev == Dev.first) && (app.dev == user.dev)) || (user.dev == dev) && (app.dev == user.dev))  # Von Webseite oder als Dev & Nutzer
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
@@ -1041,36 +1041,31 @@ class AppsController < ApplicationController
                            errors.push(Array.new([2904, "Resource already exists: Table"]))
                            status = 202
                         else
-                           if dev.user_id != user.id # Check if the user is the dev
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              # Check if table_name is too long or too short
-                              if table_name.length > max_table_name_length
-                                 errors.push(Array.new([2305, "Field too long: table_name"]))
-                                 status = 400
-                              end
-                              
-                              if table_name.length < min_table_name_length
-                                 errors.push(Array.new([2205, "Field too short: table_name"]))
-                                 status = 400
-                              end
-                              
-                              if table_name.include? " "
-                                 errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
-                                 status = 400
-                              end
-                              
-                              if errors.length == 0
-                                 # Create the new table and return it
-                                 table = Table.new(name: (table_name[0].upcase + table_name[1..-1]), app_id: app.id)
-                                 if !table.save
-                                    errors.push(Array.new([1103, "Unknown validation error"]))
-                                    status = 500
-                                 else
-                                    @result = table
-                                    ok = true
-                                 end
+                           # Check if table_name is too long or too short
+                           if table_name.length > max_table_name_length
+                              errors.push(Array.new([2305, "Field too long: table_name"]))
+                              status = 400
+                           end
+                           
+                           if table_name.length < min_table_name_length
+                              errors.push(Array.new([2205, "Field too short: table_name"]))
+                              status = 400
+                           end
+                           
+                           if table_name.include? " "
+                              errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
+                              status = 400
+                           end
+                           
+                           if errors.length == 0
+                              # Create the new table and return it
+                              table = Table.new(name: (table_name[0].upcase + table_name[1..-1]), app_id: app.id)
+                              if !table.save
+                                 errors.push(Array.new([1103, "Unknown validation error"]))
+                                 status = 500
+                              else
+                                 @result = table
+                                 ok = true
                               end
                            end
                         end
@@ -1162,7 +1157,8 @@ class AppsController < ApplicationController
                         errors.push(Array.new([2804, "Resource does not exist: Table"]))
                         status = 404
                      else
-                        if app.dev_id != dev.id # Check if the app belongs to the dev
+                        # Jeder kann zugreifen, solange die App dem Dev gehört oder man auf eigene Tabellen von der Webseite zugreift
+                        if !(((dev == Dev.first) && (app.dev == user.dev)) || app.dev == dev)
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
@@ -1279,36 +1275,30 @@ class AppsController < ApplicationController
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Check if the user is the dev
-                           if dev.user_id != user.id
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              # Validate the table name
-                              if table_name.length > max_table_name_length
-                                 errors.push(Array.new([2305, "Field too long: table_name"]))
-                                 status = 400
-                              end
-                              
-                              if table_name.length < min_table_name_length
-                                 errors.push(Array.new([2205, "Field too short: table_name"]))
-                                 status = 400
-                              end
-                              
-                              if table_name.include? " "
-                                 errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
-                                 status = 400
-                              end
-                              
-                              if errors.length == 0
-                                 # Update the table and send it back
-                                 if !table.update(name: (table_name[0].upcase + table_name[1..-1]))
-                                    errors.push(Array.new([1103, "Unknown validation error"]))
-                                    status = 500
-                                 else
-                                    @result = table
-                                    ok = true
-                                 end
+                           # Validate the table name
+                           if table_name.length > max_table_name_length
+                              errors.push(Array.new([2305, "Field too long: table_name"]))
+                              status = 400
+                           end
+                           
+                           if table_name.length < min_table_name_length
+                              errors.push(Array.new([2205, "Field too short: table_name"]))
+                              status = 400
+                           end
+                           
+                           if table_name.include? " "
+                              errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
+                              status = 400
+                           end
+                           
+                           if errors.length == 0
+                              # Update the table and send it back
+                              if !table.update(name: (table_name[0].upcase + table_name[1..-1]))
+                                 errors.push(Array.new([1103, "Unknown validation error"]))
+                                 status = 500
+                              else
+                                 @result = table
+                                 ok = true
                               end
                            end
                         end
@@ -1394,21 +1384,16 @@ class AppsController < ApplicationController
                         errors.push(Array.new([2803, "Resource does not exist: App"]))
                         status = 400
                      else
-                        # Check if the app belongs to the dev
-                        if app.dev_id != dev.id
+                        # Make sure this gets only called from the website
+                        #puts "#{dev.user.username} == Dev.first &&  #{app.dev.user.username} == #{user.dev.user.username}"
+                        if !((dev == Dev.first) && (app.dev == user.dev))
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Make sure this is only called from the website
-                           if !((dev == Dev.first) && (app.dev == user.dev))
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              # Delete the table
-                              table.destroy!
-                              @result = {}
-                              ok = true
-                           end
+                           # Delete the table
+                           table.destroy!
+                           @result = {}
+                           ok = true
                         end
                      end
                   end
