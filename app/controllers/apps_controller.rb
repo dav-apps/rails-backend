@@ -3,7 +3,7 @@ class AppsController < ApplicationController
    min_table_name_length = 2
    max_property_name_length = 20
    min_property_name_length = 2
-   max_property_value_length = 20
+   max_property_value_length = 200
    min_property_value_length = 2
    max_app_name_length = 15
    min_app_name_length = 2
@@ -71,7 +71,7 @@ class AppsController < ApplicationController
                   status = 400
                else
                   # Make sure this is only called from the website
-                  if !((dev == Dev.first) && (app.dev == user.dev))
+                  if dev != Dev.first
                      errors.push(Array.new([1102, "Action not allowed"]))
                      status = 403
                   else
@@ -85,12 +85,12 @@ class AppsController < ApplicationController
                         status = 400
                      end
                      
-                     if name.length < min_app_desc_length
+                     if desc.length < min_app_desc_length
                         errors.push(Array.new([2204, "Field too short: desc"]))
                         status = 400
                      end
                      
-                     if name.length > max_app_desc_length
+                     if desc.length > max_app_desc_length
                         errors.push(Array.new([2304, "Field too long: desc"]))
                         status = 400
                      end
@@ -287,45 +287,40 @@ class AppsController < ApplicationController
                      errors.push(Array.new([2803, "Resource does not exist: App"]))
                      status = 400
                   else
-                     if app.dev_id != dev.id # Check if the app belongs to the dev
+                     # Make sure this is only called from the website
+                     if !((dev == Dev.first) && (app.dev == user.dev))
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
-                        # Make sure this is only called from the website
-                        if !((dev == Dev.first) && (app.dev == user.dev))
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
-                        else
-                           if name.length < min_app_name_length
-                              errors.push(Array.new([2203, "Field too short: name"]))
-                              status = 400
-                           end
-                           
-                           if name.length > max_app_name_length
-                              errors.push(Array.new([2303, "Field too long: name"]))
-                              status = 400
-                           end
-                           
-                           if name.length < min_app_desc_length
-                              errors.push(Array.new([2204, "Field too short: desc"]))
-                              status = 400
-                           end
-                           
-                           if name.length > max_app_desc_length
-                              errors.push(Array.new([2304, "Field too long: desc"]))
-                              status = 400
-                           end
-                           
-                           if errors.length == 0
-                              # Update app
-                              app.update(name: name, description: desc)
-                              if !app.save
-                                 errors.push(Array.new([1103, "Unknown validation error"]))
-                                 status = 500
-                              else
-                                 @result = app
-                                 ok = true
-                              end
+                        if name.length < min_app_name_length
+                           errors.push(Array.new([2203, "Field too short: name"]))
+                           status = 400
+                        end
+                        
+                        if name.length > max_app_name_length
+                           errors.push(Array.new([2303, "Field too long: name"]))
+                           status = 400
+                        end
+                        
+                        if desc.length < min_app_desc_length
+                           errors.push(Array.new([2204, "Field too short: desc"]))
+                           status = 400
+                        end
+                        
+                        if desc.length > max_app_desc_length
+                           errors.push(Array.new([2304, "Field too long: desc"]))
+                           status = 400
+                        end
+                        
+                        if errors.length == 0
+                           # Update app
+                           app.update(name: name, description: desc)
+                           if !app.save
+                              errors.push(Array.new([1103, "Unknown validation error"]))
+                              status = 500
+                           else
+                              @result = app
+                              ok = true
                            end
                         end
                      end
@@ -404,18 +399,13 @@ class AppsController < ApplicationController
                      errors.push(Array.new([2803, "Resource does not exist: App"]))
                      status = 400
                   else
-                     if app.dev_id != dev.id # Check if the app belongs to the dev
+                     if !((dev == Dev.first) && (app.dev == user.dev)) # Make sure this is only called from the website
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
-                        if !((dev == Dev.first) && (app.dev == user.dev)) # Make sure this is only called from the website
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
-                        else
-                           app.destroy!
-                           @result = {}
-                           ok = true
-                        end
+                        app.destroy!
+                        @result = {}
+                        ok = true
                      end
                   end
                end
@@ -479,7 +469,6 @@ class AppsController < ApplicationController
          
          if jwt_valid
             if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
-               puts request.headers["Content-Type"]
                errors.push(Array.new([1104, "Content-type not supported"]))
                status = 415
             else
@@ -509,7 +498,7 @@ class AppsController < ApplicationController
                            status = 403
                         else
                            table = Table.find_by(name: table_name, app_id: app_id)
-                        
+                           
                            if !table
                               # Only create the table when the dev is logged in
                               if dev.user_id != user.id
@@ -547,28 +536,33 @@ class AppsController < ApplicationController
                               # Get the body of the request
                               object = request.request_parameters
                               
-                              @result["id"] = obj.id
-                              
-                              object.each do |key, value|
-                                 # Validate the length of the properties
-                                 if key.length > max_property_name_length
-                                    errors.push(Array.new([2306, "Field too long: Property.name"]))
-                                    status = 400
-                                 end
+                              if object.length < 1
+                                 errors.push(Array.new([2116, "Missing field: object"]))
+                                 status = 400
+                              else
+                                 @result["id"] = obj.id
                                  
-                                 if key.length < min_property_name_length
-                                    errors.push(Array.new([2206, "Field too short: Property.name"]))
-                                    status = 400
-                                 end
-                                 
-                                 if value.length > max_property_value_length
-                                    errors.push(Array.new([2307, "Field too long: Property.value"]))
-                                    status = 400
-                                 end
-                                 
-                                 if value.length < min_property_value_length
-                                    errors.push(Array.new([2206, "Field too short: Property.value"]))
-                                    status = 400
+                                 object.each do |key, value|
+                                    # Validate the length of the properties
+                                    if key.length > max_property_name_length
+                                       errors.push(Array.new([2306, "Field too long: Property.name"]))
+                                       status = 400
+                                    end
+                                    
+                                    if key.length < min_property_name_length
+                                       errors.push(Array.new([2206, "Field too short: Property.name"]))
+                                       status = 400
+                                    end
+                                    
+                                    if value.length > max_property_value_length
+                                       errors.push(Array.new([2307, "Field too long: Property.value"]))
+                                       status = 400
+                                    end
+                                    
+                                    if value.length < min_property_value_length
+                                       errors.push(Array.new([2207, "Field too short: Property.value"]))
+                                       status = 400
+                                    end
                                  end
                               end
                               
@@ -663,7 +657,7 @@ class AppsController < ApplicationController
                      status = 404
                   else
                      table = Table.find_by_id(obj.table_id)
-                  
+                     
                      if !table
                         errors.push(Array.new([2804, "Resource does not exist: Table"]))
                         status = 400
@@ -701,7 +695,6 @@ class AppsController < ApplicationController
             end
          end
       end
-      
       
       if ok && errors.length == 0
          status = 200
@@ -817,7 +810,7 @@ class AppsController < ApplicationController
                                     end
                                     
                                     if value.length < min_property_value_length
-                                       errors.push(Array.new([2206, "Field too short: Property.value"]))
+                                       errors.push(Array.new([2207, "Field too short: Property.value"]))
                                        status = 400
                                     end
                                  end
@@ -944,7 +937,7 @@ class AppsController < ApplicationController
                               errors.push(Array.new([1102, "Action not allowed"]))
                               status = 403
                            else
-                              # Check if the user is allowed to access the data
+                              # Check if user owns the object
                               if obj.user_id != user.id
                                  errors.push(Array.new([1102, "Action not allowed"]))
                                  status = 403

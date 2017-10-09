@@ -4,20 +4,20 @@ first:
     
 second:
     table: card
-    user: matt
+    user: cato
     
 third:
     table: card
     user: matt
     
-4th:
+fourth:
     table: note
     user: cato
     
-5th:
+fifth:
     table: note
     user: cato
     
-6th:
+sixth:
     table: card
     user: sherlock

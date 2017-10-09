@@ -31,22 +31,22 @@ second3:
 first4:
     name: title
     value: Erste Notiz
-    table_object: 4th
+    table_object: fourth
 
 second4:
     name: content
     value: Hallo. Dies ist meine erste Notiz!
-    table_object: 4th
+    table_object: fourth
     
 first5:
     name: title
     value: Zweite Notiz
-    table_object: 5th
+    table_object: fifth
 
 second5:
     name: content
     value: Das ist meine zweite Notiz
-    table_object: 5th
+    table_object: fifth
     
 first6:
     name: page1

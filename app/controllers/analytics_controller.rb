@@ -61,7 +61,7 @@ class AnalyticsController < ApplicationController
                      end
                      
                      if name.length < min_event_name_length
-                        errors.push(Array.new([2206, "Field too short: Event.name"]))
+                        errors.push(Array.new([2208, "Field too short: Event.name"]))
                         status = 400
                      end
                      
@@ -290,7 +290,7 @@ class AnalyticsController < ApplicationController
                               end
                               
                               if name.length < min_event_name_length
-                                 errors.push(Array.new([2206, "Field too short: Event.name"]))
+                                 errors.push(Array.new([2208, "Field too short: Event.name"]))
                                  status = 400
                               end
                               
