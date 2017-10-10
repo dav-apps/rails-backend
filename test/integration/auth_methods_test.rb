@@ -99,6 +99,115 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    
+   # Signup tests
+   test "Missing fields in signup" do
+      post "/v1/users/signup"
+      resp = JSON.parse response.body
+      
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2106, resp["errors"][0][0])
+      assert_same(2107, resp["errors"][1][0])
+      assert_same(2105, resp["errors"][2][0])
+      assert_same(2101, resp["errors"][3][0])
+   end
+   
+   test "Email already taken in signup" do
+      save_users_and_devs
+      
+      sherlock_auth_token = generate_auth_token(devs(:sherlock))
+      
+      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=dav@gmail.com&password=testtest&username=test"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2702, resp["errors"][0][0])
+   end
+   
+   test "Username already taken in signup" do
+      save_users_and_devs
+      
+      sherlock_auth_token = generate_auth_token(devs(:sherlock))
+      
+      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=cato"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2701, resp["errors"][0][0])
+   end
+   
+   test "Can't signup with too short username and password" do
+      save_users_and_devs
+      
+      sherlock_auth_token = generate_auth_token(devs(:sherlock))
+      
+      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=te&username=t"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2202, resp["errors"][0][0])
+      assert_same(2201, resp["errors"][1][0])
+   end
+   
+   test "Can't signup with too long username and password" do
+      save_users_and_devs
+      
+      sherlock_auth_token = generate_auth_token(devs(:sherlock))
+      
+      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=#{"n"*50}&username=#{"n"*30}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2302, resp["errors"][0][0])
+      assert_same(2301, resp["errors"][1][0])
+   end
+   
+   test "Can't signup with invalid email" do
+      save_users_and_devs
+      
+      sherlock_auth_token = generate_auth_token(devs(:sherlock))
+      
+      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=testexample&password=testtest&username=testuser"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2401, resp["errors"][0][0])
+   end
+   
+   test "Can't signup users as another dev except the first dev" do
+      save_users_and_devs
+      
+      matts_auth_token = generate_auth_token(devs(:matt))
+      
+      post "/v1/users/signup?auth=#{matts_auth_token}&email=testexample&password=testtest&username=testuser"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   # End signup tests
+   
+   # update_user tests
+   test "Can confirm new user" do
+      save_users_and_devs
+      
+      sherlock_auth_token = generate_auth_token(devs(:sherlock))
+      
+      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=testuser"
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      
+      new_user = User.find_by_id(resp["id"])
+      
+      new_users_confirmation_token = User.find_by_id(resp["id"]).email_confirmation_token
+      post "/v1/users/#{new_user.id}/confirm?email_confirmation_token=#{new_user.email_confirmation_token}"
+      
+      assert_response 200
+      assert(User.find_by_id(new_user.id).confirmed)
+   end
+   
+   # End update_user tests
+   
    
    
    def save_users_and_devs

@@ -111,6 +111,7 @@ class UsersController < ApplicationController
       
       if ok && errors.length == 0
          status = 201
+         @result = @user
       else
          @result.clear
          @result["errors"] = errors
@@ -398,13 +399,6 @@ class UsersController < ApplicationController
                            end
                         end
                         
-                        confirmed = object["confirmed"]
-                        if !confirmed.nil?
-                           if errors.length == 0
-                              user.confirmed = confirmed
-                           end
-                        end
-                        
                         avatar_file_extension = object["avatar_file_extension"]
                         if avatar_file_extension && avatar_file_extension.length > 0
                            if errors.length == 0
@@ -504,6 +498,59 @@ class UsersController < ApplicationController
                      @result = {}
                      ok = true
                   end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
+   def confirm_user
+      email_confirmation_token = params["email_confirmation_token"]
+      user_id = params["id"]
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !email_confirmation_token || email_confirmation_token.length < 1
+         errors.push(Array.new([2108, "Missing field: email_confirmation_token"]))
+         status = 400
+      end
+      
+      if !user_id
+         errors.push(Array.new([2103, "Missing field: id"]))
+         status = 400
+      end
+      
+      if errors.length == 0
+         user = User.find_by_id(user_id)
+         
+         if !user
+            errors.push(Array.new([2801, "Resource does not exist: User"]))
+            status = 400
+         else
+            if user.confirmed == true
+               errors.push(Array.new([1106, "User is already confirmed"]))
+               status = 400
+            else
+               if user.email_confirmation_token != email_confirmation_token
+                  errors.push(Array.new([1204, "Email confirmation token is not correct"]))
+                  status = 400
+               else
+                  user.email_confirmation_token = nil
+                  user.confirmed = true
+                  user.save!
+                  
+                  ok = true
                end
             end
          end
