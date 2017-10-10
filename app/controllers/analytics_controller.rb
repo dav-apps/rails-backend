@@ -167,24 +167,19 @@ class AnalyticsController < ApplicationController
                         errors.push(Array.new([2803, "Resource does not exist: App"]))
                         status = 400
                      else
-                        if app.dev_id != dev.id # Check if the app belongs to the dev
+                        # Make sure this can only be called from the website
+                        if !((dev == Dev.first) && (app.dev == user.dev))
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Make sure this can only be called from the website
-                           if !((dev == Dev.first) && (app.dev == user.dev))
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              @result["event"] = event.attributes
-                              
-                              logs = Array.new
-                              
-                              event.event_logs.each { |log| logs.push(log.attributes) }
-                              
-                              @result["event"]["logs"] = logs
-                              ok = true
-                           end
+                           @result["event"] = event.attributes
+                           
+                           logs = Array.new
+                           
+                           event.event_logs.each { |log| logs.push(log.attributes) }
+                           
+                           @result["event"]["logs"] = logs
+                           ok = true
                         end
                      end
                   end
@@ -261,7 +256,6 @@ class AnalyticsController < ApplicationController
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  # Get the app of the event
                   event = Event.find_by_id(event_id)
                   
                   if !event
@@ -274,40 +268,35 @@ class AnalyticsController < ApplicationController
                         errors.push(Array.new([2803, "Resource does not exist: App"]))
                         status = 400
                      else
-                        if app.dev_id != dev.id # Check if the app belongs to the dev
+                        # Make sure this can only be called from the website
+                        if !((dev == Dev.first) && (app.dev == user.dev))
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Make sure this can only be called from the website
-                           if !((dev == Dev.first) && (app.dev == user.dev))
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              # Validate properties
-                              if name.length > max_event_name_length
-                                 errors.push(Array.new([2308, "Field too long: Event.name"]))
-                                 status = 400
-                              end
-                              
-                              if name.length < min_event_name_length
-                                 errors.push(Array.new([2208, "Field too short: Event.name"]))
-                                 status = 400
-                              end
-                              
-                              if Event.exists?(name: name, app_id: app.id) && event.name != name
-                                 errors.push(Array.new([2703, "Field already taken: name"]))
-                                 status = 400
-                              end
-                              
-                              if errors.length == 0
-                                 event.name = name
-                                 if !event.save
-                                    errors.push(Array.new([1103, "Unknown validation error"]))
-                                    status = 500
-                                 else
-                                    @result = event
-                                    ok = true
-                                 end
+                           # Validate properties
+                           if name.length > max_event_name_length
+                              errors.push(Array.new([2308, "Field too long: Event.name"]))
+                              status = 400
+                           end
+                           
+                           if name.length < min_event_name_length
+                              errors.push(Array.new([2208, "Field too short: Event.name"]))
+                              status = 400
+                           end
+                           
+                           if Event.exists?(name: name, app_id: app.id) && event.name != name
+                              errors.push(Array.new([2703, "Field already taken: name"]))
+                              status = 400
+                           end
+                           
+                           if errors.length == 0
+                              event.name = name
+                              if !event.save
+                                 errors.push(Array.new([1103, "Unknown validation error"]))
+                                 status = 500
+                              else
+                                 @result = event
+                                 ok = true
                               end
                            end
                         end
@@ -393,20 +382,15 @@ class AnalyticsController < ApplicationController
                         errors.push(Array.new([2803, "Resource does not exist: App"]))
                         status = 400
                      else
-                        if app.dev_id != dev.id # Check if the app belongs to the dev
+                        # Make sure this can only be called from the website
+                        if !((dev == Dev.first) && (app.dev == user.dev))
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Make sure this can only be called from the website
-                           if !((dev == Dev.first) && (app.dev == user.dev))
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              event.destroy!
-                              
-                              @result = {}
-                              ok = true
-                           end
+                           event.destroy!
+                           
+                           @result = {}
+                           ok = true
                         end
                      end
                   end

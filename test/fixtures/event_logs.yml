@@ -1,0 +1,17 @@
+First:
+    event: Login
+    
+Second:
+    event: Login
+    
+Third:
+    event: OpenApp
+    
+Fourth:
+    event: CreateCard
+    
+Fifth:
+    event: Login2
+    
+Sixth:
+    event: LoginMobile

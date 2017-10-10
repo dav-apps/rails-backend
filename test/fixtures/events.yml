@@ -1,0 +1,19 @@
+Login:
+    name: "login"
+    app: TestApp
+    
+OpenApp:
+    name: "open_app"
+    app: Cards
+    
+CreateCard:
+    name: "create_card"
+    app: Cards
+    
+Login2:
+    name: "login2"
+    app: davApp
+    
+LoginMobile:
+    name: "login_mobile"
+    app: TestApp
