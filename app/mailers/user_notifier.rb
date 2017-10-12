@@ -22,7 +22,7 @@ class UserNotifier < ApplicationMailer
       @user = user
       @link = ENV['BASE_URL'] + "change_email/" + @user.id.to_s + "/" + @user.email_confirmation_token
       
-      mail(:to => @user.email,
+      mail(:to => @user.new_email,
       :subject => 'Confirm your new dav email')
    end
    

@@ -274,6 +274,10 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       cato.password = "123456"
       cato.save
       
+      tester = users(:tester)
+      tester.password = "testpassword"
+      tester.save
+      
       devs(:dav).save
       devs(:matt).save
       devs(:sherlock).save

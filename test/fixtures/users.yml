@@ -17,3 +17,8 @@ cato:
    username: cato
    confirmed: true
    email: cato@test.de
+
+tester:
+   username: tester
+   confirmed: false
+   email: tester@example.com

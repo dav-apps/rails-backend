@@ -186,7 +186,249 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    # End signup tests
    
+   # get_user tests
+   test "Can't get user when the requested user is not the current user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/users/#{users(:sherlock).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can get user when the requested user is the current user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/users/#{matt.id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_same(matt.id, resp["id"])
+   end
+   
+   test "User does not exist in get_user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matt_id = matt.id
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      matt.destroy!
+      
+      get "/v1/users/#{matt_id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2801, resp["errors"][0][0])
+   end
+   # End get_user tests
+   
    # update_user tests
+   test "Can't use another content type but json in update_user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/xml'}
+      resp = JSON.parse response.body
+      
+      assert_response 415
+      assert_same(1104, resp["errors"][0][0])
+   end
+   
+   test "Can't update user from outside the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+      
+   test "Can't update user with invalid email" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"email\":\"testemail\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2401, resp["errors"][0][0])
+   end
+   
+   test "Can't update user with too short username" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"d\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2201, resp["errors"][0][0])
+   end
+   
+   test "Can't update user with too long username" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"#{"d"*30}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2301, resp["errors"][0][0])
+   end
+   
+   test "Can't update user with username that's already taken" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"cato\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2701, resp["errors"][0][0])
+   end
+   
+   test "Can't update user with too short password" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"password\":\"c\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2202, resp["errors"][0][0])
+   end
+   
+   test "Can't update user with too long password" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"password\":\"#{"n"*40}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2302, resp["errors"][0][0])
+   end
+   
+   test "New password email gets send in update_user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"password\":\"testpassword\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      email = ActionMailer::Base.deliveries.last
+      
+      assert_response 200
+      assert_not_nil(email)
+      assert_equal(matt.email, email.to[0])
+   end
+   
+   test "New email email gets send in update_user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"email\":\"test14@example.com\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      email = ActionMailer::Base.deliveries.last
+      
+      assert_response 200
+      assert_not_nil(email)
+      assert_equal(resp["new_email"], email.to[0])
+   end
+   
+   test "username and avatar_file_extension gets changed in update_user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"newtestuser\",\"avatar_file_extension\": \".jpg\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      matt = User.find_by_id(matt.id)
+      
+      assert_response 200
+      assert_equal(resp["username"], matt.username)
+      assert_equal(resp["avatar_file_extension"], matt.avatar_file_extension)
+   end
+   
+   test "Can update email and password of user at the same time" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      matt = User.find_by_id(matt.id)
+      
+      assert_response 200
+      assert_equal(resp["new_email"], matt.new_email)
+      assert_equal(resp["new_password"], matt.new_password)
+   end
+   # End update_user tests
+   
+   # delete_user tests
+   test "Can't delete user from outside the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      delete "/v1/users?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "User gets deleted" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matt_id = matt.id
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      delete "/v1/users?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_nil(User.find_by_id(matt_id))
+   end
+   # End delete_user tests
+   
+   # confirm_user tests
    test "Can confirm new user" do
       save_users_and_devs
       
@@ -206,7 +448,46 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert(User.find_by_id(new_user.id).confirmed)
    end
    
-   # End update_user tests
+   test "Can't confirm user without email_confirmation_token" do
+      save_users_and_devs
+      
+      tester = users(:tester)
+      
+      post "/v1/users/#{tester.id}/confirm"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2108, resp["errors"][0][0])
+   end
+   
+   test "Can't confirm new user with invalid email_confirmation_token" do
+      save_users_and_devs
+      
+      tester = users(:tester)
+      
+      post "/v1/users/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(1204, resp["errors"][0][0])
+   end
+   
+   test "Check if user is already confirmed" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_confirmation_token = "testconfirmationtoken"
+      
+      post "/v1/users/#{matt.id}/confirm?email_confirmation_token=#{matts_confirmation_token}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(1106, resp["errors"][0][0])
+   end
+   
+   # End confirm_user tests
+   
+   
    
    
    
@@ -226,6 +507,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       cato = users(:cato)
       cato.password = "123456"
       cato.save
+      
+      tester = users(:tester)
+      tester.password = "testpassword"
+      tester.save
       
       devs(:dav).save
       devs(:matt).save

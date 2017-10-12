@@ -333,7 +333,6 @@ class UsersController < ApplicationController
                      status = 403
                   else
                      if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
-                        puts request.headers["Content-Type"]
                         errors.push(Array.new([1104, "Content-type not supported"]))
                         status = 415
                      else
@@ -350,7 +349,6 @@ class UsersController < ApplicationController
                            
                            if errors.length == 0
                               # Set email_confirmation_token and send email
-                              user.old_email = user.email
                               user.new_email = email
                               user.email_confirmation_token = generate_token
                               email_changed = true
@@ -747,7 +745,7 @@ class UsersController < ApplicationController
                   errors.push(Array.new([2601, "Field is empty: new_email"]))
                   status = 400
                else
-                  # Save new password
+                  # Save new email
                   user.old_email = user.email
                   user.email = user.new_email
                   user.new_email = nil
