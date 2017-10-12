@@ -460,7 +460,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2108, resp["errors"][0][0])
    end
    
-   test "Can't confirm new user with invalid email_confirmation_token" do
+   test "Can't confirm new user with incorrect email_confirmation_token" do
       save_users_and_devs
       
       tester = users(:tester)
@@ -472,7 +472,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1204, resp["errors"][0][0])
    end
    
-   test "Check if user is already confirmed" do
+   test "User is already confirmed" do
       save_users_and_devs
       
       matt = users(:matt)
@@ -484,8 +484,118 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 400
       assert_same(1106, resp["errors"][0][0])
    end
-   
    # End confirm_user tests
+   
+   # send_verification_email tests
+   test "Missing fields in send_verification_email" do
+      post "/v1/users/send_verification_email"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2106, resp["errors"][0][0])
+   end 
+   
+   test "Can't send verification email with already confirmed user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      post "/v1/users/send_verification_email?email=#{matt.email}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(1106, resp["errors"][0][0])
+   end
+   
+   test "Verification email gets send" do
+      save_users_and_devs
+      
+      tester = users(:tester)
+      
+      post "/v1/users/send_verification_email?email=#{tester.email}"
+      resp = JSON.parse response.body
+      
+      email = ActionMailer::Base.deliveries.last
+      
+      assert_response 200
+      assert_not_nil(email)
+      assert_equal(tester.email, email.to[0])
+   end
+   # End send_verification_email tests
+   
+   # send_password_reset_email tests
+   test "Missing fields in send_password_reset_email" do
+      post "/v1/users/send_password_reset_email"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2106, resp["errors"][0][0])
+   end
+   
+   test "Password reset email gets send" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      post "/v1/users/send_password_reset_email?email=#{matt.email}"
+      resp = JSON.parse response.body
+      
+      email = ActionMailer::Base.deliveries.last
+      
+      assert_response 200
+      assert_not_nil(email)
+      assert_equal(matt.email, email.to[0])
+   end
+   # End send_password_reset_email tests
+   
+   # save_new_password tests
+   test "Can't save new password with incorrect password confirmation token" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      post "/v1/users/#{matt.id}/save_new_password/asdonasdnonadoasnd"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(1203, resp["errors"][0][0])
+   end
+   
+   test "Can't save new password with empty new_password" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matt.password_confirmation_token = "confirmationtoken"
+      matt.save
+      
+      post "/v1/users/#{matt.id}/save_new_password/#{matt.password_confirmation_token}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2603, resp["errors"][0][0])
+   end
+   
+   test "Can save new password" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"password\": \"testpassword\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      
+      matt = User.find_by_id(matt.id)
+      
+      post "/v1/users/#{matt.id}/save_new_password/#{matt.password_confirmation_token}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_nil(User.find_by_id(matt.id).new_password)
+   end
+   # End save_new_password tests
+   
    
    
    
