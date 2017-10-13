@@ -97,6 +97,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 400
       assert_same(resp["errors"][0][0], 2802)
    end
+   # End login tests
    
    
    # Signup tests
@@ -183,6 +184,20 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Verification email gets send in signup" do
+      save_users_and_devs
+      
+      matts_auth_token = generate_auth_token(devs(:sherlock))
+      
+      post "/v1/users/signup?auth=#{matts_auth_token}&email=test@example.com&password=testtest&username=testuser"
+      resp = JSON.parse response.body
+      
+      email = ActionMailer::Base.deliveries.last
+      
+      assert_response 201
+      assert_equal(resp["email"], email.to[0])
    end
    # End signup tests
    
