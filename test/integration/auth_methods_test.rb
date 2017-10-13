@@ -596,8 +596,126 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    # End save_new_password tests
    
+   # save_new_email tests
+   test "Changes do apply in save_new_email" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      new_email = "newtest@email.com"
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      matt = User.find_by_id(matt.id)
+      
+      assert_response 200
+      assert_equal(matt.new_email, new_email)
+      
+      old_email = matt.email
+      post "/v1/users/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
+      resp = JSON.parse response.body
+      
+      matt = User.find_by_id(matt.id)
+      
+      assert_response 200
+      assert_equal(matt.email, new_email)
+      assert_nil(matt.new_email)
+      assert_equal(matt.old_email, old_email)
+   end
    
+   test "Can't save new email with invalid email confirmation token" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      post "/v1/users/#{matt.id}/save_new_email/oiSsdfh0sdjf0"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(1204, resp["errors"][0][0])
+   end
    
+   test "Can't save new email with empty new_email" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matt.email_confirmation_token = "confirmationtoken"
+      matt.save
+      
+      post "/v1/users/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2601, resp["errors"][0][0])
+   end
+   
+   test "reset_new_email_email gets send" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      new_email = "new-test@email.com"
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      matt = User.find_by_id(matt.id)
+      
+      post "/v1/users/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
+      resp = JSON.parse response.body
+      
+      matt = User.find_by_id(matt.id)
+      email = ActionMailer::Base.deliveries.last
+      
+      assert_response 200
+      assert_equal(matt.old_email, email.to[0])
+   end
+   # End save_new_email tests
+   
+   # reset_new_email tests
+   test "Can't reset new email with empty old_email" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      
+      post "/v1/users/#{matt.id}/reset_new_email"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2602, resp["errors"][0][0])
+   end
+   
+   test "Changes do apply in reset_new_email" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      new_email = "new-test@email.com"
+      original_email = matt.email
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      matt = User.find_by_id(matt.id)
+      
+      post "/v1/users/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      matt = User.find_by_id(matt.id)
+      
+      post "/v1/users/#{matt.id}/reset_new_email"
+      resp = JSON.parse response.body
+      
+      matt = User.find_by_id(matt.id)
+      
+      assert_response 200
+      assert_equal(matt.email, original_email)
+   end
+   # End reset_new_email tests
    
    
    

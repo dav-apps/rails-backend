@@ -765,7 +765,7 @@ class UsersController < ApplicationController
       
       if ok && errors.length == 0
          status = 200
-         UserNotifier.send_reset_new_email_email(@user).deliver_later
+         UserNotifier.send_reset_new_email_email(user).deliver_later
       else
          @result.clear
          @result["errors"] = errors
@@ -799,7 +799,7 @@ class UsersController < ApplicationController
                status = 400
             else
                # set new_email to email and email to old_email
-               user.email = old_email
+               user.email = user.old_email
                user.old_email = nil
                
                if !user.save
