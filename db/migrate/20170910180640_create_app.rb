@@ -5,6 +5,7 @@ class CreateApp < ActiveRecord::Migration
       t.text :description
       t.integer :dev_id
       t.boolean :published, default: false
+      t.timestamps
     end
   end
 end

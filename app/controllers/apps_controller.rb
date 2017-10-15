@@ -626,7 +626,7 @@ class AppsController < ApplicationController
                status = 400
             else
                app = App.find_by_id(table.app_id)
-            
+               
                if !app
                   errors.push(Array.new([2803, "Resource does not exist: App"]))
                   status = 400
@@ -639,7 +639,7 @@ class AppsController < ApplicationController
                         if !token || token.length < 1
                            # Token and JWT missing
                            if !token || token.length < 1
-                              errors.push(Array.new([0000, "Missing field: access_token"]))
+                              errors.push(Array.new([2117, "Missing field: access_token"]))
                               status = 400
                            end
                            
@@ -697,7 +697,7 @@ class AppsController < ApplicationController
                                     status = 403
                                  else
                                     if obj.user_id != user.id   # If the object belongs to the user
-                                       if obj.private?
+                                       if obj.visibility == 0
                                           errors.push(Array.new([1102, "Action not allowed"]))
                                           status = 403
                                        else
@@ -718,11 +718,7 @@ class AppsController < ApplicationController
             end
          end
          
-         
-         if !can_access
-            errors.push(Array.new([1102, "Action not allowed"]))
-            status = 403
-         else
+         if errors.length == 0 && can_access
             # Return object
             @result = Hash.new
             @result["id"] = obj.id
@@ -733,6 +729,9 @@ class AppsController < ApplicationController
             end
             
             ok = true
+         elsif errors.length == 0
+            errors.push(Array.new([1102, "Action not allowed"]))
+            status = 403
          end
       end
       
@@ -1434,6 +1433,116 @@ class AppsController < ApplicationController
                            table.destroy!
                            @result = {}
                            ok = true
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
+   def create_access_token
+      object_id = params["object_id"]
+      
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !object_id
+         errors.push(Array.new([2115, "Missing field: object_id"]))
+         status = 400
+      end
+      
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([2102, "Missing field: jwt"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([1301, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([1302, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([1303, "JWT: unknown error"]))
+            status = 401
+         end
+         
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
+               status = 400
+            else
+               dev = Dev.find_by_id(dev_id)
+               
+               if !dev     # Check if the dev exists
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                  status = 400
+               else
+                  # Check if the object belongs to the user
+                  object = TableObject.find_by_id(object_id)
+                  
+                  if !object
+                     errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
+                     status = 400
+                  else
+                     table = Table.find_by_id(object.table_id)
+                     
+                     if !table
+                        errors.push(Array.new([2804, "Resource does not exist: Table"]))
+                        status = 400
+                     else
+                        app = App.find_by_id(table.app_id)
+                        
+                        if !app
+                           errors.push(Array.new([2803, "Resource does not exist: App"]))
+                           status = 400
+                        else
+                           if app.dev != dev
+                              errors.push(Array.new([1102, "Action not allowed"]))
+                              status = 403
+                           else
+                              if object.user != user
+                                 errors.push(Array.new([1102, "Action not allowed"]))
+                                 status = 403
+                              else
+                                 # Create ObjectAccessToken and return it
+                                 token = ObjectAccessToken.new(table_object: object, access_token: generate_token)
+                                 
+                                 if !token.save
+                                    errors.push(Array.new([1103, "Unknown validation error"]))
+                                    status = 500
+                                 else
+                                    @result = token
+                                    ok = true
+                                 end
+                              end
+                           end
                         end
                      end
                   end

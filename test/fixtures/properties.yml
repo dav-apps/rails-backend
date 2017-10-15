@@ -51,7 +51,17 @@ second5:
 first6:
     name: page1
     value: Karte von Sherlock
+    table_object: sixth
 
 second6:
     name: page2
     value: Card of Sherlock
+    table_object: sixth
+
+first7:
+    name: title
+    value: Welt retten
+
+second7:
+    name: content
+    value: Samstag, 9:30 Uhr in Fukushima

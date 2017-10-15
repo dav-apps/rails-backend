@@ -415,10 +415,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2306, resp["errors"][0][0])
       assert_same(2307, resp["errors"][1][0])
    end
-   
-   test "Can create public object" do
-      
-   end
    # End create_object tests
    
    # get_object tests
@@ -436,10 +432,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 404
       assert_same(2805, resp["errors"][0][0])
-   end
-   
-   test "Can get public object" do
-      
    end
    
    test "Can't get the objects of the tables of another dev" do
@@ -481,6 +473,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't get object without access token and JWT" do
+      save_users_and_devs
+      
+      get "/v1/apps/object/#{table_objects(:second).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 401
+      assert_same(2117, resp["errors"][0][0])
+      assert_same(2102, resp["errors"][1][0])
+   end
+   
+   test "Can get object with access token without logging in" do
+      save_users_and_devs
+      
+      
    end
    # End get_object tests
    
@@ -896,8 +905,43 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
-   
    # End delete_table tests
+   
+   # create_access_token
+   test "Missing fields in create_access_token" do
+      post "/v1/apps/access_token"
+      resp = JSON.parse response.body
+      
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2115, resp["errors"][0][0])
+      assert_same(2102, resp["errors"][1][0])
+   end
+   
+   test "Can't create access tokens for objects of another user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/access_token?object_id=#{table_objects(:fifth).id}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't create access tokens for objects of the apps of another dev" do
+      save_users_and_devs
+      
+      sherlock = users(:sherlock)
+      sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      
+      post "/v1/apps/access_token?object_id=#{table_objects(:seventh).id}&jwt=#{sherlocks_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
    
    
    

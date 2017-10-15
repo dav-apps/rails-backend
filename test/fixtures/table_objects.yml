@@ -21,3 +21,7 @@ fifth:
 sixth:
     table: card
     user: sherlock
+
+seventh:
+    table: note
+    user: sherlock
