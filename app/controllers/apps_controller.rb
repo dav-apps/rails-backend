@@ -650,7 +650,7 @@ class AppsController < ApplicationController
                         else
                            # Check if the token is valid
                            obj.object_access_tokens.each do |access_token|
-                              if access_token == token
+                              if access_token.access_token == token
                                  can_access = true
                                  access_token.destroy!
                               end
@@ -1552,12 +1552,18 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         status = 200
+         status = 201
       else
          @result.clear
          @result["errors"] = errors
       end
       
       render json: @result, status: status if status
+   end
+   
+   
+   private
+   def generate_token
+      SecureRandom.hex(20)
    end
 end

@@ -65,3 +65,11 @@ first7:
 second7:
     name: content
     value: Samstag, 9:30 Uhr in Fukushima
+
+first8:
+    name: title
+    value: Testnotiz
+
+second8:
+    name: content
+    value: Dies ist eine öffentliche Testnotiz. Jeder kann sie lesen!

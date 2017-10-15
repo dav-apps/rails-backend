@@ -1,6 +1,7 @@
 first:
     table: card
     user: matt
+    visibility: 1
     
 second:
     table: card
@@ -25,3 +26,8 @@ sixth:
 seventh:
     table: note
     user: sherlock
+
+eight:
+    table: note
+    user: matt
+    visibility: 2

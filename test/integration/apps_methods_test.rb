@@ -489,7 +489,54 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can get object with access token without logging in" do
       save_users_and_devs
       
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      object_id = table_objects(:third).id
       
+      post "/v1/apps/access_token?object_id=#{object_id}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      
+      token = resp["access_token"]
+      
+      get "/v1/apps/object/#{object_id}?access_token=#{token}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+   
+   test "Can get protected object as another user" do
+      save_users_and_devs
+      
+      sherlock = users(:sherlock)
+      sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/object/#{table_objects(:first).id}?jwt=#{sherlocks_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+   
+   test "Can get public object as logged in user" do
+      save_users_and_devs
+      
+      sherlock = users(:sherlock)
+      sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/object/#{table_objects(:eight).id}?jwt=#{sherlocks_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+   
+   test "Can get public object without being logged in" do
+      save_users_and_devs
+      
+      get "/v1/apps/object/#{table_objects(:eight).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
    end
    # End get_object tests
    
@@ -907,7 +954,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End delete_table tests
    
-   # create_access_token
+   # create_access_token tests
    test "Missing fields in create_access_token" do
       post "/v1/apps/access_token"
       resp = JSON.parse response.body
@@ -942,6 +989,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
+   # End create_access_token tests
    
    
    
