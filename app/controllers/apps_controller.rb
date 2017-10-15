@@ -540,8 +540,6 @@ class AppsController < ApplicationController
                                  errors.push(Array.new([2116, "Missing field: object"]))
                                  status = 400
                               else
-                                 @result["id"] = obj.id
-                                 
                                  object.each do |key, value|
                                     # Validate the length of the properties
                                     if key.length > max_property_name_length
@@ -588,6 +586,8 @@ class AppsController < ApplicationController
       
       if ok && errors.length == 0
          status = 201
+         @result["id"] = obj.id
+         @result["visibility"] = obj.visibility
       else
          @result.clear
          @result["errors"] = errors
@@ -598,101 +598,141 @@ class AppsController < ApplicationController
    
    def get_object
       object_id = params["id"]
+      token = params["access_token"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
       ok = false
+      can_access = false
       
       if !object_id
          errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
       end
       
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
       if errors.length == 0 
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
+         obj = TableObject.find_by_id(object_id)
          
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
+         if !obj
+            errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
+            status = 404
+         else
+            table = Table.find_by_id(obj.table_id)
             
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
+            if !table
+               errors.push(Array.new([2804, "Resource does not exist: Table"]))
                status = 400
             else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev     # Check if the dev exists
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+               app = App.find_by_id(table.app_id)
+            
+               if !app
+                  errors.push(Array.new([2803, "Resource does not exist: App"]))
                   status = 400
                else
-                  # Check if the object exists
-                  obj = TableObject.find_by_id(object_id)
-                  
-                  if !obj
-                     errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
-                     status = 404
-                  else
-                     table = Table.find_by_id(obj.table_id)
-                     
-                     if !table
-                        errors.push(Array.new([2804, "Resource does not exist: Table"]))
-                        status = 400
-                     else
-                        app = App.find_by_id(table.app_id)
-                     
-                        if !app
-                           errors.push(Array.new([2803, "Resource does not exist: App"]))
-                           status = 400
+                  # Check the visibility
+                  if obj.visibility != 2
+                     # Check JWT
+                     if !jwt || jwt.length < 1
+                        # Check access_token
+                        if !token || token.length < 1
+                           # Token and JWT missing
+                           if !token || token.length < 1
+                              errors.push(Array.new([0000, "Missing field: access_token"]))
+                              status = 400
+                           end
+                           
+                           if !jwt || jwt.length < 1
+                              errors.push(Array.new([2102, "Missing field: jwt"]))
+                              status = 401
+                           end
                         else
-                           # Check if the app belongs to the dev
-                           if app.dev_id != dev.id
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
+                           # Check if the token is valid
+                           obj.object_access_tokens.each do |access_token|
+                              if access_token == token
+                                 can_access = true
+                                 access_token.destroy!
+                              end
+                           end
+                        end
+                     else
+                        jwt_valid = false
+                        begin
+                           decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+                           jwt_valid = true
+                        rescue JWT::ExpiredSignature
+                           # JWT expired
+                           errors.push(Array.new([1301, "JWT: expired"]))
+                           status = 401
+                        rescue JWT::DecodeError
+                           errors.push(Array.new([1302, "JWT: not valid"]))
+                           status = 401
+                           # rescue other errors
+                        rescue Exception
+                           errors.push(Array.new([1303, "JWT: unknown error"]))
+                           status = 401
+                        end
+                        
+                        if jwt_valid
+                           
+                           user_id = decoded_jwt[0]["user_id"]
+                           dev_id = decoded_jwt[0]["dev_id"]
+                           
+                           user = User.find_by_id(user_id)
+                           
+                           if !user
+                              errors.push(Array.new([2801, "Resource does not exist: User"]))
+                              status = 400
                            else
-                              if obj.user_id != user.id   # If the object belongs to the user
-                                 errors.push(Array.new([1102, "Action not allowed"]))
-                                 status = 403
+                              dev = Dev.find_by_id(dev_id)
+                              
+                              if !dev     # Check if the dev exists
+                                 errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                                 status = 400
                               else
-                                 # Anythink is ok
-                                 @result = Hash.new
-                                 @result["id"] = obj.id
-                                 
-                                 obj.properties.each do |prop|
-                                    @result[prop.name] = prop.value
+                                 # Check if the app belongs to the dev
+                                 if app.dev_id != dev.id
+                                    errors.push(Array.new([1102, "Action not allowed"]))
+                                    status = 403
+                                 else
+                                    if obj.user_id != user.id   # If the object belongs to the user
+                                       if obj.private?
+                                          errors.push(Array.new([1102, "Action not allowed"]))
+                                          status = 403
+                                       else
+                                          can_access = true
+                                       end
+                                    else  # Object does belong to the user
+                                       can_access = true
+                                    end
                                  end
-                                 
-                                 ok = true
                               end
                            end
                         end
                      end
+                  else
+                     can_access = true
                   end
                end
             end
+         end
+         
+         
+         if !can_access
+            errors.push(Array.new([1102, "Action not allowed"]))
+            status = 403
+         else
+            # Return object
+            @result = Hash.new
+            @result["id"] = obj.id
+            @result["visibility"] = obj.visibility
+            
+            obj.properties.each do |prop|
+               @result[prop.name] = prop.value
+            end
+            
+            ok = true
          end
       end
       

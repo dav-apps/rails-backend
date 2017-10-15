@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20170926185051) do
+ActiveRecord::Schema.define(version: 20171014213231) do
 
   create_table "apps", force: :cascade do |t|
     t.string  "name",        limit: 255
@@ -51,6 +51,11 @@ ActiveRecord::Schema.define(version: 20170926185051) do
     t.datetime "updated_at"
   end
 
+  create_table "object_access_tokens", force: :cascade do |t|
+    t.integer "table_object_id", limit: 4
+    t.string  "access_token",    limit: 255
+  end
+
   create_table "properties", force: :cascade do |t|
     t.integer "table_object_id", limit: 4
     t.string  "name",            limit: 255
@@ -58,8 +63,9 @@ ActiveRecord::Schema.define(version: 20170926185051) do
   end
 
   create_table "table_objects", force: :cascade do |t|
-    t.integer "table_id", limit: 4
-    t.integer "user_id",  limit: 4
+    t.integer "table_id",   limit: 4
+    t.integer "user_id",    limit: 4
+    t.integer "visibility", limit: 4, default: 0
   end
 
   create_table "tables", force: :cascade do |t|
