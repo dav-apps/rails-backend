@@ -427,6 +427,7 @@ class AppsController < ApplicationController
    define_method :create_object do
       table_name = params["table_name"]
       app_id = params["app_id"]
+      visibility = params["visibility"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -531,49 +532,60 @@ class AppsController < ApplicationController
                            end
                            
                            if errors.length == 0
-                              obj = TableObject.create(table_id: table.id, user_id: user.id)
+                              obj = TableObject.new(table_id: table.id, user_id: user.id)
                               
-                              # Get the body of the request
-                              object = request.request_parameters
-                              
-                              if object.length < 1
-                                 errors.push(Array.new([2116, "Missing field: object"]))
-                                 status = 400
-                              else
-                                 object.each do |key, value|
-                                    # Validate the length of the properties
-                                    if key.length > max_property_name_length
-                                       errors.push(Array.new([2306, "Field too long: Property.name"]))
-                                       status = 400
-                                    end
-                                    
-                                    if key.length < min_property_name_length
-                                       errors.push(Array.new([2206, "Field too short: Property.name"]))
-                                       status = 400
-                                    end
-                                    
-                                    if value.length > max_property_value_length
-                                       errors.push(Array.new([2307, "Field too long: Property.value"]))
-                                       status = 400
-                                    end
-                                    
-                                    if value.length < min_property_value_length
-                                       errors.push(Array.new([2207, "Field too short: Property.value"]))
-                                       status = 400
-                                    end
+                              begin
+                                 if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
+                                    obj.visibility = visibility.to_i
                                  end
                               end
                               
-                              if errors.length == 0
-                                 object.each do |key, value|
-                                    if !Property.create(table_object_id: obj.id, name: key, value: value)
-                                       errors.push(Array.new([1103, "Unknown validation error"]))
-                                       status = 500
-                                    else
-                                       @result[key] = value
+                              if !obj.save
+                                 errors.push(Array.new([1103, "Unknown validation error"]))
+                                 status = 500
+                              else
+                                 # Get the body of the request
+                                 object = request.request_parameters
+                                 
+                                 if object.length < 1
+                                    errors.push(Array.new([2116, "Missing field: object"]))
+                                    status = 400
+                                 else
+                                    object.each do |key, value|
+                                       # Validate the length of the properties
+                                       if key.length > max_property_name_length
+                                          errors.push(Array.new([2306, "Field too long: Property.name"]))
+                                          status = 400
+                                       end
+                                       
+                                       if key.length < min_property_name_length
+                                          errors.push(Array.new([2206, "Field too short: Property.name"]))
+                                          status = 400
+                                       end
+                                       
+                                       if value.length > max_property_value_length
+                                          errors.push(Array.new([2307, "Field too long: Property.value"]))
+                                          status = 400
+                                       end
+                                       
+                                       if value.length < min_property_value_length
+                                          errors.push(Array.new([2207, "Field too short: Property.value"]))
+                                          status = 400
+                                       end
                                     end
                                  end
-                                 ok = true
+                                 
+                                 if errors.length == 0
+                                    object.each do |key, value|
+                                       if !Property.create(table_object_id: obj.id, name: key, value: value)
+                                          errors.push(Array.new([1103, "Unknown validation error"]))
+                                          status = 500
+                                       else
+                                          @result[key] = value
+                                       end
+                                    end
+                                    ok = true
+                                 end
                               end
                            end
                         end
@@ -747,6 +759,7 @@ class AppsController < ApplicationController
    
    define_method :update_object do
       object_id = params["id"]
+      visibility = params["visibility"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
@@ -878,6 +891,19 @@ class AppsController < ApplicationController
                                           end
                                        end
                                     end
+                                    
+                                    # If there is a new visibility, save it
+                                    begin
+                                       if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
+                                          obj.visibility = visibility.to_i
+                                          
+                                          if !obj.save
+                                             errors.push(Array.new([1103, "Unknown validation error"]))
+                                             status = 500
+                                          end
+                                       end
+                                    end
+                                    @result["visibility"] = obj.visibility
                                     
                                     ok = true
                                  end

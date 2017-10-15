@@ -415,6 +415,58 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2306, resp["errors"][0][0])
       assert_same(2307, resp["errors"][1][0])
    end
+   
+   test "Can't create object with visibility > 2" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=5&app_id=#{apps(:TestApp).id}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_same(0, resp["visibility"])
+   end
+   
+   test "Can't create object with visibility < 0" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=-4&app_id=#{apps(:TestApp).id}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_same(0, resp["visibility"])
+   end
+   
+   test "Can't create object with visibility that is not an integer" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=hello&app_id=#{apps(:TestApp).id}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_same(0, resp["visibility"])
+   end
+   
+   test "Can create object with another visibility" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_same(2, resp["visibility"])
+   end
    # End create_object tests
    
    # get_object tests
@@ -595,16 +647,55 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(table_objects(:first).id, resp["id"])
       assert_not_nil(resp["test"])
    end
-   # End update_object tests
    
-   # delete_object tests
-   test "Can't delete an object when the dev does not own the table and the user does not own the object" do
+   test "Can update object with new visibility" do
       save_users_and_devs
       
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/apps/object/#{table_objects(:fifth).id}?jwt=#{matts_jwt}"
+      put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}&visibility=2", "{\"#{"test"}\":\"#{"test"}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_same(2, resp["visibility"])
+   end
+   
+   test "Can't update an object with invalid visibility" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}&visibility=hello", "{\"#{"test"}\":\"#{"test"}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_same(0, resp["visibility"])
+   end
+   # End update_object tests
+   
+   # delete_object tests
+   test "Can't delete an object when the dev does not own the table" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      delete "/v1/apps/object/#{table_objects(:seventh).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't delete an object of another user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      delete "/v1/apps/object/#{table_objects(:second).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
