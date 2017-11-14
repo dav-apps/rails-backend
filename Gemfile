@@ -28,6 +28,9 @@ gem 'sendgrid-ruby'
 gem 'jwt'
 gem 'rails-api'
 
+gem 'tiny_tds', '~> 2.1'
+gem 'activerecord-sqlserver-adapter'
+
 # Use Unicorn as the app server
 # gem 'unicorn'
 

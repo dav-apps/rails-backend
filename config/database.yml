@@ -15,10 +15,12 @@ test:
   username: <%= ENV['TEST_DATABASE_USER'] %>
   password: <%= ENV['TEST_DATABASE_PASSWORD'] %>
 production:
-  adapter: mysql2
-  encoding: utf8
-  reconnect: false
-  database: <%= ENV['PRODUCTION_DATABASE_NAME'] %>
-  pool: 5
-  username: <%= ENV['PRODUCTION_DATABASE_USER'] %>
-  password: <%= ENV['PRODUCTION_DATABASE_PASSWORD'] %>
+  adapter: sqlserver     
+  mode: dblib
+  host: <%= ENV['AZURE_PRODUCTION_SERVER'] %>
+  port: 1433
+  database: <%= ENV['AZURE_PRODUCTION_DATABASE_NAME'] %>
+  username: <%= ENV['AZURE_PRODUCTION_DATABASE_USERNAME'] %>
+  password: <%= ENV['AZURE_PRODUCTION_DATABASE_PASSWORD'] %>
+  timeout: 5000
+  azure: true
