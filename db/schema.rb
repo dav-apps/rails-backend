@@ -14,32 +14,32 @@
 ActiveRecord::Schema.define(version: 20171014213231) do
 
   create_table "apps", force: :cascade do |t|
-    t.string   "name",        limit: 255
-    t.text     "description", limit: 65535
+    t.string   "name",        limit: 4000
+    t.text     "description", limit: 2147483647
     t.integer  "dev_id",      limit: 4
-    t.boolean  "published",                 default: false
+    t.boolean  "published",                      default: false
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
   create_table "cards", force: :cascade do |t|
-    t.string  "page1",   limit: 255
-    t.string  "page2",   limit: 255
+    t.string  "page1",   limit: 4000
+    t.string  "page2",   limit: 4000
     t.integer "deck_id", limit: 4
   end
 
   create_table "decks", force: :cascade do |t|
-    t.string  "name",    limit: 255
+    t.string  "name",    limit: 4000
     t.integer "user_id", limit: 4
   end
 
   create_table "devs", force: :cascade do |t|
     t.integer  "user_id",    limit: 4
-    t.string   "api_key",    limit: 255
-    t.string   "secret_key", limit: 255
+    t.string   "api_key",    limit: 4000
+    t.string   "secret_key", limit: 4000
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "uuid",       limit: 255
+    t.string   "uuid",       limit: 4000
   end
 
   create_table "event_logs", force: :cascade do |t|
@@ -49,7 +49,7 @@ ActiveRecord::Schema.define(version: 20171014213231) do
   end
 
   create_table "events", force: :cascade do |t|
-    t.string   "name",       limit: 255
+    t.string   "name",       limit: 4000
     t.integer  "app_id",     limit: 4
     t.datetime "created_at"
     t.datetime "updated_at"
@@ -57,15 +57,15 @@ ActiveRecord::Schema.define(version: 20171014213231) do
 
   create_table "object_access_tokens", force: :cascade do |t|
     t.integer  "table_object_id", limit: 4
-    t.string   "access_token",    limit: 255
+    t.string   "access_token",    limit: 4000
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
   create_table "properties", force: :cascade do |t|
     t.integer "table_object_id", limit: 4
-    t.string  "name",            limit: 255
-    t.string  "value",           limit: 255
+    t.string  "name",            limit: 4000
+    t.string  "value",           limit: 4000
   end
 
   create_table "table_objects", force: :cascade do |t|
@@ -78,26 +78,26 @@ ActiveRecord::Schema.define(version: 20171014213231) do
 
   create_table "tables", force: :cascade do |t|
     t.integer  "app_id",     limit: 4
-    t.string   "name",       limit: 255
+    t.string   "name",       limit: 4000
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
   create_table "users", force: :cascade do |t|
-    t.string   "email",                       limit: 255
-    t.string   "password_digest",             limit: 255
-    t.string   "username",                    limit: 255
-    t.boolean  "confirmed",                               default: false
-    t.string   "email_confirmation_token",    limit: 255
-    t.string   "password_confirmation_token", limit: 255
-    t.string   "new_password",                limit: 255
-    t.string   "new_email",                   limit: 255
-    t.string   "avatar_file_extension",       limit: 255
-    t.boolean  "uses_cards",                              default: false
-    t.boolean  "uses_usb",                                default: false
+    t.string   "email",                       limit: 4000
+    t.string   "password_digest",             limit: 4000
+    t.string   "username",                    limit: 4000
+    t.boolean  "confirmed",                                default: false
+    t.string   "email_confirmation_token",    limit: 4000
+    t.string   "password_confirmation_token", limit: 4000
+    t.string   "new_password",                limit: 4000
+    t.string   "new_email",                   limit: 4000
+    t.string   "avatar_file_extension",       limit: 4000
+    t.boolean  "uses_cards",                               default: false
+    t.boolean  "uses_usb",                                 default: false
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "old_email",                   limit: 255
+    t.string   "old_email",                   limit: 4000
   end
 
 end

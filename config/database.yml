@@ -24,3 +24,4 @@ production:
   password: <%= ENV['AZURE_PRODUCTION_DATABASE_PASSWORD'] %>
   timeout: 5000
   azure: true
+  proxy: <%= ENV['QUOTAGUARDSTATIC_URL'] %>
