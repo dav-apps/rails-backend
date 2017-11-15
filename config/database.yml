@@ -15,7 +15,7 @@ test:
   username: <%= ENV['TEST_DATABASE_USER'] %>
   #password: <%= ENV['TEST_DATABASE_PASSWORD'] %>
 production:
-  adapter: sqlserver     
+  adapter: sqlserver
   mode: dblib
   host: <%= ENV['AZURE_PRODUCTION_SERVER'] %>
   port: 1433
@@ -24,4 +24,3 @@ production:
   password: <%= ENV['AZURE_PRODUCTION_DATABASE_PASSWORD'] %>
   timeout: 5000
   azure: true
-  proxy: <%= ENV['QUOTAGUARDSTATIC_URL'] %>
