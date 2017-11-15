@@ -5,7 +5,7 @@ development:
   database: <%= ENV['DEVELOPMENT_DATABASE_NAME'] %>
   pool: 5
   username: <%= ENV['DEVELOPMENT_DATABASE_USER'] %>
-  password: <%= ENV['DEVELOPMENT_DATABASE_PASSWORD'] %>
+  #password: <%= ENV['DEVELOPMENT_DATABASE_PASSWORD'] %>
 test:
   adapter: mysql2
   encoding: utf8
@@ -13,7 +13,7 @@ test:
   database: <%= ENV['TEST_DATABASE_NAME'] %>
   pool: 5
   username: <%= ENV['TEST_DATABASE_USER'] %>
-  password: <%= ENV['TEST_DATABASE_PASSWORD'] %>
+  #password: <%= ENV['TEST_DATABASE_PASSWORD'] %>
 production:
   adapter: sqlserver     
   mode: dblib
