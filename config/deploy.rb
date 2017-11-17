@@ -1,5 +1,5 @@
 # Change these
-server '52.157.182.112', port: 22, roles: [:web, :app], primary: true
+server '40.68.225.204', port: 22, roles: [:web, :app], primary: true
 
 set :repo_url,        'https://github.com/Dav2070/rails-backend.git'
 set :application,     'rails-backend'
