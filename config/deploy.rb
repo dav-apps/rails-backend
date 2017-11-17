@@ -1,5 +1,5 @@
 # Change these
-server '52.233.195.8', port: 22, roles: [:web, :app], primary: true
+server 'dav-backend.westeurope.cloudapp.azure.com', port: 22, roles: [:web, :app], primary: true
 
 set :repo_url,        'https://github.com/Dav2070/rails-backend.git'
 set :application,     'rails-backend'
