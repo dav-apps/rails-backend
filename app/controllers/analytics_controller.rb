@@ -198,6 +198,102 @@ class AnalyticsController < ApplicationController
       render json: @result, status: status if status
    end
    
+   def get_event_by_name
+      event_name = params["name"]
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !event_name || event_name.length < 1
+         errors.push(Array.new([2111, "Missing field: name"]))
+         status = 400
+      end
+      
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([2102, "Missing field: jwt"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([1301, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([1302, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([1303, "JWT: unknown error"]))
+            status = 401
+         end
+         
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
+               status = 400
+            else
+               dev = Dev.find_by_id(dev_id)
+               
+               if !dev
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                  status = 400
+               else
+                  # Get the app of the event
+                  event = Event.find_by(name: event_name)
+                  
+                  if !event
+                     errors.push(Array.new([2807, "Resource does not exist: Event"]))
+                     status = 404
+                  else
+                     app = App.find_by_id(event.app_id)
+                     
+                     if !app
+                        errors.push(Array.new([2803, "Resource does not exist: App"]))
+                        status = 400
+                     else
+                        # Make sure this can only be called from the website
+                        if !((dev == Dev.first) && (app.dev == user.dev))
+                           errors.push(Array.new([1102, "Action not allowed"]))
+                           status = 403
+                        else
+                           @result["event"] = event.attributes
+                           
+                           logs = Array.new
+                           
+                           event.event_logs.each { |log| logs.push(log.attributes) }
+                           
+                           @result["event"]["logs"] = logs
+                           ok = true
+                        end
+                     end
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
    define_method :update_event do
       name = params["name"]
       event_id = params["id"]
