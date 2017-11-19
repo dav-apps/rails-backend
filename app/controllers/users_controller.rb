@@ -189,6 +189,7 @@ class UsersController < ApplicationController
          payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
          token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
          @result["jwt"] = token
+         @result["user_id"] = user.id
          
          status = 200
       else
