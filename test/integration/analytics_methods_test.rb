@@ -66,6 +66,21 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       end
    end
    
+   test "Can get all logs of an event by name" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      resp["event"]["logs"].each do |e|
+         assert_same(events(:Login).id, e["event_id"])
+      end
+   end
+   
    test "get_event can't be called from outside the website" do
       save_users_and_devs
       
@@ -73,6 +88,19 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
       get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "get_event_by_name can't be called from outside the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -90,6 +118,30 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can't get the event by name of the app of another dev" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:CreateCard).name}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Missing fields in get_event_by_name" do
+      save_users_and_devs
+      
+      get "/v1/analytics/event"
+      resp = JSON.parse response.body
+      
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2111, resp["errors"][0][0])
+      assert_same(2102, resp["errors"][1][0])
    end
    # End get_event tests
    
