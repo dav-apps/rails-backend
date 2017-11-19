@@ -130,7 +130,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(tables(:note).id, resp["app"]["tables"][0]["id"])
+      assert_same(tables(:note).id, resp["tables"][0]["id"])
    end
    
    test "Can't get an app of the first dev as another dev" do

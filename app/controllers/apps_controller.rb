@@ -195,8 +195,8 @@ class AppsController < ApplicationController
                               tables.push(table)
                            end
                            
-                           @result["app"] = app.attributes
-                           @result["app"]["tables"] = tables
+                           @result = app.attributes
+                           @result["tables"] = tables
                            ok = true
                         end
                      end
