@@ -510,8 +510,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_same(table_objects(:first).id, resp["id"])
-      assert_not_nil(resp["page1"])
-      assert_not_nil(resp["page2"])
+      assert_not_nil(resp["properties"]["page1"])
+      assert_not_nil(resp["properties"]["page2"])
    end
    
    test "Can't access an object when the user does not own the object" do
@@ -645,7 +645,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_same(table_objects(:first).id, resp["id"])
-      assert_not_nil(resp["test"])
+      assert_not_nil(resp["properties"]["test"])
    end
    
    test "Can update object with new visibility" do

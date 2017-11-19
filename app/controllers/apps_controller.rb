@@ -576,14 +576,23 @@ class AppsController < ApplicationController
                                  end
                                  
                                  if errors.length == 0
+                                    properties = Hash.new
+                                    
                                     object.each do |key, value|
                                        if !Property.create(table_object_id: obj.id, name: key, value: value)
                                           errors.push(Array.new([1103, "Unknown validation error"]))
                                           status = 500
                                        else
-                                          @result[key] = value
+                                          properties[key] = value
                                        end
                                     end
+                                    
+                                    @result["id"] = obj.id
+                                    @result["table_id"] = table.id
+                                    @result["user_id"] = user.id
+                                    @result["visibility"] = obj.visibility
+                                    @result["properties"] = properties
+                                    
                                     ok = true
                                  end
                               end
@@ -598,8 +607,6 @@ class AppsController < ApplicationController
       
       if ok && errors.length == 0
          status = 201
-         @result["id"] = obj.id
-         @result["visibility"] = obj.visibility
       else
          @result.clear
          @result["errors"] = errors
@@ -734,11 +741,15 @@ class AppsController < ApplicationController
             # Return object
             @result = Hash.new
             @result["id"] = obj.id
+            @result["table_id"] = table.id
+            @result["user_id"] = user.id if user
             @result["visibility"] = obj.visibility
             
+            properties = Hash.new
             obj.properties.each do |prop|
-               @result[prop.name] = prop.value
+               properties[prop.name] = prop.value
             end
+            @result["properties"] = properties
             
             ok = true
          elsif errors.length == 0
@@ -841,9 +852,6 @@ class AppsController < ApplicationController
                                  # Get the body of the request
                                  object = request.request_parameters
                                  
-                                 @result = Hash.new
-                                 @result["id"] = obj.id
-                                 
                                  object.each do |key, value|
                                     # Validate the length of the properties
                                     if key.length > max_property_name_length
@@ -868,6 +876,7 @@ class AppsController < ApplicationController
                                  end
                                  
                                  if errors.length == 0
+                                    properties = Hash.new
                                     object.each do |key, value|
                                        prop = Property.find_by(name: key, table_object_id: obj.id)
                                        
@@ -879,7 +888,7 @@ class AppsController < ApplicationController
                                              errors.push(Array.new([1103, "Unknown validation error"]))
                                              status = 500
                                           else
-                                             @result[key] = value
+                                             properties[key] = value
                                           end
                                        else
                                           prop.update(name: key, value: value)
@@ -887,7 +896,7 @@ class AppsController < ApplicationController
                                              errors.push(Array.new([1103, "Unknown validation error"]))
                                              status = 500
                                           else
-                                             @result[key] = value
+                                             properties[key] = value
                                           end
                                        end
                                     end
@@ -903,7 +912,12 @@ class AppsController < ApplicationController
                                           end
                                        end
                                     end
+                                    
+                                    @result["id"] = obj.id
+                                    @result["table_id"] = table.id
+                                    @result["user_id"] = user.id
                                     @result["visibility"] = obj.visibility
+                                    @result["properties"] = properties
                                     
                                     ok = true
                                  end
