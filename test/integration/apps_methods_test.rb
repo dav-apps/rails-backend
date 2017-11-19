@@ -869,8 +869,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(apps(:Cards).id, resp["table"]["app_id"])
-      resp["table"]["entries"].each do |e|
+      assert_same(apps(:Cards).id, resp["app_id"])
+      resp["entries"].each do |e|
          assert_same(users(:matt).id, e["user_id"])
       end
    end

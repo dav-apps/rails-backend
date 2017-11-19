@@ -1227,7 +1227,7 @@ class AppsController < ApplicationController
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           @result["table"] = table.attributes
+                           @result = table.attributes
                            
                            array = Array.new
                            
@@ -1244,7 +1244,7 @@ class AppsController < ApplicationController
                               end
                            end
                            
-                           @result["table"]["entries"] = array
+                           @result["entries"] = array
                            ok = true
                         end
                      end
