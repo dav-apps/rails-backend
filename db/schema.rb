@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20171014213231) do
+ActiveRecord::Schema.define(version: 20171122185925) do
 
   create_table "apps", force: :cascade do |t|
     t.string   "name",        limit: 255
@@ -20,17 +20,6 @@ ActiveRecord::Schema.define(version: 20171014213231) do
     t.boolean  "published",                 default: false
     t.datetime "created_at"
     t.datetime "updated_at"
-  end
-
-  create_table "cards", force: :cascade do |t|
-    t.string  "page1",   limit: 255
-    t.string  "page2",   limit: 255
-    t.integer "deck_id", limit: 4
-  end
-
-  create_table "decks", force: :cascade do |t|
-    t.string  "name",    limit: 255
-    t.integer "user_id", limit: 4
   end
 
   create_table "devs", force: :cascade do |t|
@@ -93,11 +82,14 @@ ActiveRecord::Schema.define(version: 20171014213231) do
     t.string   "new_password",                limit: 255
     t.string   "new_email",                   limit: 255
     t.string   "avatar_file_extension",       limit: 255
-    t.boolean  "uses_cards",                              default: false
-    t.boolean  "uses_usb",                                default: false
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "old_email",                   limit: 255
+  end
+
+  create_table "users_apps", force: :cascade do |t|
+    t.integer "user_id", limit: 4
+    t.integer "app_id",  limit: 4
   end
 
 end

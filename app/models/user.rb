@@ -12,4 +12,6 @@ class User < ActiveRecord::Base
     has_many :cards, through: :decks
     has_one :dev, dependent: :destroy
     has_many :table_objects, dependent: :destroy
+    has_many :users_apps
+    has_many :apps, through: :users_apps
 end

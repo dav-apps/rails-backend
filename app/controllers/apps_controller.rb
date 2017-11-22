@@ -587,6 +587,12 @@ class AppsController < ApplicationController
                                        end
                                     end
                                     
+                                    # Save that user uses the app
+                                    if !user.apps.find_by_id(app.id)
+                                       users_app = UsersApp.create(app_id: app.id, user_id: user.id)
+                                       users_app.save
+                                    end
+                                    
                                     @result["id"] = obj.id
                                     @result["table_id"] = table.id
                                     @result["user_id"] = user.id

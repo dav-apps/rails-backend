@@ -10,8 +10,6 @@ class CreateUser < ActiveRecord::Migration
       t.string :new_password
       t.string :new_email
       t.string :avatar_file_extension
-      t.boolean :uses_cards, default: false
-      t.boolean :uses_usb, default: false
       t.timestamps
     end
   end
