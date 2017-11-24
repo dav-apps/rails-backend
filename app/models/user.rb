@@ -8,8 +8,6 @@ class User < ActiveRecord::Base
             format: {with: VALID_EMAIL_REGEX}
     has_secure_password
     
-    has_many :decks, dependent: :destroy
-    has_many :cards, through: :decks
     has_one :dev, dependent: :destroy
     has_many :table_objects, dependent: :destroy
     has_many :users_apps

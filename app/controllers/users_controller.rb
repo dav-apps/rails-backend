@@ -263,7 +263,7 @@ class UsersController < ApplicationController
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
-                        @result = requested_user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password")
+                        @result = requested_user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
                         ok = true
                      end
                   end
@@ -412,7 +412,7 @@ class UsersController < ApplicationController
                               errors.push(Array.new([1103, "Unknown validation error"]))
                               status = 500
                            else
-                              @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password")
+                              @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
                               ok = true
                               
                               if email_changed
