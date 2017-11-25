@@ -66,7 +66,7 @@ class AppsController < ApplicationController
             else
                dev = Dev.find_by_id(dev_id)
                
-               if !dev
+               if !dev || !user.dev
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
@@ -96,7 +96,7 @@ class AppsController < ApplicationController
                      end
                      
                      if errors.length == 0
-                        app = App.new(name: name, description: desc, dev_id: dev.id)
+                        app = App.new(name: name, description: desc, dev_id: user.dev.id)
                         
                         if !app.save
                            errors.push(Array.new([1103, "Unknown validation error"]))
@@ -1474,7 +1474,7 @@ class AppsController < ApplicationController
                   status = 400
                else
                   table = Table.find_by_id(table_id)
-               
+                  
                   if !table
                      errors.push(Array.new([2804, "Resource does not exist: Table"]))
                      status = 400

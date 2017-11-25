@@ -70,6 +70,29 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(resp["errors"][0][0], 2303)
       assert_same(resp["errors"][1][0], 2304)
    end
+   
+   test "Can create and delete app from website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      testapp_name = "testapp1231"
+      testapp_desc = "asdasdasdasdasd"
+      
+      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{testapp_name}&desc=#{testapp_desc}"
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_equal(testapp_name, resp["name"])
+      assert_equal(testapp_desc, resp["description"])
+      
+      
+      delete "/v1/apps/app/#{resp["id"]}?jwt=#{matts_jwt}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+   end
    # End create_app tests
    
    
