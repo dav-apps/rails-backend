@@ -447,7 +447,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", "{\"n\":\"v\"}", {'Content-Type' => 'application/json'}
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", "{\"\":\"\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -461,7 +461,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", "{\"#{"n"*30}\":\"#{"n"*202}\"}", {'Content-Type' => 'application/json'}
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", "{\"#{"n"*30}\":\"#{"n"*1202}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -659,13 +659,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1102, resp["errors"][0][0])
    end
    
-   test "Can't update an object with too long name and value" do
+   test "Can't update an object with too short name and value" do
       save_users_and_devs
       
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", "{\"n\":\"v\"}", {'Content-Type' => 'application/json'}
+      put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", "{\"\":\"\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -673,13 +673,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2207, resp["errors"][1][0])
    end
    
-   test "Can't update an object with too short name and value" do
+   test "Can't update an object with too long name and value" do
       save_users_and_devs
       
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", "{\"#{"n"*30}\":\"#{"n"*202}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", "{\"#{"n"*30}\":\"#{"n"*1202}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400

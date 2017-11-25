@@ -2,9 +2,9 @@ class AppsController < ApplicationController
    max_table_name_length = 15
    min_table_name_length = 2
    max_property_name_length = 20
-   min_property_name_length = 2
-   max_property_value_length = 200
-   min_property_value_length = 2
+   min_property_name_length = 1
+   max_property_value_length = 1000
+   min_property_value_length = 1
    max_app_name_length = 15
    min_app_name_length = 2
    max_app_desc_length = 200
@@ -180,25 +180,20 @@ class AppsController < ApplicationController
                      errors.push(Array.new([2803, "Resource does not exist: App"]))
                      status = 404
                   else
-                     if app.dev_id != dev.id # Check if the app belongs to the dev
-                        errors.push(Array.new([1102, "Action not allowed"]))
-                        status = 403
-                     else
-                        # Make sure this is called from the website or from the associated dev
+                     # Make sure this is called from the website or from the associated dev
                         if !(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev)
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           tables = Array.new
-                           
-                           app.tables.each do |table|
-                              tables.push(table)
-                           end
-                           
-                           @result = app.attributes
-                           @result["tables"] = tables
-                           ok = true
+                        tables = Array.new
+                        
+                        app.tables.each do |table|
+                           tables.push(table)
                         end
+                        
+                        @result = app.attributes
+                        @result["tables"] = tables
+                        ok = true
                      end
                   end
                end
