@@ -218,8 +218,6 @@ class AppsController < ApplicationController
    
    define_method :update_app do
       app_id = params["id"]
-      name = params["name"]
-      desc = params["desc"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -229,16 +227,6 @@ class AppsController < ApplicationController
       
       if !app_id
          errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !name || name.length < 1
-         errors.push(Array.new([2111, "Missing field: name"]))
-         status = 400
-      end
-      
-      if !desc || desc.length < 1
-         errors.push(Array.new([2112, "Missing field: desc"]))
          status = 400
       end
       
@@ -292,29 +280,49 @@ class AppsController < ApplicationController
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
-                        if name.length < min_app_name_length
-                           errors.push(Array.new([2203, "Field too short: name"]))
-                           status = 400
-                        end
-                        
-                        if name.length > max_app_name_length
-                           errors.push(Array.new([2303, "Field too long: name"]))
-                           status = 400
-                        end
-                        
-                        if desc.length < min_app_desc_length
-                           errors.push(Array.new([2204, "Field too short: desc"]))
-                           status = 400
-                        end
-                        
-                        if desc.length > max_app_desc_length
-                           errors.push(Array.new([2304, "Field too long: desc"]))
-                           status = 400
+                        if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
+                           errors.push(Array.new([1104, "Content-type not supported"]))
+                           status = 415
+                        else
+                           object = request.request_parameters
+                           
+                           name = object["name"]
+                           if name
+                              if name.length < min_app_name_length
+                                 errors.push(Array.new([2203, "Field too short: name"]))
+                                 status = 400
+                              end
+                              
+                              if name.length > max_app_name_length
+                                 errors.push(Array.new([2303, "Field too long: name"]))
+                                 status = 400
+                              end
+                              
+                              if errors.length == 0
+                                 app.name = name
+                              end
+                           end
+                           
+                           desc = object["description"]
+                           if desc
+                              if desc.length < min_app_desc_length
+                                 errors.push(Array.new([2204, "Field too short: description"]))
+                                 status = 400
+                              end
+                              
+                              if desc.length > max_app_desc_length
+                                 errors.push(Array.new([2304, "Field too long: description"]))
+                                 status = 400
+                              end
+                              
+                              if errors.length == 0
+                                 app.description = desc
+                              end
+                           end
                         end
                         
                         if errors.length == 0
                            # Update app
-                           app.update(name: name, description: desc)
                            if !app.save
                               errors.push(Array.new([1103, "Unknown validation error"]))
                               status = 500
@@ -331,7 +339,7 @@ class AppsController < ApplicationController
       end
       
       if ok && errors.length == 0
-         status = 201
+         status = 200
       else
          @result.clear
          @result["errors"] = errors

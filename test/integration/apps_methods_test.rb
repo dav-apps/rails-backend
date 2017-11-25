@@ -154,7 +154,20 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(resp["errors"].length, 3)
+      assert_same(resp["errors"].length, 1)
+   end
+   
+   test "Can't use another content type but json in update_app" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/xml'}
+      resp = JSON.parse response.body
+      
+      assert_response 415
+      assert_same(1104, resp["errors"][0][0])
    end
    
    test "User does not exist in update_app" do
@@ -165,7 +178,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
       users(:matt).destroy!
       
-      put "/v1/apps/app/#{test_app_id}?jwt=#{matts_jwt}&name=New Appname&desc=Hello World! This is the new description."
+      put "/v1/apps/app/#{test_app_id}?jwt=#{matts_jwt}", "{\"name\":\"TestApp12133\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -177,7 +190,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
       
-      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}&name=New Appname&desc=Hello World! This is the new description."
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"name\":\"TestApp121314\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -190,7 +203,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}&name=#{"o"*17}&desc=" + "o"*300
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"name\":\"#{"o"*17}\", \"description\":\"#{"o"*300}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -205,7 +218,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}&name=o&desc=o"
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"name\":\"a\", \"description\":\"a\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -220,7 +233,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/app/#{apps(:davApp).id}?jwt=#{matts_jwt}&name=New Name&desc=New description"
+      put "/v1/apps/app/#{apps(:davApp).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -233,11 +246,28 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/app/#{apps(:Cards).id}?jwt=#{matts_jwt}&name=New Name&desc=New description"
+      put "/v1/apps/app/#{apps(:Cards).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can update name and description of app at once" do
+      save_users_and_devs
+      
+      new_name = "Neuer Name"
+      new_desc = "Neue Beschreibung"
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"name\":\"#{new_name}\", \"description\": \"#{new_desc}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(new_name, resp["name"])
+      assert_equal(new_desc, resp["description"])
    end
    # End update_app tests
    

@@ -397,7 +397,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(resp["avatar_file_extension"], matt.avatar_file_extension)
    end
    
-   test "Can update email and password of user at the same time" do
+   test "Can update email and password of user at once" do
       save_users_and_devs
       
       matt = users(:matt)
@@ -410,7 +410,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_equal(resp["new_email"], matt.new_email)
-      assert_equal(resp["new_password"], matt.new_password)
    end
    # End update_user tests
    
