@@ -56,12 +56,12 @@ class AnalyticsController < ApplicationController
                   if !event
                      # Validate properties
                      if name.length > max_event_name_length
-                        errors.push(Array.new([2308, "Field too long: Event.name"]))
+                        errors.push(Array.new([2303, "Field too long: name"]))
                         status = 400
                      end
                      
                      if name.length < min_event_name_length
-                        errors.push(Array.new([2208, "Field too short: Event.name"]))
+                        errors.push(Array.new([2203, "Field too short: name"]))
                         status = 400
                      end
                      
@@ -373,12 +373,12 @@ class AnalyticsController < ApplicationController
                               if name
                                  # Validate properties
                                  if name.length > max_event_name_length
-                                    errors.push(Array.new([2308, "Field too long: Event.name"]))
+                                    errors.push(Array.new([2303, "Field too long: name"]))
                                     status = 400
                                  end
                                  
                                  if name.length < min_event_name_length
-                                    errors.push(Array.new([2208, "Field too short: Event.name"]))
+                                    errors.push(Array.new([2203, "Field too short: name"]))
                                     status = 400
                                  end
                                  

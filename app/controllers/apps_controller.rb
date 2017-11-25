@@ -1294,7 +1294,6 @@ class AppsController < ApplicationController
    
    define_method :update_table do
       table_id = params["id"]
-      table_name = params["table_name"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -1304,11 +1303,6 @@ class AppsController < ApplicationController
       
       if !table_id
          errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !table_name || table_name.length < 1
-         errors.push(Array.new([2113, "Missing field: table_name"]))
          status = 400
       end
       
@@ -1368,25 +1362,39 @@ class AppsController < ApplicationController
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Validate the table name
-                           if table_name.length > max_table_name_length
-                              errors.push(Array.new([2305, "Field too long: table_name"]))
-                              status = 400
-                           end
-                           
-                           if table_name.length < min_table_name_length
-                              errors.push(Array.new([2205, "Field too short: table_name"]))
-                              status = 400
-                           end
-                           
-                           if table_name.include? " "
-                              errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
-                              status = 400
+                           if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
+                              errors.push(Array.new([1104, "Content-type not supported"]))
+                              status = 415
+                           else
+                              object = request.request_parameters
+                              
+                              name = object["name"]
+                              if name
+                                 # Validate the table name
+                                 if name.length > max_table_name_length
+                                    errors.push(Array.new([2303, "Field too long: name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if name.length < min_table_name_length
+                                    errors.push(Array.new([2203, "Field too short: name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if name.include? " "
+                                    errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
+                                    status = 400
+                                 end
+                              end
+                              
+                              if errors.length == 0
+                                 table.name = (name[0].upcase + name[1..-1])
+                              end
                            end
                            
                            if errors.length == 0
                               # Update the table and send it back
-                              if !table.update(name: (table_name[0].upcase + table_name[1..-1]))
+                              if !table.save
                                  errors.push(Array.new([1103, "Unknown validation error"]))
                                  status = 500
                               else

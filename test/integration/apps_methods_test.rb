@@ -924,8 +924,20 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2113, resp["errors"][0][0])
-      assert_same(2102, resp["errors"][1][0])
+      assert_same(2102, resp["errors"][0][0])
+   end
+   
+   test "Can't use another content type but json in update_table" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/xml'}
+      resp = JSON.parse response.body
+      
+      assert_response 415
+      assert_same(1104, resp["errors"][0][0])
    end
    
    test "update_table can't be called from outside the website" do
@@ -934,7 +946,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=Test"
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -947,7 +959,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}&table_name=Test"
+      put "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -960,11 +972,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=#{"n"*30}"
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", "{\"name\":\"#{"n"*30}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2305, resp["errors"][0][0])
+      assert_same(2303, resp["errors"][0][0])
    end
    
    test "Can't update a table with too short table name" do
@@ -973,11 +985,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=n"
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", "{\"name\":\"t\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2205, resp["errors"][0][0])
+      assert_same(2203, resp["errors"][0][0])
    end
    
    test "Can't update a table with invalid table name" do
@@ -986,7 +998,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=Test Name"
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", "{\"name\":\"Test name\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -996,14 +1008,17 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can get the table properties after updating" do
       save_users_and_devs
       
+      new_name = "TestName"
+      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}&table_name=TestName"
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", "{\"name\":\"#{new_name}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
       assert_same(tables(:note).id, resp["id"])
+      assert_equal(new_name, resp["name"])
    end
    
    test "Can't update a table of the first dev" do
@@ -1012,7 +1027,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/table/#{tables(:card).id}?jwt=#{matts_jwt}&table_name=Test"
+      put "/v1/apps/table/#{tables(:card).id}?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403

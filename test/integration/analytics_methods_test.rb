@@ -21,7 +21,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2208, resp["errors"][0][0])
+      assert_same(2203, resp["errors"][0][0])
    end
    
    test "Can't create event with too long eventname" do
@@ -32,7 +32,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2308, resp["errors"][0][0])
+      assert_same(2303, resp["errors"][0][0])
    end
    
    test "Create new event when event does not yet exist" do
@@ -233,7 +233,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2308, resp["errors"][0][0])
+      assert_same(2303, resp["errors"][0][0])
    end
    
    test "Can't update an event with too short name" do
@@ -246,7 +246,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2208, resp["errors"][0][0])
+      assert_same(2203, resp["errors"][0][0])
    end
    
    test "Can't update an event with name that's already taken" do
