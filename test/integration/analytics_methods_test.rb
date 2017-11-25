@@ -152,8 +152,20 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2111, resp["errors"][0][0])
-      assert_same(2102, resp["errors"][1][0])
+      assert_same(2102, resp["errors"][0][0])
+   end
+   
+   test "Can't use another content type but json in update_event" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/xml'}
+      resp = JSON.parse response.body
+      
+      assert_response 415
+      assert_same(1104, resp["errors"][0][0])
    end
    
    test "update_event can't be called from outside the website" do
@@ -162,7 +174,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&name=test"
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -175,7 +187,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login2).id}?jwt=#{matts_jwt}&name=test"
+      put "/v1/analytics/event/#{events(:Login2).id}?jwt=#{matts_jwt}", "{\"name\":\"newname\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -188,7 +200,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}&name=test"
+      put "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}", "{\"name\":\"newname\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -198,15 +210,17 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    test "Can get the properties of the event after updating" do
       save_users_and_devs
       
+      new_name = "newname"
+      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&name=test"
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"#{new_name}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
       assert_same(events(:Login).id, resp["id"])
-      assert_not_nil(resp["name"])
+      assert_equal(new_name, resp["name"])
    end
    
    test "Can't update an event with too long name" do
@@ -215,7 +229,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&name=#{"n"*30}"
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"#{"n"*30}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -228,7 +242,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&name=n"
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"n\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -241,7 +255,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&name=login_mobile"
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"login_mobile\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400

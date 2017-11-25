@@ -295,7 +295,6 @@ class AnalyticsController < ApplicationController
    end
    
    define_method :update_event do
-      name = params["name"]
       event_id = params["id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -305,11 +304,6 @@ class AnalyticsController < ApplicationController
       
       if !event_id
          errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !name || name.length < 1
-         errors.push(Array.new([2111, "Missing field: name"]))
          status = 400
       end
       
@@ -369,24 +363,37 @@ class AnalyticsController < ApplicationController
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Validate properties
-                           if name.length > max_event_name_length
-                              errors.push(Array.new([2308, "Field too long: Event.name"]))
-                              status = 400
-                           end
-                           
-                           if name.length < min_event_name_length
-                              errors.push(Array.new([2208, "Field too short: Event.name"]))
-                              status = 400
-                           end
-                           
-                           if Event.exists?(name: name, app_id: app.id) && event.name != name
-                              errors.push(Array.new([2703, "Field already taken: name"]))
-                              status = 400
+                           if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
+                              errors.push(Array.new([1104, "Content-type not supported"]))
+                              status = 415
+                           else
+                              object = request.request_parameters
+                              
+                              name = object["name"]
+                              if name
+                                 # Validate properties
+                                 if name.length > max_event_name_length
+                                    errors.push(Array.new([2308, "Field too long: Event.name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if name.length < min_event_name_length
+                                    errors.push(Array.new([2208, "Field too short: Event.name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if Event.exists?(name: name, app_id: app.id) && event.name != name
+                                    errors.push(Array.new([2703, "Field already taken: name"]))
+                                    status = 400
+                                 end
+                                 
+                                 if errors.length == 0
+                                    event.name = name
+                                 end
+                              end
                            end
                            
                            if errors.length == 0
-                              event.name = name
                               if !event.save
                                  errors.push(Array.new([1103, "Unknown validation error"]))
                                  status = 500
