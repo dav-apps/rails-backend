@@ -242,6 +242,22 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 400
       assert_same(2801, resp["errors"][0][0])
    end
+   
+   test "Can see apps of the user in get_user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      get "/v1/users/#{matt.id}?jwt=#{jwt}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      assert_same(apps(:Cards).id, resp2["apps"][0])
+   end
    # End get_user tests
    
    # update_user tests
@@ -410,6 +426,22 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_equal(resp["new_email"], matt.new_email)
+   end
+   
+   test "Can see apps of the user in update_user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      put "/v1/users?jwt=#{jwt}", "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", {'Content-Type' => 'application/json'}
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      assert_same(apps(:Cards).id, resp2["apps"][0])
    end
    # End update_user tests
    
