@@ -1,4 +1,4 @@
-class DevController < ApplicationController
+class DevsController < ApplicationController
    
    define_method :create_dev do
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
@@ -42,7 +42,7 @@ class DevController < ApplicationController
             else
                dev = Dev.find_by_id(dev_id)
                
-               if !dev || !user.dev
+               if !dev
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
@@ -127,9 +127,9 @@ class DevController < ApplicationController
             else
                dev = Dev.find_by_id(dev_id)
                
-               if !dev
+               if !dev || !user.dev
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
+                  status = 404
                else
                   # Make sure this is called from the website
                   if dev != Dev.first
@@ -197,7 +197,7 @@ class DevController < ApplicationController
             else
                dev = Dev.find_by_id(dev_id)
                
-               if !dev
+               if !dev || !user.dev
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
@@ -209,7 +209,7 @@ class DevController < ApplicationController
                      # Check if the dev still has apps left
                      if user.dev.apps.length != 0
                         errors.push(Array.new([1107, "All Apps need to be deleted"]))
-                        status = 304
+                        status = 400
                      else
                         # Delete dev
                         user.dev.destroy!
@@ -274,7 +274,7 @@ class DevController < ApplicationController
             else
                dev = Dev.find_by_id(dev_id)
                
-               if !dev
+               if !dev || !user.dev
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else

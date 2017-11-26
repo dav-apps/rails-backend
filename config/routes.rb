@@ -14,6 +14,12 @@ Rails.application.routes.draw do
   match '/v1/users/:id/reset_new_email', to: 'users#reset_new_email', via: 'post'
   match '/v1/users/:id/confirm', to: 'users#confirm_user', via: 'post'
   
+  # Dev routes
+  match '/v1/devs', to: 'devs#create_dev', via: 'post'
+  match '/v1/devs', to: 'devs#get_dev', via: 'get'
+  match '/v1/devs', to: 'devs#delete_dev', via: 'delete'
+  match '/v1/devs/generate_new_keys', to: 'devs#generate_new_keys', via: 'post'
+  
   # Apps routes
   match '/v1/apps/object', to: 'apps#create_object', via: 'post'
   match '/v1/apps/object/:id', to: 'apps#get_object', via: 'get'

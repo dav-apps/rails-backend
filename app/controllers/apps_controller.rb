@@ -270,7 +270,7 @@ class AppsController < ApplicationController
                      errors.push(Array.new([2803, "Resource does not exist: App"]))
                      status = 400
                   else
-                     # Make sure this is only called from the website
+                     # Make sure this is only called from the website and from the dev of the app
                      if !((dev == Dev.first) && (app.dev == user.dev))
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403

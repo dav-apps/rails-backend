@@ -22,3 +22,8 @@ tester:
    username: tester
    confirmed: false
    email: tester@example.com
+
+tester2:
+   username: tester2
+   confirmed: true
+   email: tester2@example.com
