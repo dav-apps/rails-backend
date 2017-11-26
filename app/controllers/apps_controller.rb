@@ -1033,6 +1033,12 @@ class AppsController < ApplicationController
                                  obj.destroy!
                                  @result = {}
                                  ok = true
+                                 
+                                 # Save that user does not use the app if this was the last object
+                                 if TableObject.find_by(user_id: user.id).nil?
+                                    users_app = UsersApp.find_by(user_id: user.id, app_id: app.id)
+                                    users_app.destroy!
+                                 end
                               end
                            end
                         end

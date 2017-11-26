@@ -754,6 +754,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       tester.password = "testpassword"
       tester.save
       
+      tester2 = users(:tester2)
+      tester2.password = "testpassword"
+      tester2.save
+      
       devs(:dav).save
       devs(:matt).save
       devs(:sherlock).save

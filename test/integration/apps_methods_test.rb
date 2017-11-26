@@ -1150,6 +1150,29 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End create_access_token tests
    
+   # users_apps tests
+   test "UsersApp object gets created and deleted when user creates object and deletes it" do
+      save_users_and_devs
+      
+      tester2 = users(:tester2)
+      jwt = (JSON.parse login_user(tester2, "testpassword", devs(:sherlock)).body)["jwt"]
+      
+      assert_nil(UsersApp.find_by(user_id: tester2.id))
+      post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      object_id = resp["id"]
+      assert_response 201
+      assert_not_nil(UsersApp.find_by(user_id: tester2.id))
+      
+      delete "/v1/apps/object/#{object_id}?jwt=#{jwt}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      assert_nil(UsersApp.find_by(user_id: tester2.id))
+   end
+   # End users_apps tests
+   
    
    
    
@@ -1173,6 +1196,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       tester = users(:tester)
       tester.password = "testpassword"
       tester.save
+      
+      tester2 = users(:tester2)
+      tester2.password = "testpassword"
+      tester2.save
       
       devs(:dav).save
       devs(:matt).save
