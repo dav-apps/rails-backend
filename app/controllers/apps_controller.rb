@@ -181,16 +181,16 @@ class AppsController < ApplicationController
                      status = 404
                   else
                      # Make sure this is called from the website or from the associated dev
-                        if !(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev)
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
-                        else
+                     if !(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev)
+                        errors.push(Array.new([1102, "Action not allowed"]))
+                        status = 403
+                     else
                         tables = Array.new
                         
                         app.tables.each do |table|
                            tables.push(table)
                         end
-                        
+                     
                         @result = app.attributes
                         @result["tables"] = tables
                         ok = true
