@@ -1,4 +1,3 @@
-# Change these
 server 'dav-backend.westeurope.cloudapp.azure.com', port: 22, roles: [:web, :app], primary: true
 
 set :repo_url,        'https://github.com/Dav2070/rails-backend.git'
@@ -25,7 +24,7 @@ set :puma_init_active_record, true  # Change to false when not using ActiveRecor
 
 ## Defaults:
 # set :scm,           :git
-# set :branch,        :new_deployment
+set :branch,        :master
 # set :format,        :pretty
 # set :log_level,     :debug
 # set :keep_releases, 5
@@ -66,17 +65,9 @@ namespace :deploy do
     end
   end
 
-  desc 'Restart application'
-  task :restart do
-    on roles(:app), in: :sequence, wait: 5 do
-      invoke 'puma:restart'
-    end
-  end
-
   before :starting,     :check_revision
   after  :finishing,    :compile_assets
   after  :finishing,    :cleanup
-  after  :finishing,    :restart
 end
 
 # ps aux | grep puma    # Get puma pid
