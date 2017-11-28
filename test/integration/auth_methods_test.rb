@@ -174,7 +174,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2401, resp["errors"][0][0])
    end
    
-   test "Can't signup users as another dev except the first dev" do
+   test "Can't signup from outside the website" do
       save_users_and_devs
       
       matts_auth_token = generate_auth_token(devs(:matt))
