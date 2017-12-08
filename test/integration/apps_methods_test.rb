@@ -62,7 +62,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{"o"*17}&desc=" + "o"*300
+      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{"o"*35}&desc=" + "o"*510
       resp = JSON.parse response.body
       
       assert_response 400
@@ -226,7 +226,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"name\":\"#{"o"*17}\", \"description\":\"#{"o"*300}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"name\":\"#{"o"*35}\", \"description\":\"#{"o"*510}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400

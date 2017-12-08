@@ -5,9 +5,9 @@ class AppsController < ApplicationController
    min_property_name_length = 1
    max_property_value_length = 1000
    min_property_value_length = 1
-   max_app_name_length = 15
+   max_app_name_length = 30
    min_app_name_length = 2
-   max_app_desc_length = 200
+   max_app_desc_length = 500
    min_app_desc_length = 3
    
    # App methods

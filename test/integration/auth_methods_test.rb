@@ -71,8 +71,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       save_users_and_devs
       
       dev = devs(:matt)
-      auth = dev.api_key + "," + Base64.strict_encode64(OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), 
-                           dev.secret_key, dev.id.to_s + "," + devs(:sherlock).user_id.to_s + "," + dev.uuid.to_s))
+      auth = dev.api_key + "," + Base64.strict_encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), 
+                           dev.secret_key, dev.uuid.to_s))
       
       get "/v1/users/login?email=matt@test.de&password=schachmatt&auth=" + auth
       resp = JSON.parse response.body
@@ -570,8 +570,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # End send_verification_email tests
    
    # send_password_reset_email tests
-   test "Missing fields in send_password_reset_email" do
-      post "/v1/users/send_password_reset_email"
+   test "Missing fields in send_reset_password_email" do
+      post "/v1/users/send_reset_password_email"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -583,7 +583,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       matt = users(:matt)
       
-      post "/v1/users/send_password_reset_email?email=#{matt.email}"
+      post "/v1/users/send_reset_password_email?email=#{matt.email}"
       resp = JSON.parse response.body
       
       email = ActionMailer::Base.deliveries.last

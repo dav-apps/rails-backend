@@ -7,10 +7,8 @@ class ApplicationController < ActionController::API
          false
       else
          if api_key == dev.api_key
-            sig = dev.uuid.to_s
             
-            digest = OpenSSL::Digest.new('sha256')
-            new_sig = Base64.strict_encode64(OpenSSL::HMAC.hexdigest(digest, dev.secret_key, sig))
+            new_sig = Base64.strict_encode64(Base64.strict_encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid)))
             
             if new_sig == signature
                true

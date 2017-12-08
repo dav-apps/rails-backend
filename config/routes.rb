@@ -8,7 +8,7 @@ Rails.application.routes.draw do
   match '/v1/users', to: 'users#delete_user', via: 'delete'
   
   match '/v1/users/send_verification_email', to: 'users#send_verification_email', via: 'post'
-  match '/v1/users/send_password_reset_email', to: 'users#send_password_reset_email', via: 'post'
+  match '/v1/users/send_reset_password_email', to: 'users#send_reset_password_email', via: 'post'
   match '/v1/users/:id/save_new_password/:password_confirmation_token', to: 'users#save_new_password', via: 'post'
   match '/v1/users/:id/save_new_email/:email_confirmation_token', to: 'users#save_new_email', via: 'post'
   match '/v1/users/:id/reset_new_email', to: 'users#reset_new_email', via: 'post'

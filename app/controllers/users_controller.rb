@@ -99,7 +99,7 @@ class UsersController < ApplicationController
                            errors.push(Array.new([1103, "Unknown validation error"]))
                            status = 500
                         else
-                           UserNotifier.send_signup_email(@user).deliver_later
+                           UserNotifier.send_verification_email(@user).deliver_later
                            ok = true
                         end
                      end
@@ -125,6 +125,7 @@ class UsersController < ApplicationController
       password = params[:password]
       
       auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      
       if auth
          api_key = auth.split(",")[0]
          sig = auth.split(",")[1]
@@ -611,7 +612,7 @@ class UsersController < ApplicationController
       if ok && errors.length == 0
          status = 200
          # Send email
-         UserNotifier.send_signup_email(user).deliver_later
+         UserNotifier.send_verification_email(user).deliver_later
       else
          @result.clear
          @result["errors"] = errors
@@ -620,7 +621,7 @@ class UsersController < ApplicationController
       render json: @result, status: status if status
    end
    
-   def send_password_reset_email
+   def send_reset_password_email
       email = params["email"]
       
       errors = Array.new
@@ -653,7 +654,7 @@ class UsersController < ApplicationController
       if ok && errors.length == 0
          status = 200
          # Send email
-         UserNotifier.send_password_reset_email(user).deliver_later
+         UserNotifier.send_reset_password_email(user).deliver_later
       else
          @result.clear
          @result["errors"] = errors
