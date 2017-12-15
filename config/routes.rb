@@ -15,9 +15,10 @@ Rails.application.routes.draw do
   match '/v1/users/:id/confirm', to: 'users#confirm_user', via: 'post'
   
   # Dev routes
-  match '/v1/devs', to: 'devs#create_dev', via: 'post'
-  match '/v1/devs', to: 'devs#get_dev', via: 'get'
-  match '/v1/devs', to: 'devs#delete_dev', via: 'delete'
+  match '/v1/devs/dev', to: 'devs#create_dev', via: 'post'
+  match '/v1/devs/dev', to: 'devs#get_dev', via: 'get'
+  match '/v1/devs/dev/:api_key', to: 'devs#get_dev_by_api_key', via: 'get'
+  match '/v1/devs/dev', to: 'devs#delete_dev', via: 'delete'
   match '/v1/devs/generate_new_keys', to: 'devs#generate_new_keys', via: 'post'
   
   # Apps routes

@@ -71,7 +71,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       save_users_and_devs
       
       dev = devs(:matt)
-      auth = dev.api_key + "," + Base64.strict_encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid))
+      auth = dev.api_key + "," + Base64.strict_encode64(Base64.strict_encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid)))
       
       get "/v1/users/login?email=matt@test.de&password=schachmatt&auth=" + auth
       resp = JSON.parse response.body

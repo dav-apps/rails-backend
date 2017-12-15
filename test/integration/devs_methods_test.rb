@@ -4,7 +4,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    
    # Create_dev tests
    test "Missing fields in create_dev" do
-      post "/v1/devs"
+      post "/v1/devs/dev"
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
@@ -17,7 +17,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/devs?jwt=#{matts_jwt}"
+      post "/v1/devs/dev?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -30,7 +30,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       cato = users(:cato)
       jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/devs?jwt=#{jwt}"
+      post "/v1/devs/dev?jwt=#{jwt}"
       resp = JSON.parse response.body
       
       assert_response 201
@@ -42,7 +42,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       cato = users(:cato)
       jwt = (JSON.parse login_user(cato, "123456", devs(:matt)).body)["jwt"]
       
-      post "/v1/devs?jwt=#{jwt}"
+      post "/v1/devs/dev?jwt=#{jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -57,7 +57,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/devs?jwt=#{matts_jwt}"
+      get "/v1/devs/dev?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -69,13 +69,46 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/devs?jwt=#{matts_jwt}"
+      get "/v1/devs/dev?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
    # End get_dev tests
+   
+   # get_dev_by_api_key tests
+   test "Can't get dev by api_key without auth token" do
+      save_users_and_devs
+      
+      get "/v1/devs/dev/#{devs(:matt).api_key}"
+      resp = JSON.parse response.body
+      
+      assert_response 401
+      assert_same(2101, resp["errors"][0][0])
+   end
+   
+   test "Can't get dev by api_key from outside the website" do
+      save_users_and_devs
+      
+      auth = generate_auth_token(devs(:matt))
+      get "/v1/devs/dev/#{devs(:matt).api_key}?auth=#{auth}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   
+   test "Can get dev by api_key from the website" do
+      save_users_and_devs
+      
+      auth = generate_auth_token(devs(:sherlock))
+      get "/v1/devs/dev/#{devs(:matt).api_key}?auth=#{auth}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+   # End get_dev_by_api_key_tests
    
    # delete_dev tests
    test "Can delete dev from the website" do
@@ -84,7 +117,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       tester2 = users(:tester2)
       jwt = (JSON.parse login_user(tester2, "testpassword", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/devs?jwt=#{jwt}"
+      delete "/v1/devs/dev?jwt=#{jwt}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -96,7 +129,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/devs?jwt=#{matts_jwt}"
+      delete "/v1/devs/dev?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -109,7 +142,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       tester2 = users(:tester2)
       jwt = (JSON.parse login_user(tester2, "testpassword", devs(:matt)).body)["jwt"]
       
-      delete "/v1/devs?jwt=#{jwt}"
+      delete "/v1/devs/dev?jwt=#{jwt}"
       resp = JSON.parse response.body
       
       assert_response 403

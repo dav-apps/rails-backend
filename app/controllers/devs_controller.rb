@@ -155,6 +155,63 @@ class DevsController < ApplicationController
       render json: @result, status: status if status
    end
    
+   define_method :get_dev_by_api_key do
+      requested_dev_api_key = params["api_key"]
+      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+      
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !auth || auth.length < 1
+         errors.push(Array.new([2101, "Missing field: auth"]))
+         status = 401
+      end
+      
+      if errors.length == 0
+         dev = Dev.find_by(api_key: api_key)
+         
+         if !dev     # Check if the dev exists
+            errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+            status = 400
+         else
+            if !check_authorization(api_key, sig)
+               errors.push(Array.new([1101, "Authentication failed"]))
+               status = 401
+            else
+               if dev.user_id != Dev.first.user_id
+                  errors.push(Array.new([1102, "Action not allowed"]))
+                  status = 403
+               else
+                  # Get requested dev
+                  requested_dev = Dev.find_by(api_key: requested_dev_api_key)
+                  
+                  if !requested_dev
+                     errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                     status = 400
+                  else
+                     @result = requested_dev
+                     ok = true
+                  end
+               end
+            end
+         end
+      end
+      
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+   
    define_method :delete_dev do
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
