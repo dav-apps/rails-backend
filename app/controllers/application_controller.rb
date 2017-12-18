@@ -1,6 +1,4 @@
 class ApplicationController < ActionController::API
-   
-   after_action :set_cors_header
   
    def check_authorization(api_key, signature)
       dev = Dev.find_by(api_key: api_key)
