@@ -23,9 +23,11 @@ module Workspace
     # Do not swallow errors in after_commit/after_rollback callbacks.
     config.active_record.raise_in_transactional_callbacks = true
     
-    config.action_dispatch.default_headers.merge!('Access-Control-Allow-Origin' => '*')
-    config.action_dispatch.default_headers.merge!('Access-Control-Allow-Methods' => 'POST, PUT, DELETE, GET, OPTIONS')
-    config.action_dispatch.default_headers.merge!('Access-Control-Request-Method' => '*')
-    config.action_dispatch.default_headers.merge!('Access-Control-Allow-Headers' => 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
+    config.middleware.insert_before 0, "Rack::Cors" do
+      allow do
+        origins '*'
+        resource '*', :headers => :any, :methods => [:get, :post, :options]
+      end
+    end
   end
 end

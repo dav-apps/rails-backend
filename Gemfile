@@ -29,6 +29,8 @@ gem 'rails-api'
 gem 'tiny_tds', '~> 1.3'
 gem 'activerecord-sqlserver-adapter'
 
+gem 'rack-cors', :require => 'rack/cors'
+
 # Use #Puma as the app server
 gem 'puma'
 

@@ -107,6 +107,7 @@ GEM
       mini_portile2 (~> 2.3.0)
     puma (3.10.0)
     rack (1.6.8)
+    rack-cors (1.0.2)
     rack-protection (1.5.3)
       rack
     rack-test (0.6.3)
@@ -213,6 +214,7 @@ DEPENDENCIES
   jwt
   mysql2
   puma
+  rack-cors
   rails (= 4.2.7.1)
   rails-api
   sass-rails (~> 5.0)
