@@ -26,7 +26,7 @@ module Workspace
     config.middleware.insert_before 0, "Rack::Cors" do
       allow do
         origins '*'
-        resource '*', :headers => ['HTTP_AUTHORIZATION', 'Authentication', 'Content-Type'], :methods => [:get, :post, :put, :delete, :options]
+        resource '*', :headers => ['HTTP_AUTHORIZATION', 'Authentication', 'Content-Type'], :methods => [:get, :post, :delete, :put, :patch, :options, :head]
       end
     end
   end
