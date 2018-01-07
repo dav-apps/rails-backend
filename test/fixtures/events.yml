@@ -1,19 +1,19 @@
 Login:
-    name: "login"
-    app: TestApp
+  name: "login"
+  app: TestApp
     
 OpenApp:
-    name: "open_app"
-    app: Cards
+  name: "open_app"
+  app: Cards
     
 CreateCard:
-    name: "create_card"
-    app: Cards
+  name: "create_card"
+  app: Cards
     
 Login2:
-    name: "login2"
-    app: davApp
+  name: "login2"
+  app: davApp
     
 LoginMobile:
-    name: "login_mobile"
-    app: TestApp
+  name: "login_mobile"
+  app: TestApp

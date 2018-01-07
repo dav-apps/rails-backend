@@ -1,29 +1,29 @@
 dav:
-   username: dav
-   confirmed: true
-   email: dav@gmail.com
+  username: dav
+  confirmed: true
+  email: dav@gmail.com
 
 sherlock:
-   username: Sherlock
-   confirmed: true
-   email: sherlock@web.de
+  username: Sherlock
+  confirmed: true
+  email: sherlock@web.de
 
 matt:
-   username: matt
-   confirmed: true
-   email: matt@test.de
+  username: matt
+  confirmed: true
+  email: matt@test.de
 
 cato:
-   username: cato
-   confirmed: true
-   email: cato@test.de
+  username: cato
+  confirmed: true
+  email: cato@test.de
 
 tester:
-   username: tester
-   confirmed: false
-   email: tester@example.com
+  username: tester
+  confirmed: false
+  email: tester@example.com
 
 tester2:
-   username: tester2
-   confirmed: true
-   email: tester2@example.com
+  username: tester2
+  confirmed: true
+  email: tester2@example.com

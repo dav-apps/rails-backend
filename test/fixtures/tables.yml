@@ -1,11 +1,11 @@
 card:
-   name: Card
-   app: Cards
+  name: Card
+  app: Cards
    
 note:
-   name: Note
-   app: TestApp
+  name: Note
+  app: TestApp
 
 davTable:
-   name: davTable
-   app: davApp
+  name: davTable
+  app: davApp

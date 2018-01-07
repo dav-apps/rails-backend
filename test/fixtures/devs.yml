@@ -1,11 +1,11 @@
 dav:
-   user: dav
+  user: dav
 
 sherlock:
-   user: sherlock
+  user: sherlock
 
 matt:
-   user: matt
+  user: matt
 
 tester2:
-   user: tester2
+  user: tester2

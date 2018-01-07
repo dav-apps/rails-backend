@@ -1,17 +1,17 @@
 First:
-    event: Login
+  event: Login
     
 Second:
-    event: Login
+  event: Login
     
 Third:
-    event: OpenApp
+  event: OpenApp
     
 Fourth:
-    event: CreateCard
+  event: CreateCard
     
 Fifth:
-    event: Login2
+  event: Login2
     
 Sixth:
-    event: LoginMobile
+  event: LoginMobile

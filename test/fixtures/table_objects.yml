@@ -1,33 +1,33 @@
 first:
-    table: card
-    user: matt
-    visibility: 1
+  table: card
+  user: matt
+  visibility: 1
     
 second:
-    table: card
-    user: cato
+  table: card
+  user: cato
     
 third:
-    table: card
-    user: matt
+  table: card
+  user: matt
     
 fourth:
-    table: note
-    user: cato
+  table: note
+  user: cato
     
 fifth:
-    table: note
-    user: cato
+  table: note
+  user: cato
     
 sixth:
-    table: card
-    user: sherlock
+  table: card
+  user: sherlock
 
 seventh:
-    table: note
-    user: sherlock
+  table: note
+  user: sherlock
 
 eight:
-    table: note
-    user: matt
-    visibility: 2
+  table: note
+  user: matt
+  visibility: 2

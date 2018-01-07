@@ -168,6 +168,43 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1102, resp["errors"][0][0])
    end
    # End get_app tests
+
+   # Tests for get_all_apps
+   test "Missing fields in get_all_apps" do
+      save_users_and_devs
+      
+      get "/v1/apps/apps/all"
+      resp = JSON.parse response.body
+      
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(resp["errors"].length, 1)
+   end
+
+   test "Can get all apps from the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/apps/all?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+
+   test "Can't get all apps from outside the website" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/apps/apps/all?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   # End get_all_apps tests
    
    # update_app tests
    test "Missing fields in update_app" do

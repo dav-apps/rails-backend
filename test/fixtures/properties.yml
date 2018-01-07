@@ -1,75 +1,75 @@
 first1:
-    name: page1
-    value: Hallo Welt
-    table_object: first
+  name: page1
+  value: Hallo Welt
+  table_object: first
     
 second1:
-    name: page2
-    value: Hello World
-    table_object: first
+  name: page2
+  value: Hello World
+  table_object: first
     
 first2:
-    name: page1
-    value: Sonne
-    table_object: second
+  name: page1
+  value: Sonne
+  table_object: second
     
 second2:
-    name: page2
-    value: sun
-    table_object: second
+  name: page2
+  value: sun
+  table_object: second
     
 first3:
-    name: page1
-    value: Guten Tag
-    table_object: third
+  name: page1
+  value: Guten Tag
+  table_object: third
     
 second3:
-    name: page2
-    value: Good day
-    table_object: third
+  name: page2
+  value: Good day
+  table_object: third
     
 first4:
-    name: title
-    value: Erste Notiz
-    table_object: fourth
+  name: title
+  value: Erste Notiz
+  table_object: fourth
 
 second4:
-    name: content
-    value: Hallo. Dies ist meine erste Notiz!
-    table_object: fourth
+  name: content
+  value: Hallo. Dies ist meine erste Notiz!
+  table_object: fourth
     
 first5:
-    name: title
-    value: Zweite Notiz
-    table_object: fifth
+  name: title
+  value: Zweite Notiz
+  table_object: fifth
 
 second5:
-    name: content
-    value: Das ist meine zweite Notiz
-    table_object: fifth
+  name: content
+  value: Das ist meine zweite Notiz
+  table_object: fifth
     
 first6:
-    name: page1
-    value: Karte von Sherlock
-    table_object: sixth
+  name: page1
+  value: Karte von Sherlock
+  table_object: sixth
 
 second6:
-    name: page2
-    value: Card of Sherlock
-    table_object: sixth
+  name: page2
+  value: Card of Sherlock
+  table_object: sixth
 
 first7:
-    name: title
-    value: Welt retten
+  name: title
+  value: Welt retten
 
 second7:
-    name: content
-    value: Samstag, 9:30 Uhr in Fukushima
+  name: content
+  value: Samstag, 9:30 Uhr in Fukushima
 
 first8:
-    name: title
-    value: Testnotiz
+  name: title
+  value: Testnotiz
 
 second8:
-    name: content
-    value: Dies ist eine öffentliche Testnotiz. Jeder kann sie lesen!
+  name: content
+  value: Dies ist eine öffentliche Testnotiz. Jeder kann sie lesen!

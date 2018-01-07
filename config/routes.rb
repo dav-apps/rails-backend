@@ -34,6 +34,7 @@ Rails.application.routes.draw do
   
   match '/v1/apps/app', to: 'apps#create_app', via: 'post'
   match '/v1/apps/app/:id', to: 'apps#get_app', via: 'get'
+  match '/v1/apps/apps/all', to: 'apps#get_all_apps', via: 'get'
   match '/v1/apps/app/:id', to: 'apps#update_app', via: 'put'
   match '/v1/apps/app/:id', to: 'apps#delete_app', via: 'delete'
   
