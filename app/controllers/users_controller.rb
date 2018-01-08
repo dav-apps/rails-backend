@@ -267,7 +267,7 @@ class UsersController < ApplicationController
                         @result = requested_user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
                         
                         users_apps = Array.new
-                        requested_user.users_apps.each {|app| users_apps.push(app.app.id)}
+                        requested_user.users_apps.each {|app| users_apps.push(app.app)}
                         
                         @result["apps"] = users_apps
                         ok = true

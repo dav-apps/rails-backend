@@ -255,7 +255,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp2 = JSON.parse response.body
       
       assert_response 200
-      assert_same(apps(:Cards).id, resp2["apps"][0])
+      assert_same(apps(:Cards).id, resp2["apps"][0]["id"])
    end
    # End get_user tests
    
