@@ -183,10 +183,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can get all apps from the website" do
       save_users_and_devs
       
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      auth = generate_auth_token(devs(:sherlock))
       
-      get "/v1/apps/apps/all?jwt=#{matts_jwt}"
+      get "/v1/apps/apps/all?auth=#{auth}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -195,10 +194,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can't get all apps from outside the website" do
       save_users_and_devs
       
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      auth = generate_auth_token(devs(:matt))
       
-      get "/v1/apps/apps/all?jwt=#{matts_jwt}"
+      get "/v1/apps/apps/all?auth=#{auth}"
       resp = JSON.parse response.body
       
       assert_response 403
