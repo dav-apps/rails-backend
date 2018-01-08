@@ -20,4 +20,8 @@ class ApplicationController < ActionController::API
          end
       end
    end
+
+   def validate_url(url)
+      url =~ /\A#{URI::regexp}\z/
+   end
 end

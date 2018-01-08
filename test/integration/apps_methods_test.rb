@@ -93,6 +93,53 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
    end
+
+   test "Can create app with links" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      testapp_name = "testapp11231"
+      testapp_desc = "asdasdasdasd"
+      link_web = "http://dav-apps.tech"
+      link_play = "http://dav-apps.tech"
+
+      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{testapp_name}&desc=#{testapp_desc}&link_web=#{link_web}&link_play=#{link_play}"
+      resp = JSON.parse response.body
+
+      assert_response 201
+      assert_equal(testapp_name, resp["name"])
+      assert_equal(testapp_desc, resp["description"])
+      assert_equal(link_web, resp["link_web"])
+      assert_equal(link_play, resp["link_play"])
+
+
+      delete "/v1/apps/app/#{resp["id"]}?jwt=#{matts_jwt}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+   end
+
+   test "Can't create app with invalid link" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      testapp_name = "testapp11231"
+      testapp_desc = "asdasdasdasd"
+      link_web = "blablabla"
+      link_windows = "alert('Hello')"
+
+      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{testapp_name}&desc=#{testapp_desc}&link_web=#{link_web}&link_windows=#{link_windows}"
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(resp["errors"].length, 2)
+      assert_same(resp["errors"][0][0], 2402)
+      assert_same(resp["errors"][1][0], 2404)
+   end
    # End create_app tests
    
    
@@ -326,6 +373,53 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_equal(new_name, resp["name"])
       assert_equal(new_desc, resp["description"])
+   end
+
+   test "Can update links of an app" do
+      save_users_and_devs
+
+      link_play = "https://dav-apps.tech"
+      link_windows = "http://microsoft.com/blabla"
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"link_play\":\"#{link_play}\", \"link_windows\": \"#{link_windows}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(link_play, resp["link_play"])
+      assert_equal(link_windows, resp["link_windows"])
+   end
+
+   test "Can update app with blank links" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"link_play\":\"_\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal("", resp["link_play"])
+   end
+
+   test "Can't update app with invalid links" do
+      save_users_and_devs
+
+      link_play = "bla  blam´a dadasd"
+      link_windows = "hellowor-ld124"
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"link_play\":\"#{link_play}\", \"link_windows\": \"#{link_windows}\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2403, resp["errors"][0][0])
+      assert_same(2404, resp["errors"][1][0])
    end
    # End update_app tests
    

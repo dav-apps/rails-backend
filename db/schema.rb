@@ -11,15 +11,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20171122185925) do
+ActiveRecord::Schema.define(version: 20180108164626) do
 
   create_table "apps", force: :cascade do |t|
-    t.string   "name",        limit: 255
-    t.text     "description", limit: 65535
-    t.integer  "dev_id",      limit: 4
-    t.boolean  "published",                 default: false
+    t.string   "name",         limit: 255
+    t.text     "description",  limit: 65535
+    t.integer  "dev_id",       limit: 4
+    t.boolean  "published",                  default: false
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.string   "link_web",     limit: 255
+    t.string   "link_play",    limit: 255
+    t.string   "link_windows", limit: 255
   end
 
   create_table "devs", force: :cascade do |t|

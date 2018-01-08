@@ -8,12 +8,16 @@ class AppsController < ApplicationController
    max_app_name_length = 30
    min_app_name_length = 2
    max_app_desc_length = 500
-   min_app_desc_length = 3
+	min_app_desc_length = 3
+	link_blank_string = "_"
    
    # App methods
    define_method :create_app do
       name = params["name"]
       desc = params["desc"]
+      link_web = params["link_web"]
+      link_play = params["link_play"]
+      link_windows = params["link_windows"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -93,11 +97,56 @@ class AppsController < ApplicationController
                      if desc.length > max_app_desc_length
                         errors.push(Array.new([2304, "Field too long: desc"]))
                         status = 400
-                     end
+							end
+							
+							if link_web
+								if link_web == link_blank_string
+									link_web = ""
+								elsif !validate_url(link_web)
+									# Invalid link
+									errors.push(Array.new([2402, "Field not valid: link_web"]))
+									status = 400
+								end
+							end
+
+							if link_play
+								if link_play == link_blank_string
+									link_play = ""
+								elsif !validate_url(link_play)
+									# Invalid link
+									errors.push(Array.new([2403, "Field not valid: link_play"]))
+									status = 400
+								end
+							end
+
+							if link_windows
+								if link_windows == link_blank_string
+									link_windows = ""
+								elsif !validate_url(link_windows)
+									# Invalid link
+									errors.push(Array.new([2404, "Field not valid: link_windows"]))
+									status = 400
+								end
+							end
+							
                      
                      if errors.length == 0
                         app = App.new(name: name, description: desc, dev_id: user.dev.id)
+
+                        # Save existing links
+                        if link_web
+                           app.link_web = link_web
+                        end
+
+                        if link_play
+                           app.link_play = link_play
+                        end
+
+                        if link_windows
+                           app.link_windows = link_windows
+                        end
                         
+
                         if !app.save
                            errors.push(Array.new([1103, "Unknown validation error"]))
                            status = 500
@@ -370,7 +419,46 @@ class AppsController < ApplicationController
                               if errors.length == 0
                                  app.description = desc
                               end
-                           end
+									end
+									
+									link_web = object["link_web"]
+									if link_web
+										if link_web == link_blank_string
+											app.link_web = ""
+										elsif !validate_url(link_web)
+											# Invalid link
+											errors.push(Array.new([2402, "Field not valid: link_web"]))
+											status = 400
+										else
+											app.link_web = link_web
+										end
+									end
+
+									link_play = object["link_play"]
+									if link_play
+										if link_play == link_blank_string
+											app.link_play = ""
+										elsif !validate_url(link_play)
+											# Invalid link
+											errors.push(Array.new([2403, "Field not valid: link_play"]))
+											status = 400
+										else
+											app.link_play = link_play
+										end
+									end
+
+									link_windows = object["link_windows"]
+									if link_windows
+										if link_windows == link_blank_string
+											app.link_windows = ""
+										elsif !validate_url(link_windows)
+											# Invalid link
+											errors.push(Array.new([2404, "Field not valid: link_windows"]))
+											status = 400
+										else
+											app.link_windows = link_windows
+										end
+									end
                         end
                         
                         if errors.length == 0
