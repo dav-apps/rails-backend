@@ -18,8 +18,8 @@ devs = Dev.create([
 ])
 
 apps = App.create([
-   {dev: devs.first, name: "Cards", description: "This is a vocabulary app!", published: true},
-   {dev: devs.second, name: "TestApp", description: "This is a test app.", published: false}
+   {dev: devs.first, name: "Cards", description: "This is a vocabulary app!", published: true, link_web: "http://cards.dav-apps.tech"},
+   {dev: devs.second, name: "TestApp", description: "This is a test app.", published: false, link_play: "https://play.google.com"}
 ])
 
 tables = Table.create([
