@@ -12,7 +12,7 @@ class UserNotifier < ApplicationMailer
    
    def send_reset_password_email(user)
       @user = user
-      @link = ENV['BASE_URL'] + "reset_password/#{@user.id}/#{@user.password_confirmation_token}"
+      @link = ENV['BASE_URL'] + "reset_password/#{@user.password_confirmation_token}"
       
       mail(:to => @user.email,
       :subject => 'Reset your dav password')
