@@ -663,6 +663,66 @@ class UsersController < ApplicationController
       render json: @result, status: status if status
    end
    
+   define_method :set_password do
+      password_confirmation_token = params["password_confirmation_token"]
+      password = params["password"]
+
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+
+      if !password_confirmation_token || password_confirmation_token.length < 1
+         errors.push(Array.new([2109, "Missing field: password_confirmation_token"]))
+         status = 400
+      end
+
+      if !password || password.length < 1
+         errors.push(Array.new([2107, "Missing field: password"]))
+         status = 400
+      end
+
+      if errors.length == 0
+         user = User.find_by(password_confirmation_token: password_confirmation_token)
+
+         if !user
+            errors.push(Array.new([1203, "Password confirmation token is not correct"]))
+            status = 400
+         else
+            # Validate password
+            if password.length < min_password_length
+               errors.push(Array.new([2202, "Field too short: password"]))
+               status = 400
+            end
+            
+            if password.length > max_password_length
+               errors.push(Array.new([2302, "Field too long: password"]))
+               status = 400
+            end
+            
+            if errors.length == 0
+               user.password = password
+               user.password_confirmation_token = nil
+
+               if !user.save
+                  errors.push(Array.new([1103, "Unknown validation error"]))
+                  status = 500
+               else
+                  ok = true
+               end
+            end
+         end
+      end
+
+      if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
+
    def save_new_password
       user_id = params["id"]
       password_confirmation_token = params["password_confirmation_token"]

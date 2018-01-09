@@ -568,7 +568,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    # End send_verification_email tests
    
-   # send_password_reset_email tests
+   # send_reset_password_email tests
    test "Missing fields in send_reset_password_email" do
       post "/v1/users/send_reset_password_email"
       resp = JSON.parse response.body
@@ -591,8 +591,55 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_not_nil(email)
       assert_equal(matt.email, email.to[0])
    end
-   # End send_password_reset_email tests
+   # End send_reset_password_email tests
    
+   # set_password tests
+   test "Missing fields in set_password" do
+      save_users_and_devs
+
+      post "/v1/users/set_password/blabla"
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2107, resp["errors"][0][0])
+   end
+
+   test "Can't set password with incorrect password confirmation token" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matt.password_confirmation_token = "confirmationtoken333"
+      matt.save
+
+      password = "blablanewpassword"
+
+      post "/v1/users/set_password/confirmationtoken?password=#{password}"
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(1203, resp["errors"][0][0])
+   end
+
+   test "Can set password and login with new password" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matt.password_confirmation_token = "confirmationtoken222"
+      matt.save
+
+      password = "blablanewpassword"
+
+      post "/v1/users/set_password/#{matt.password_confirmation_token}?password=#{password}"
+      resp = JSON.parse response.body
+
+      assert_response 200
+
+      get "/v1/users/login?email=#{matt.email}&password=#{password}&auth=" + generate_auth_token(devs(:sherlock))
+
+      assert_response 200
+   end
+   # End set_password tests
+
    # save_new_password tests
    test "Can't save new password with incorrect password confirmation token" do
       save_users_and_devs
