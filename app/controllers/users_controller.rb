@@ -410,6 +410,19 @@ class UsersController < ApplicationController
                               user.avatar_file_extension = avatar_file_extension
                            end
                         end
+
+                        plan = object["plan"]
+                        if plan
+                           if plan == "0" || plan == "1" || plan == "2"
+                              if errors.length == 0
+                                 user.plan = plan.to_i
+                              end
+                           else
+                              errors.push(Array.new([1108, "Plan does not exist"]))
+                              status = 400
+                           end
+                        end
+                        
                         
                         
                         if errors.length == 0

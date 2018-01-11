@@ -363,6 +363,32 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 400
       assert_same(2302, resp["errors"][0][0])
    end
+
+   test "Can't update user with not existing plan" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"plan\":\"4\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(1108, resp["errors"][0][0])
+   end
+
+   test "Can't update user with invalid plan" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"plan\":\"heloasdasd\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(1108, resp["errors"][0][0])
+   end
    
    test "New password email gets send in update_user" do
       save_users_and_devs
@@ -441,6 +467,18 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_same(apps(:Cards).id, resp2["apps"][0])
+   end
+
+   test "Can update plan in update_user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/users?jwt=#{matts_jwt}", "{\"plan\":\"1\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 200
    end
    # End update_user tests
    
