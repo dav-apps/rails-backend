@@ -720,6 +720,50 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
+
+   def send_delete_account_email
+      email = params["email"]
+
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+      
+      if !email || email.length < 1
+         errors.push(Array.new([2106, "Missing field: email"]))
+         status = 400
+      end
+
+      if errors.length == 0
+         user = User.find_by(email: email)
+         
+         if !user
+            errors.push(Array.new([2801, "Resource does not exist: User"]))
+            status = 400
+         else
+            # Generate password and email confirmation tokens
+            user.password_confirmation_token = generate_token
+            user.email_confirmation_token = generate_token
+            
+            if !user.save
+               errors.push(Array.new([1103, "Unknown validation error"]))
+               status = 500
+            else
+               ok = true
+            end
+         end
+      end
+
+      if ok && errors.length == 0
+         status = 200
+         # Send email
+         UserNotifier.send_delete_account_email(user).deliver_later
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
    
    def send_reset_password_email
       email = params["email"]

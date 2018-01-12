@@ -680,6 +680,39 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(tester.email, email.to[0])
    end
    # End send_verification_email tests
+
+   # send_delete_account_email tests
+   test "Missing fields in send_delete_account_email" do
+      post "/v1/users/send_delete_account_email"
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2106, resp["errors"][0][0])
+   end
+
+   test "Can't send delete account email to non-existant user" do
+      post "/v1/users/send_delete_account_email?email=nonexistantemail@example.com"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2801, resp["errors"][0][0])
+   end
+
+   test "delete account email gets send" do
+      save_users_and_devs
+      
+      tester = users(:tester)
+      
+      post "/v1/users/send_delete_account_email?email=#{tester.email}"
+      resp = JSON.parse response.body
+      
+      email = ActionMailer::Base.deliveries.last
+      
+      assert_response 200
+      assert_not_nil(email)
+      assert_equal(tester.email, email.to[0])
+   end
+   # End send_delete_account_email tests
    
    # send_reset_password_email tests
    test "Missing fields in send_reset_password_email" do
