@@ -6,6 +6,7 @@ Rails.application.routes.draw do
   match '/v1/users/:id', to: 'users#get_user', via: 'get'
   match '/v1/users', to: 'users#update_user', via: 'put'
   match '/v1/users', to: 'users#delete_user', via: 'delete'
+  match '/v1/users/app/:app_id', to: 'users#remove_app', via: 'delete'
   
   match '/v1/users/send_verification_email', to: 'users#send_verification_email', via: 'post'
   match '/v1/users/send_reset_password_email', to: 'users#send_reset_password_email', via: 'post'

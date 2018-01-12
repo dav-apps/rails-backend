@@ -510,6 +510,54 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_nil(User.find_by_id(matt_id))
    end
    # End delete_user tests
+
+   # remove_app tests
+   test "Missing fields in remove_app" do
+      delete "/v1/users/app/1"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't remove app from outside the website" do
+      save_users_and_devs
+
+      tester = users(:tester2)
+      app = apps(:TestApp)
+      tester_jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
+
+      delete "/v1/users/app/#{app.id}?jwt=#{tester_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "remove_app removes all objects and the association" do
+      save_users_and_devs
+
+      tester = users(:tester2)
+      app = apps(:TestApp)
+      table = tables(:note)
+      tester_jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
+      tester_jwt2 = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{tester_jwt}&table_name=#{table.name}&app_id=#{app.id}", "{\"test\": \"testobject\"}", {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      assert(tester.apps.last.name == app.name)
+      obj_id = resp["id"]
+
+      # Remove app
+      delete "/v1/users/app/#{app.id}?jwt=#{tester_jwt2}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert(tester.apps.length == 0)
+   end
+   # End remove_app tests
    
    # confirm_user tests
    test "Can confirm new user" do
