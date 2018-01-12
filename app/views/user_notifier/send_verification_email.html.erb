@@ -4,9 +4,10 @@
     <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
   </head>
   <body>
-    <h1>Thanks for signing up, <%= @user.username %>!</h1>
-    <p>You can activate your account by clicking the following link: </p>
-    <a href="<%= @link %>">dav-apps.tech</a>
+    <h3>Thanks for signing up, <%= @user.username %>!</h3>
+    <p>You can activate your account by clicking the following link: 
+      <a href="<%= @link %>">dav-apps.tech</a></p>
+    
     <p>If you didn’t ask to verify this address, you can ignore this email.</p>
   </body>
 </html>
