@@ -611,7 +611,9 @@ class UsersController < ApplicationController
 
                            # Delete user and app association
                            ua = UsersApp.find_by(user_id: user.id, app_id: app.id)
-                           ua.destroy!
+                           if ua
+                              ua.destroy!
+                           end
 
                            @result = {}
                            ok = true
