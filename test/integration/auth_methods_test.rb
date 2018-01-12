@@ -483,27 +483,54 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # End update_user tests
    
    # delete_user tests
-   test "Can't delete user from outside the website" do
+   test "Missing fields in delete_user" do
       save_users_and_devs
+
+      tester = users(:tester2)
+
+      delete "/v1/users/#{tester.id}"
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2108, resp["errors"][0][0])
+      assert_same(2109, resp["errors"][1][0])
+   end
+
+   test "Can't delete user with incorrect confirmation tokens" do
+      save_users_and_devs
+
+      email_confirmation_token = "emailconfirmationtoken"
+      password_confirmation_token = "passwordconfirmationtoken"
       
       matt = users(:matt)
+      matt.email_confirmation_token = email_confirmation_token
+      matt.password_confirmation_token = password_confirmation_token
+      matt.save
+
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      delete "/v1/users?jwt=#{matts_jwt}"
+      delete "/v1/users/#{matt.id}?email_confirmation_token=#{email_confirmation_token + "adsad"}&password_confirmation_token=#{password_confirmation_token + "asdasd"}"
       resp = JSON.parse response.body
       
-      assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_response 400
+      assert_same(1204, resp["errors"][0][0])
    end
    
    test "User gets deleted" do
       save_users_and_devs
+
+      email_confirmation_token = "emailconfirmationtoken"
+      password_confirmation_token = "passwordconfirmationtoken"
       
       matt = users(:matt)
       matt_id = matt.id
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      matt.email_confirmation_token = email_confirmation_token
+      matt.password_confirmation_token = password_confirmation_token
+      matt.save
+
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      delete "/v1/users?jwt=#{matts_jwt}"
+      delete "/v1/users/#{matt.id}?email_confirmation_token=#{email_confirmation_token}&password_confirmation_token=#{password_confirmation_token}"
       resp = JSON.parse response.body
       
       assert_response 200

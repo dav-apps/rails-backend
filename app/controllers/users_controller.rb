@@ -465,61 +465,48 @@ class UsersController < ApplicationController
    end
    
    def delete_user
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
+      email_confirmation_token = params[:email_confirmation_token]
+      password_confirmation_token = params[:password_confirmation_token]
+      user_id = params[:id]
+
       errors = Array.new
       @result = Hash.new
       ok = false
       
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
+      if !email_confirmation_token || email_confirmation_token.length < 1
+         errors.push(Array.new([2108, "Missing field: email_confirmation_token"]))
+         status = 400
+      end
+
+      if !password_confirmation_token || password_confirmation_token.length < 1
+         errors.push(Array.new([2109, "Missing field: password_confirmation_token"]))
+         status = 400
+      end
+
+      if !user_id
+         errors.push(Array.new([2104, "Missing field: user_id"]))
+         status = 400
       end
       
       if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
+         user = User.find_by_id(user_id)
          
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
+         if !user
+            errors.push(Array.new([2801, "Resource does not exist: User"]))
+            status = 400
+         else
+            if user.email_confirmation_token != email_confirmation_token
+               errors.push(Array.new([1204, "Email confirmation token is not correct"]))
                status = 400
             else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+               if user.password_confirmation_token != password_confirmation_token
+                  errors.push(Array.new([1203, "Password confirmation token is not correct"]))
                   status = 400
                else
-                  # Check if the call was send from the website
-                  if dev != Dev.first
-                     errors.push(Array.new([1102, "Action not allowed"]))
-                     status = 403
-                  else
-                     # Delete the user
-                     user.destroy!
-                     @result = {}
-                     ok = true
-                  end
+                  # Delete the user
+                  user.destroy!
+                  @result = {}
+                  ok = true
                end
             end
          end

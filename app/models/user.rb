@@ -10,6 +10,6 @@ class User < ActiveRecord::Base
     
     has_one :dev, dependent: :destroy
     has_many :table_objects, dependent: :destroy
-    has_many :users_apps
+    has_many :users_apps, dependent: :destroy
     has_many :apps, through: :users_apps
 end
