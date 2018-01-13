@@ -200,6 +200,95 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
    end
+
+   def login_by_jwt
+      api_key = params[:api_key]
+
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+
+      errors = Array.new
+      @result = Hash.new
+      ok = false
+
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([2102, "Missing field: jwt"]))
+         status = 400
+      end
+
+      if !api_key || api_key.length < 1
+         errors.push(Array.new([2118, "Missing field: api_key"]))
+         status = 400
+      end
+
+      if errors.length == 0
+         jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([1301, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([1302, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([1303, "JWT: unknown error"]))
+            status = 401
+         end
+
+         if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
+               status = 400
+            else
+               dev_jwt = Dev.find_by_id(dev_id)
+               
+               if !dev_jwt
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                  status = 400
+               else
+                  if dev_jwt != Dev.first
+                     errors.push(Array.new([1102, "Action not allowed"]))
+                     status = 403
+                  else
+                     dev_api_key = Dev.find_by(api_key: api_key)
+
+                     if !dev_api_key
+                        errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                        status = 400
+                     else
+                        ok = true
+                     end
+                  end
+               end
+            end
+         end
+      end
+
+      if ok && errors.length == 0
+         # Create JWT and result
+         expHours = Rails.env.production? ? 6 : 10000000
+         exp = Time.now.to_i + expHours * 3600
+         payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev_api_key.id, :exp => exp}
+         token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
+         @result["jwt"] = token
+         @result["user_id"] = user.id
+         
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+   end
    
    def get_user
       requested_user_id = params["id"]

@@ -98,6 +98,57 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    # End login tests
    
+   # login_by_jwt tests
+   test "Missing fields in login_by_jwt" do
+      get "/v1/users/login_by_jwt"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(resp["errors"][0][0], 2102)
+      assert_same(resp["errors"][1][0], 2118)
+   end
+
+   test "Can't login by jwt from outside the website" do
+      save_users_and_devs
+
+      matt_dev = devs(:matt)
+      cato = users(:cato)
+      cato_jwt = (JSON.parse login_user(cato, "123456", matt_dev).body)["jwt"]
+
+      get "/v1/users/login_by_jwt?api_key=#{matt_dev.api_key}&jwt=#{cato_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp["errors"][0][0], 1102)
+   end
+
+   test "Can login by jwt" do
+      save_users_and_devs
+
+      matt_dev = devs(:matt)
+      cato = users(:cato)
+      website_jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
+
+      get "/v1/users/login_by_jwt?api_key=#{matt_dev.api_key}&jwt=#{website_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 200
+
+      app_jwt = resp["jwt"]
+
+      # Use this jwt to try to access resources that are only accessible by the first dev
+      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=#{tables(:card).name}&jwt=#{website_jwt}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      
+      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=#{tables(:card).name}&jwt=#{app_jwt}"
+      resp3 = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(resp3["errors"][0][0], 1102)
+   end
+   # End login_by_jwt tests
    
    # Signup tests
    test "Missing fields in signup" do

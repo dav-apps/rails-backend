@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   
   # User routes
   match '/v1/users/login', to: 'users#login', via: 'get'
+  match '/v1/users/login_by_jwt', to: 'users#login_by_jwt', via: 'get'
   match '/v1/users/signup', to: 'users#signup', via: 'post'
   match '/v1/users/:id', to: 'users#get_user', via: 'get'
   match '/v1/users', to: 'users#update_user', via: 'put'
