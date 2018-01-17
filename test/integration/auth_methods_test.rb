@@ -473,20 +473,19 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(resp["new_email"], email.to[0])
    end
    
-   test "username and avatar_file_extension gets changed in update_user" do
+   test "username gets changed in update_user" do
       save_users_and_devs
       
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"newtestuser\",\"avatar_file_extension\": \".jpg\"}", {'Content-Type' => 'application/json'}
+      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"newtestuser\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
       
       assert_response 200
       assert_equal(resp["username"], matt.username)
-      assert_equal(resp["avatar_file_extension"], matt.avatar_file_extension)
    end
    
    test "Can update email and password of user at once" do
@@ -517,7 +516,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp2 = JSON.parse response.body
       
       assert_response 200
-      assert_same(apps(:Cards).id, resp2["apps"][0])
+      assert_same(apps(:Cards).id, resp2["apps"][0]["id"])
    end
 
    test "Can update plan in update_user" do

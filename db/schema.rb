@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180111203731) do
+ActiveRecord::Schema.define(version: 20180117184437) do
 
   create_table "apps", force: :cascade do |t|
     t.string   "name",         limit: 255
@@ -84,7 +84,6 @@ ActiveRecord::Schema.define(version: 20180111203731) do
     t.string   "password_confirmation_token", limit: 255
     t.string   "new_password",                limit: 255
     t.string   "new_email",                   limit: 255
-    t.string   "avatar_file_extension",       limit: 255
     t.datetime "created_at"
     t.datetime "updated_at"
     t.string   "old_email",                   limit: 255

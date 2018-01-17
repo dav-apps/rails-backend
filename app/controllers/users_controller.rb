@@ -357,8 +357,8 @@ class UsersController < ApplicationController
                         
                         users_apps = Array.new
                         requested_user.users_apps.each {|app| users_apps.push(app.app)}
-                        
                         @result["apps"] = users_apps
+
                         ok = true
                      end
                   end
@@ -544,11 +544,12 @@ class UsersController < ApplicationController
                               status = 500
                            else
                               @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
-                              ok = true
-                              
+
                               users_apps = Array.new
-                              user.users_apps.each {|app| users_apps.push(app.app.id)}
+                              user.users_apps.each {|app| users_apps.push(app.app)}
                               @result["apps"] = users_apps
+
+                              ok = true
                               
                               if email_changed
                                  UserNotifier.send_change_email_email(user).deliver_later
