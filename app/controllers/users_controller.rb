@@ -492,11 +492,34 @@ class UsersController < ApplicationController
                               password_changed = true
                            end
                         end
-                        
-                        avatar_file_extension = object["avatar_file_extension"]
-                        if avatar_file_extension && avatar_file_extension.length > 0
+
+                        avatar = object["avatar"]
+                        if avatar && avatar.length > 0
                            if errors.length == 0
-                              user.avatar_file_extension = avatar_file_extension
+                              begin
+                                 filename = user.id.to_s + ".png"
+                                 bytes = Base64.decode64(avatar)
+                                 img   = Magick::Image.from_blob(bytes).first
+                                 format   = img.format
+
+                                 if format == "png" || format == "PNG" || format == "jpg" || format == "JPG" || format == "jpeg" || format == "JPEG"
+                                    # file extension okay
+                                 else
+                                    errors.push(Array.new([1109, "File extension not supported"]))
+                                    status = 400
+                                 end
+
+                                 png_bytes = img.to_blob { |attrs| attrs.format = 'PNG' }
+
+                                 Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+                                 Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+                                 client = Azure::Blob::BlobService.new
+                                 blob = client.create_block_blob(ENV["AZURE_AVATAR_CONTAINER_NAME"], filename, png_bytes)
+                              rescue Exception => e
+                                 errors.push(Array.new([1103, "Unknown validation error"]))
+                                 status = 400
+                              end
                            end
                         end
 

@@ -31,6 +31,12 @@ gem 'activerecord-sqlserver-adapter'
 
 gem 'rack-cors', :require => 'rack/cors'
 
+# Azure File Storage
+gem 'azure'
+
+# RMagick for image processing
+gem 'rmagick'
+
 # Use #Puma as the app server
 gem 'puma'
 
