@@ -504,18 +504,17 @@ class UsersController < ApplicationController
 
                                  if format == "png" || format == "PNG" || format == "jpg" || format == "JPG" || format == "jpeg" || format == "JPEG"
                                     # file extension okay
+                                    png_bytes = img.to_blob { |attrs| attrs.format = 'PNG' }
+
+                                    Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+                                    Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+                                    client = Azure::Blob::BlobService.new
+                                    blob = client.create_block_blob(ENV["AZURE_AVATAR_CONTAINER_NAME"], filename, png_bytes)
                                  else
                                     errors.push(Array.new([1109, "File extension not supported"]))
                                     status = 400
                                  end
-
-                                 png_bytes = img.to_blob { |attrs| attrs.format = 'PNG' }
-
-                                 Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-                                 Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-                                 client = Azure::Blob::BlobService.new
-                                 blob = client.create_block_blob(ENV["AZURE_AVATAR_CONTAINER_NAME"], filename, png_bytes)
                               rescue Exception => e
                                  errors.push(Array.new([1103, "Unknown validation error"]))
                                  status = 400
