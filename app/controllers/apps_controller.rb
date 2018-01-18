@@ -964,7 +964,7 @@ class AppsController < ApplicationController
 					client = Azure::Blob::BlobService.new
 					blob = client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
 				rescue Exception => e
-					
+
 				end
 
 				if obj.properties.length == 1 && blob
@@ -979,12 +979,7 @@ class AppsController < ApplicationController
 					file = true
 					ok = true
 				else
-					# Return object
-					@result = Hash.new
-					@result["id"] = obj.id
-					@result["table_id"] = table.id
-					@result["user_id"] = user.id if user
-					@result["visibility"] = obj.visibility
+					@result = obj.attributes
 
 					properties = Hash.new
 					obj.properties.each do |prop|
@@ -1270,7 +1265,18 @@ class AppsController < ApplicationController
                               if obj.user_id != user.id
                                  errors.push(Array.new([1102, "Action not allowed"]))
                                  status = 403
-                              else
+										else
+											begin
+												Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+												Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+												filename = "#{app.id}/#{obj.id}"
+												client = Azure::Blob::BlobService.new
+												client.delete_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
+											rescue Exception => e
+												
+											end
+
                                  obj.destroy!
                                  @result = {}
                                  ok = true
