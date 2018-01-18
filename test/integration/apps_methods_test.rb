@@ -649,6 +649,67 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 201
       assert_same(2, resp["visibility"])
    end
+
+   test "Can't create object and upload file without ext parameter" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2119, resp["errors"][0][0])
+   end
+
+   test "Can create object and upload text file" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      assert_not_nil(resp["id"])
+
+      # Delete object
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      
+      assert_response 200
+   end
+
+   test "Can create object and upload empty file" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", "", {'Content-Type' => 'text/plain'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+
+      # Delete object
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      
+      assert_response 200
+   end
+
+   test "Can't create object and upload file with empty Content-Type header" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt"
+      resp = JSON.parse response.body
+
+      assert_response 415
+      assert_same(1104, resp["errors"][0][0])
+   end
    # End create_object tests
    
    # get_object tests
@@ -751,6 +812,27 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
    end
+
+   test "Can't get protected object with uploaded file as another user" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=1&app_id=#{apps(:TestApp).id}&ext=txt", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      
+      sherlock = users(:sherlock)
+      sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/object/#{resp["id"]}?jwt=#{sherlocks_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
    
    test "Can get public object as logged in user" do
       save_users_and_devs
@@ -769,6 +851,29 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       get "/v1/apps/object/#{table_objects(:eight).id}"
       resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+
+   test "Can get object with uploaded file" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+
+      get "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      resp2 = response.body
+
+      assert_response 200
+      assert(!resp2.include?("id"))
+
+      # Delete object
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
       
       assert_response 200
    end
@@ -854,6 +959,35 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_same(0, resp["visibility"])
+   end
+
+   test "Can update visibility and ext of object with file" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      # Create object
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+
+      new_ext = "html"
+      new_visibility = 2
+
+      # Update object
+      put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&visibility=#{new_visibility}&ext=#{new_ext}", "<p>Hallo Welt! Dies ist eine HTML-Datei.</p>", {'Content-Type' => 'text/html'}
+      resp = JSON.parse response.body
+
+      assert_response 200
+      assert_equal(new_ext, resp["properties"]["ext"])
+      assert_equal(new_visibility, resp["visibility"])
+
+      # Delete object
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      
+      assert_response 200
    end
    # End update_object tests
    

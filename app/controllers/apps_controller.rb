@@ -742,10 +742,7 @@ class AppsController < ApplicationController
 													users_app.save
 												end
 												
-												@result["id"] = obj.id
-												@result["table_id"] = table.id
-												@result["user_id"] = user.id
-												@result["visibility"] = obj.visibility
+												@result = obj.attributes
 												@result["properties"] = properties
 												
 												ok = true
@@ -756,6 +753,11 @@ class AppsController < ApplicationController
 									if !ext || ext.length < 1
 										errors.push(Array.new([2119, "Missing field: ext"]))
 										status = 400
+									end
+
+									if request.headers["Content-Type"] == "application/x-www-form-urlencoded"
+										errors.push(Array.new([1104, "Content-type not supported"]))
+										status = 415
 									end
 
 									if errors.length == 0
