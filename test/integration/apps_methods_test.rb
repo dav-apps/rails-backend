@@ -828,10 +828,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       
       get "/v1/apps/object/#{resp["id"]}?jwt=#{sherlocks_jwt}"
-      resp = JSON.parse response.body
+      resp2 = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_same(1102, resp2["errors"][0][0])
+
+      # Delete object
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      
+      assert_response 200
    end
    
    test "Can get public object as logged in user" do
