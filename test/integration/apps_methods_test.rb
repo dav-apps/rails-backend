@@ -480,17 +480,17 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(resp["errors"].length, 3)
    end
    
-   test "can't use another Content-Type but json in create_object" do
+   test "Can't save json when using another Content-Type than json in create_object" do
       save_users_and_devs
       
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", {"test": "test"}, {'Content-Type' => 'application/xml'}
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", "{\"test\": \"test\"}", {'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
-      assert_response 415
-      assert_same(1104, resp["errors"][0][0])
+      assert_response 400
+      assert_same(2119, resp["errors"][0][0])
    end
    
    test "Table does not exist and gets created when the user is the dev" do

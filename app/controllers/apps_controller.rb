@@ -575,13 +575,15 @@ class AppsController < ApplicationController
    define_method :create_object do
       table_name = params["table_name"]
       app_id = params["app_id"]
-      visibility = params["visibility"]
+		visibility = params["visibility"]
+		ext = params["ext"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
       @result = Hash.new
-      ok = false
+		ok = false
+		file = false
       
       if !table_name || table_name.length < 1
          errors.push(Array.new([2113, "Missing field: table_name"]))
@@ -616,146 +618,193 @@ class AppsController < ApplicationController
             status = 401
          end
          
-         if jwt_valid
-            if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
-               errors.push(Array.new([1104, "Content-type not supported"]))
-               status = 415
-            else
-               user_id = decoded_jwt[0]["user_id"]
-               dev_id = decoded_jwt[0]["dev_id"]
-               
-               user = User.find_by_id(user_id)
-            
-               if !user
-                  errors.push(Array.new([2801, "Resource does not exist: User"]))
-                  status = 400
-               else
-                  dev = Dev.find_by_id(dev_id)
-                  
-                  if !dev
-                     errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                     status = 400
-                  else
-                     app = App.find_by_id(app_id)
-                     # Check if the app exists
-                     if !app
-                        errors.push(Array.new([2803, "Resource does not exist: App"]))
-                        status = 400
-                     else
-                        if app.dev_id != dev.id       # Check if the app belongs to the dev
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
-                        else
-                           table = Table.find_by(name: table_name, app_id: app_id)
-                           
-                           if !table
-                              # Only create the table when the dev is logged in
-                              if dev.user_id != user.id
-                                 errors.push(Array.new([2804, "Resource does not exist: Table"]))
-                                 status = 400
-                              else
-                                 # Check if table_name is too long or too short
-                                 if table_name.length > max_table_name_length
-                                    errors.push(Array.new([2305, "Field too long: table_name"]))
-                                    status = 400
-                                 end
-                                 
-                                 if table_name.length < min_table_name_length
-                                    errors.push(Array.new([2205, "Field too short: table_name"]))
-                                    status = 400
-                                 end
-                                 
-                                 if table_name.include? " "
-                                    errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
-                                    status = 400
-                                 end
-                                 
-                                 # Create a new table
-                                 table = Table.new(app_id: app.id, name: (table_name[0].upcase + table_name[1..-1]))
-                                 if !table.save
-                                    errors.push(Array.new([1103, "Unknown validation error"]))
-                                    status = 500
-                                 end
-                              end
-                           end
-                           
-                           if errors.length == 0
-                              obj = TableObject.new(table_id: table.id, user_id: user.id)
-                              
-                              begin
-                                 if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
-                                    obj.visibility = visibility.to_i
-                                 end
-                              end
-                              
-                              if !obj.save
-                                 errors.push(Array.new([1103, "Unknown validation error"]))
-                                 status = 500
-                              else
-                                 # Get the body of the request
-                                 object = request.request_parameters
-                                 
-                                 if object.length < 1
-                                    errors.push(Array.new([2116, "Missing field: object"]))
-                                    status = 400
-                                 else
-                                    object.each do |key, value|
-                                       # Validate the length of the properties
-                                       if key.length > max_property_name_length
-                                          errors.push(Array.new([2306, "Field too long: Property.name"]))
-                                          status = 400
-                                       end
-                                       
-                                       if key.length < min_property_name_length
-                                          errors.push(Array.new([2206, "Field too short: Property.name"]))
-                                          status = 400
-                                       end
-                                       
-                                       if value.length > max_property_value_length
-                                          errors.push(Array.new([2307, "Field too long: Property.value"]))
-                                          status = 400
-                                       end
-                                       
-                                       if value.length < min_property_value_length
-                                          errors.push(Array.new([2207, "Field too short: Property.value"]))
-                                          status = 400
-                                       end
-                                    end
-                                 end
-                                 
-                                 if errors.length == 0
-                                    properties = Hash.new
-                                    
-                                    object.each do |key, value|
-                                       if !Property.create(table_object_id: obj.id, name: key, value: value)
-                                          errors.push(Array.new([1103, "Unknown validation error"]))
-                                          status = 500
-                                       else
-                                          properties[key] = value
-                                       end
-                                    end
-                                    
-                                    # Save that user uses the app
-                                    if !user.apps.find_by_id(app.id)
-                                       users_app = UsersApp.create(app_id: app.id, user_id: user.id)
-                                       users_app.save
-                                    end
-                                    
-                                    @result["id"] = obj.id
-                                    @result["table_id"] = table.id
-                                    @result["user_id"] = user.id
-                                    @result["visibility"] = obj.visibility
-                                    @result["properties"] = properties
-                                    
-                                    ok = true
-                                 end
-                              end
-                           end
-                        end
-                     end
-                  end
-               end
-            end
+			if jwt_valid
+				user_id = decoded_jwt[0]["user_id"]
+				dev_id = decoded_jwt[0]["dev_id"]
+
+				user = User.find_by_id(user_id)
+
+				if !user
+					errors.push(Array.new([2801, "Resource does not exist: User"]))
+					status = 400
+				else
+					dev = Dev.find_by_id(dev_id)
+
+					if !dev
+						errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+						status = 400
+					else
+						app = App.find_by_id(app_id)
+						# Check if the app exists
+						if !app
+							errors.push(Array.new([2803, "Resource does not exist: App"]))
+							status = 400
+						else
+							if app.dev_id != dev.id       # Check if the app belongs to the dev
+								errors.push(Array.new([1102, "Action not allowed"]))
+								status = 403
+							else
+								table = Table.find_by(name: table_name, app_id: app_id)
+								
+								if !table
+									# Only create the table when the dev is logged in
+									if dev.user_id != user.id
+										errors.push(Array.new([2804, "Resource does not exist: Table"]))
+										status = 400
+									else
+										# Check if table_name is too long or too short
+										if table_name.length > max_table_name_length
+											errors.push(Array.new([2305, "Field too long: table_name"]))
+											status = 400
+										end
+										
+										if table_name.length < min_table_name_length
+											errors.push(Array.new([2205, "Field too short: table_name"]))
+											status = 400
+										end
+										
+										if table_name.include? " "
+											errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
+											status = 400
+										end
+										
+										# Create a new table
+										table = Table.new(app_id: app.id, name: (table_name[0].upcase + table_name[1..-1]))
+										if !table.save
+											errors.push(Array.new([1103, "Unknown validation error"]))
+											status = 500
+										end
+									end
+								end
+
+								if (request.headers["Content-Type"] == "application/json" ||
+									request.headers["Content-Type"] == "application/json; charset=utf-8") &&
+									request.content_type == "application/json"
+
+									if errors.length == 0
+										obj = TableObject.new(table_id: table.id, user_id: user.id)
+										
+										begin
+											if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
+												obj.visibility = visibility.to_i
+											end
+										end
+										
+										if !obj.save
+											errors.push(Array.new([1103, "Unknown validation error"]))
+											status = 500
+										else
+											# Get the body of the request
+											object = request.request_parameters
+											
+											if object.length < 1
+												errors.push(Array.new([2116, "Missing field: object"]))
+												status = 400
+											else
+												object.each do |key, value|
+													# Validate the length of the properties
+													if key.length > max_property_name_length
+														errors.push(Array.new([2306, "Field too long: Property.name"]))
+														status = 400
+													end
+													
+													if key.length < min_property_name_length
+														errors.push(Array.new([2206, "Field too short: Property.name"]))
+														status = 400
+													end
+													
+													if value.length > max_property_value_length
+														errors.push(Array.new([2307, "Field too long: Property.value"]))
+														status = 400
+													end
+													
+													if value.length < min_property_value_length
+														errors.push(Array.new([2207, "Field too short: Property.value"]))
+														status = 400
+													end
+												end
+											end
+											
+											if errors.length == 0
+												properties = Hash.new
+												
+												object.each do |key, value|
+													if !Property.create(table_object_id: obj.id, name: key, value: value)
+														errors.push(Array.new([1103, "Unknown validation error"]))
+														status = 500
+													else
+														properties[key] = value
+													end
+												end
+												
+												# Save that user uses the app
+												if !user.apps.find_by_id(app.id)
+													users_app = UsersApp.create(app_id: app.id, user_id: user.id)
+													users_app.save
+												end
+												
+												@result["id"] = obj.id
+												@result["table_id"] = table.id
+												@result["user_id"] = user.id
+												@result["visibility"] = obj.visibility
+												@result["properties"] = properties
+												
+												ok = true
+											end
+										end
+									end
+								else
+									if !ext || ext.length < 1
+										errors.push(Array.new([2119, "Missing field: ext"]))
+										status = 400
+									end
+
+									if errors.length == 0
+										# Create table object and save it
+										obj = TableObject.new(table_id: table.id, user_id: user.id)
+										
+										begin
+											if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
+												obj.visibility = visibility.to_i
+											end
+										end
+										
+										if !obj.save
+											errors.push(Array.new([1103, "Unknown validation error"]))
+											status = 500
+										else
+											begin
+												# Read the file and save it in files container
+												if request.body.class == StringIO
+													file = request.body
+												else
+													file = File.open(request.body, "rb")
+												end
+												contents = file.read
+
+												filename = "#{app.id}/#{obj.id}.#{ext}"
+	
+												Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+												Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+	
+												client = Azure::Blob::BlobService.new
+												blob = client.create_block_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename, contents)
+
+												@result = contents
+												ok = true
+												file = true
+											rescue Exception => e
+												puts e
+												errors.push(Array.new([1103, "Unknown validation error"]))
+												status = 500
+											end
+										end
+									end
+								end
+							end
+						end
+					end
+				end
          end
       end
       
@@ -765,8 +814,16 @@ class AppsController < ApplicationController
          @result.clear
          @result["errors"] = errors
       end
-      
-      render json: @result, status: status if status
+		
+		if file
+			if status
+				send_data(@result, status: status)
+			else
+				send_data(@result)
+			end
+		else
+			render json: @result, status: status if status
+		end
    end
    
    def get_object
