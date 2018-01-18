@@ -583,7 +583,6 @@ class AppsController < ApplicationController
       errors = Array.new
       @result = Hash.new
 		ok = false
-		file = false
       
       if !table_name || table_name.length < 1
          errors.push(Array.new([2113, "Missing field: table_name"]))
@@ -782,7 +781,7 @@ class AppsController < ApplicationController
 												end
 												contents = file.read
 
-												filename = "#{app.id}/#{obj.id}.#{ext}"
+												filename = "#{app.id}/#{obj.id}"
 	
 												Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
 												Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
@@ -790,9 +789,23 @@ class AppsController < ApplicationController
 												client = Azure::Blob::BlobService.new
 												blob = client.create_block_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename, contents)
 
-												@result = contents
-												ok = true
-												file = true
+												# Save extension as property
+												prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+
+												if !prop.save
+													errors.push(Array.new([1103, "Unknown validation error"]))
+													status = 500
+												else
+													@result = obj.attributes
+
+													properties = Hash.new
+													obj.properties.each do |prop|
+														properties[prop.name] = prop.value
+													end
+
+													@result["properties"] = properties
+													ok = true
+												end
 											rescue Exception => e
 												puts e
 												errors.push(Array.new([1103, "Unknown validation error"]))
@@ -815,15 +828,7 @@ class AppsController < ApplicationController
          @result["errors"] = errors
       end
 		
-		if file
-			if status
-				send_data(@result, status: status)
-			else
-				send_data(@result)
-			end
-		else
-			render json: @result, status: status if status
-		end
+		render json: @result, status: status if status
    end
    
    def get_object
@@ -948,21 +953,47 @@ class AppsController < ApplicationController
             end
          end
          
-         if errors.length == 0 && can_access
-            # Return object
-            @result = Hash.new
-            @result["id"] = obj.id
-            @result["table_id"] = table.id
-            @result["user_id"] = user.id if user
-            @result["visibility"] = obj.visibility
-            
-            properties = Hash.new
-            obj.properties.each do |prop|
-               properties[prop.name] = prop.value
-            end
-            @result["properties"] = properties
-            
-            ok = true
+			if errors.length == 0 && can_access
+				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+				filename = "#{app.id}/#{obj.id}"
+				file = false
+
+				begin
+					client = Azure::Blob::BlobService.new
+					blob = client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
+				rescue Exception => e
+					
+				end
+
+				if obj.properties.length == 1 && blob
+					@result = blob[1]
+
+					obj.properties.each do |prop|
+						if prop.name == "ext"
+							filename += ".#{prop.value}"
+						end
+					end
+					
+					file = true
+					ok = true
+				else
+					# Return object
+					@result = Hash.new
+					@result["id"] = obj.id
+					@result["table_id"] = table.id
+					@result["user_id"] = user.id if user
+					@result["visibility"] = obj.visibility
+
+					properties = Hash.new
+					obj.properties.each do |prop|
+						properties[prop.name] = prop.value
+					end
+					@result["properties"] = properties
+
+					ok = true
+				end
          elsif errors.length == 0
             errors.push(Array.new([1102, "Action not allowed"]))
             status = 403
@@ -972,11 +1003,19 @@ class AppsController < ApplicationController
       if ok && errors.length == 0
          status = 200
       else
-         @result.clear
+			@result.clear
          @result["errors"] = errors
       end
-      
-      render json: @result, status: status if status
+		
+		if file
+			if status
+				send_data(@result, status: status, filename: filename)
+			else
+				send_data(@result)
+			end
+		else
+			render json: @result, status: status if status
+		end
    end
    
    define_method :update_object do
