@@ -1,22 +1,22 @@
 Rails.application.routes.draw do
   
   # User routes
-  match '/v1/users/login', to: 'users#login', via: 'get'
-  match '/v1/users/login_by_jwt', to: 'users#login_by_jwt', via: 'get'
-  match '/v1/users/signup', to: 'users#signup', via: 'post'
-  match '/v1/users/:id', to: 'users#get_user', via: 'get'
-  match '/v1/users', to: 'users#update_user', via: 'put'
-  match '/v1/users/:id', to: 'users#delete_user', via: 'delete'
-  match '/v1/users/app/:app_id', to: 'users#remove_app', via: 'delete'
+  match '/v1/auth/login', to: 'users#login', via: 'get'
+  match '/v1/auth/login_by_jwt', to: 'users#login_by_jwt', via: 'get'
+  match '/v1/auth/signup', to: 'users#signup', via: 'post'
+  match '/v1/auth/user/:id', to: 'users#get_user', via: 'get'
+  match '/v1/auth/user', to: 'users#update_user', via: 'put'
+  match '/v1/auth/user/:id', to: 'users#delete_user', via: 'delete'
+  match '/v1/auth/app/:app_id', to: 'users#remove_app', via: 'delete'
   
-  match '/v1/users/send_verification_email', to: 'users#send_verification_email', via: 'post'
-  match '/v1/users/send_delete_account_email', to: 'users#send_delete_account_email', via: 'post'
-  match '/v1/users/send_reset_password_email', to: 'users#send_reset_password_email', via: 'post'
-  match '/v1/users/set_password/:password_confirmation_token', to: 'users#set_password', via: 'post'
-  match '/v1/users/:id/save_new_password/:password_confirmation_token', to: 'users#save_new_password', via: 'post'
-  match '/v1/users/:id/save_new_email/:email_confirmation_token', to: 'users#save_new_email', via: 'post'
-  match '/v1/users/:id/reset_new_email', to: 'users#reset_new_email', via: 'post'
-  match '/v1/users/:id/confirm', to: 'users#confirm_user', via: 'post'
+  match '/v1/auth/send_verification_email', to: 'users#send_verification_email', via: 'post'
+  match '/v1/auth/send_delete_account_email', to: 'users#send_delete_account_email', via: 'post'
+  match '/v1/auth/send_reset_password_email', to: 'users#send_reset_password_email', via: 'post'
+  match '/v1/auth/set_password/:password_confirmation_token', to: 'users#set_password', via: 'post'
+  match '/v1/auth/user/:id/save_new_password/:password_confirmation_token', to: 'users#save_new_password', via: 'post'
+  match '/v1/auth/user/:id/save_new_email/:email_confirmation_token', to: 'users#save_new_email', via: 'post'
+  match '/v1/auth/user/:id/reset_new_email', to: 'users#reset_new_email', via: 'post'
+  match '/v1/auth/user/:id/confirm', to: 'users#confirm_user', via: 'post'
   
   # Dev routes
   match '/v1/devs/dev', to: 'devs#create_dev', via: 'post'

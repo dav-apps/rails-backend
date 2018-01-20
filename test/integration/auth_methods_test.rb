@@ -6,7 +6,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "can login" do
       save_users_and_devs
       
-      get "/v1/users/login?email=sherlock@web.de&password=sherlocked&auth=" + generate_auth_token(devs(:sherlock))
+      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked&auth=" + generate_auth_token(devs(:sherlock))
       
       assert_response :success
    end
@@ -14,7 +14,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "can't login without email" do
       save_users_and_devs
       
-      get "/v1/users/login?password=sherlocked&auth=" + generate_auth_token(devs(:sherlock))
+      get "/v1/auth/login?password=sherlocked&auth=" + generate_auth_token(devs(:sherlock))
       
       assert_response 400
    end
@@ -22,7 +22,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "can't login without password" do
       save_users_and_devs
       
-      get "/v1/users/login?email=sherlock@web.de&auth=" + generate_auth_token(devs(:sherlock))
+      get "/v1/auth/login?email=sherlock@web.de&auth=" + generate_auth_token(devs(:sherlock))
       
       assert_response 400
    end
@@ -30,7 +30,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "can't login without auth" do
       save_users_and_devs
       
-      get "/v1/users/login?email=sherlock@web.de&password=sherlocked"
+      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked"
       
       assert_response 401
    end
@@ -38,7 +38,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "can login without being the dev" do
       save_users_and_devs
       
-      get "/v1/users/login?email=sherlock@web.de&password=sherlocked&auth=" + generate_auth_token(devs(:matt))
+      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked&auth=" + generate_auth_token(devs(:matt))
       
       assert_response 200
    end
@@ -50,7 +50,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt.confirmed = false
       matt.save
       
-      get "/v1/users/login?email=matt@test.de&password=schachmatt&auth=" + generate_auth_token(devs(:matt))
+      get "/v1/auth/login?email=matt@test.de&password=schachmatt&auth=" + generate_auth_token(devs(:matt))
       resp = JSON.parse response.body
       
       assert_response 400
@@ -60,7 +60,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "can't login with an incorrect password" do
       save_users_and_devs
       
-      get "/v1/users/login?email=matt@test.de&password=falschesPassword&auth=" + generate_auth_token(devs(:matt))
+      get "/v1/auth/login?email=matt@test.de&password=falschesPassword&auth=" + generate_auth_token(devs(:matt))
       resp = JSON.parse response.body
       
       assert_response 401
@@ -73,7 +73,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       dev = devs(:matt)
       auth = dev.api_key + "," + Base64.strict_encode64(Base64.strict_encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid)))
       
-      get "/v1/users/login?email=matt@test.de&password=schachmatt&auth=" + auth
+      get "/v1/auth/login?email=matt@test.de&password=schachmatt&auth=" + auth
       resp = JSON.parse response.body
       
       assert_response 401
@@ -90,7 +90,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       sherlock = devs(:sherlock)
       sherlock.destroy!
       
-      get "/v1/users/login?email=matt@test.de&password=schachmatt&auth=" + sherlock_auth_token
+      get "/v1/auth/login?email=matt@test.de&password=schachmatt&auth=" + sherlock_auth_token
       resp = JSON.parse response.body
       
       assert_response 400
@@ -100,7 +100,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # login_by_jwt tests
    test "Missing fields in login_by_jwt" do
-      get "/v1/users/login_by_jwt"
+      get "/v1/auth/login_by_jwt"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -115,7 +115,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       cato = users(:cato)
       cato_jwt = (JSON.parse login_user(cato, "123456", matt_dev).body)["jwt"]
 
-      get "/v1/users/login_by_jwt?api_key=#{matt_dev.api_key}&jwt=#{cato_jwt}"
+      get "/v1/auth/login_by_jwt?api_key=#{matt_dev.api_key}&jwt=#{cato_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -129,7 +129,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       cato = users(:cato)
       website_jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
 
-      get "/v1/users/login_by_jwt?api_key=#{matt_dev.api_key}&jwt=#{website_jwt}"
+      get "/v1/auth/login_by_jwt?api_key=#{matt_dev.api_key}&jwt=#{website_jwt}"
       resp = JSON.parse response.body
 
       assert_response 200
@@ -152,7 +152,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # Signup tests
    test "Missing fields in signup" do
-      post "/v1/users/signup"
+      post "/v1/auth/signup"
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
@@ -167,7 +167,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=dav@gmail.com&password=testtest&username=test"
+      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=dav@gmail.com&password=testtest&username=test"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -179,7 +179,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=cato"
+      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=cato"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -191,7 +191,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=te&username=t"
+      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=te&username=t"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -204,7 +204,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=#{"n"*50}&username=#{"n"*30}"
+      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=#{"n"*50}&username=#{"n"*30}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -217,7 +217,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=testexample&password=testtest&username=testuser"
+      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=testexample&password=testtest&username=testuser"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -229,7 +229,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       matts_auth_token = generate_auth_token(devs(:matt))
       
-      post "/v1/users/signup?auth=#{matts_auth_token}&email=testexample&password=testtest&username=testuser"
+      post "/v1/auth/signup?auth=#{matts_auth_token}&email=testexample&password=testtest&username=testuser"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -241,7 +241,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       matts_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/users/signup?auth=#{matts_auth_token}&email=test@example.com&password=testtest&username=testuser"
+      post "/v1/auth/signup?auth=#{matts_auth_token}&email=test@example.com&password=testtest&username=testuser"
       resp = JSON.parse response.body
       
       email = ActionMailer::Base.deliveries.last
@@ -258,7 +258,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/users/#{users(:sherlock).id}?jwt=#{matts_jwt}"
+      get "/v1/auth/user/#{users(:sherlock).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -271,7 +271,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/users/#{matt.id}?jwt=#{matts_jwt}"
+      get "/v1/auth/user/#{matt.id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -286,7 +286,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       matt.destroy!
       
-      get "/v1/users/#{matt_id}?jwt=#{matts_jwt}"
+      get "/v1/auth/user/#{matt_id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -302,7 +302,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      get "/v1/users/#{matt.id}?jwt=#{jwt}"
+      get "/v1/auth/user/#{matt.id}?jwt=#{jwt}"
       resp2 = JSON.parse response.body
       
       assert_response 200
@@ -317,7 +317,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/xml'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
@@ -330,7 +330,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -343,7 +343,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"email\":\"testemail\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\":\"testemail\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -356,7 +356,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"d\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"username\":\"d\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -369,7 +369,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"#{"d"*30}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"username\":\"#{"d"*30}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -382,7 +382,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"cato\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"username\":\"cato\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -395,7 +395,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"password\":\"c\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\":\"c\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -408,7 +408,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"password\":\"#{"n"*40}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\":\"#{"n"*40}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -421,7 +421,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"plan\":\"4\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"plan\":\"4\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -434,7 +434,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"plan\":\"heloasdasd\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"plan\":\"heloasdasd\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -447,7 +447,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"password\":\"testpassword\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\":\"testpassword\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       email = ActionMailer::Base.deliveries.last
@@ -463,7 +463,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"email\":\"test14@example.com\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\":\"test14@example.com\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       email = ActionMailer::Base.deliveries.last
@@ -479,7 +479,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"username\":\"newtestuser\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"username\":\"newtestuser\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -494,7 +494,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -512,7 +512,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      put "/v1/users?jwt=#{jwt}", "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{jwt}", "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", {'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
       
       assert_response 200
@@ -525,7 +525,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"plan\":\"1\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"plan\":\"1\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -538,7 +538,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       tester = users(:tester2)
 
-      delete "/v1/users/#{tester.id}"
+      delete "/v1/auth/user/#{tester.id}"
       resp = JSON.parse response.body
 
       assert_response 400
@@ -559,7 +559,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      delete "/v1/users/#{matt.id}?email_confirmation_token=#{email_confirmation_token + "adsad"}&password_confirmation_token=#{password_confirmation_token + "asdasd"}"
+      delete "/v1/auth/user/#{matt.id}?email_confirmation_token=#{email_confirmation_token + "adsad"}&password_confirmation_token=#{password_confirmation_token + "asdasd"}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -580,7 +580,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      delete "/v1/users/#{matt.id}?email_confirmation_token=#{email_confirmation_token}&password_confirmation_token=#{password_confirmation_token}"
+      delete "/v1/auth/user/#{matt.id}?email_confirmation_token=#{email_confirmation_token}&password_confirmation_token=#{password_confirmation_token}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -590,7 +590,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
    # remove_app tests
    test "Missing fields in remove_app" do
-      delete "/v1/users/app/1"
+      delete "/v1/auth/app/1"
       resp = JSON.parse response.body
 
       assert_response 401
@@ -604,7 +604,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       app = apps(:TestApp)
       tester_jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
 
-      delete "/v1/users/app/#{app.id}?jwt=#{tester_jwt}"
+      delete "/v1/auth/app/#{app.id}?jwt=#{tester_jwt}"
       resp = JSON.parse response.body
 
       assert_response 403
@@ -628,7 +628,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       obj_id = resp["id"]
 
       # Remove app
-      delete "/v1/users/app/#{app.id}?jwt=#{tester_jwt2}"
+      delete "/v1/auth/app/#{app.id}?jwt=#{tester_jwt2}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -642,7 +642,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/users/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=testuser"
+      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=testuser"
       resp = JSON.parse response.body
       
       assert_response 201
@@ -650,7 +650,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       new_user = User.find_by_id(resp["id"])
       
       new_users_confirmation_token = User.find_by_id(resp["id"]).email_confirmation_token
-      post "/v1/users/#{new_user.id}/confirm?email_confirmation_token=#{new_user.email_confirmation_token}"
+      post "/v1/auth/user/#{new_user.id}/confirm?email_confirmation_token=#{new_user.email_confirmation_token}"
       
       assert_response 200
       assert(User.find_by_id(new_user.id).confirmed)
@@ -661,7 +661,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       tester = users(:tester)
       
-      post "/v1/users/#{tester.id}/confirm"
+      post "/v1/auth/user/#{tester.id}/confirm"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -673,7 +673,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       tester = users(:tester)
       
-      post "/v1/users/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg"
+      post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -686,7 +686,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_confirmation_token = "testconfirmationtoken"
       
-      post "/v1/users/#{matt.id}/confirm?email_confirmation_token=#{matts_confirmation_token}"
+      post "/v1/auth/user/#{matt.id}/confirm?email_confirmation_token=#{matts_confirmation_token}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -696,7 +696,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # send_verification_email tests
    test "Missing fields in send_verification_email" do
-      post "/v1/users/send_verification_email"
+      post "/v1/auth/send_verification_email"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -708,7 +708,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       matt = users(:matt)
       
-      post "/v1/users/send_verification_email?email=#{matt.email}"
+      post "/v1/auth/send_verification_email?email=#{matt.email}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -720,7 +720,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       tester = users(:tester)
       
-      post "/v1/users/send_verification_email?email=#{tester.email}"
+      post "/v1/auth/send_verification_email?email=#{tester.email}"
       resp = JSON.parse response.body
       
       email = ActionMailer::Base.deliveries.last
@@ -733,7 +733,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
    # send_delete_account_email tests
    test "Missing fields in send_delete_account_email" do
-      post "/v1/users/send_delete_account_email"
+      post "/v1/auth/send_delete_account_email"
       resp = JSON.parse response.body
 
       assert_response 400
@@ -741,7 +741,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't send delete account email to non-existant user" do
-      post "/v1/users/send_delete_account_email?email=nonexistantemail@example.com"
+      post "/v1/auth/send_delete_account_email?email=nonexistantemail@example.com"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -753,7 +753,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       tester = users(:tester)
       
-      post "/v1/users/send_delete_account_email?email=#{tester.email}"
+      post "/v1/auth/send_delete_account_email?email=#{tester.email}"
       resp = JSON.parse response.body
       
       email = ActionMailer::Base.deliveries.last
@@ -766,7 +766,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # send_reset_password_email tests
    test "Missing fields in send_reset_password_email" do
-      post "/v1/users/send_reset_password_email"
+      post "/v1/auth/send_reset_password_email"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -778,7 +778,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       matt = users(:matt)
       
-      post "/v1/users/send_reset_password_email?email=#{matt.email}"
+      post "/v1/auth/send_reset_password_email?email=#{matt.email}"
       resp = JSON.parse response.body
       
       email = ActionMailer::Base.deliveries.last
@@ -793,7 +793,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "Missing fields in set_password" do
       save_users_and_devs
 
-      post "/v1/users/set_password/blabla"
+      post "/v1/auth/set_password/blabla"
       resp = JSON.parse response.body
 
       assert_response 400
@@ -809,7 +809,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       password = "blablanewpassword"
 
-      post "/v1/users/set_password/confirmationtoken?password=#{password}"
+      post "/v1/auth/set_password/confirmationtoken?password=#{password}"
       resp = JSON.parse response.body
 
       assert_response 400
@@ -825,12 +825,12 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       password = "blablanewpassword"
 
-      post "/v1/users/set_password/#{matt.password_confirmation_token}?password=#{password}"
+      post "/v1/auth/set_password/#{matt.password_confirmation_token}?password=#{password}"
       resp = JSON.parse response.body
 
       assert_response 200
 
-      get "/v1/users/login?email=#{matt.email}&password=#{password}&auth=" + generate_auth_token(devs(:sherlock))
+      get "/v1/auth/login?email=#{matt.email}&password=#{password}&auth=" + generate_auth_token(devs(:sherlock))
 
       assert_response 200
    end
@@ -842,7 +842,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       matt = users(:matt)
       
-      post "/v1/users/#{matt.id}/save_new_password/asdonasdnonadoasnd"
+      post "/v1/auth/user/#{matt.id}/save_new_password/asdonasdnonadoasnd"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -856,7 +856,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt.password_confirmation_token = "confirmationtoken"
       matt.save
       
-      post "/v1/users/#{matt.id}/save_new_password/#{matt.password_confirmation_token}"
+      post "/v1/auth/user/#{matt.id}/save_new_password/#{matt.password_confirmation_token}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -869,14 +869,14 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"password\": \"testpassword\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\": \"testpassword\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
       
       matt = User.find_by_id(matt.id)
       
-      post "/v1/users/#{matt.id}/save_new_password/#{matt.password_confirmation_token}"
+      post "/v1/auth/user/#{matt.id}/save_new_password/#{matt.password_confirmation_token}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -892,7 +892,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_email = "newtest@email.com"
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -901,7 +901,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(matt.new_email, new_email)
       
       old_email = matt.email
-      post "/v1/users/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
+      post "/v1/auth/user/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -917,7 +917,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       matt = users(:matt)
       
-      post "/v1/users/#{matt.id}/save_new_email/oiSsdfh0sdjf0"
+      post "/v1/auth/user/#{matt.id}/save_new_email/oiSsdfh0sdjf0"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -931,7 +931,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt.email_confirmation_token = "confirmationtoken"
       matt.save
       
-      post "/v1/users/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
+      post "/v1/auth/user/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -945,13 +945,13 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_email = "new-test@email.com"
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
       matt = User.find_by_id(matt.id)
       
-      post "/v1/users/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
+      post "/v1/auth/user/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -968,7 +968,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       matt = users(:matt)
       
-      post "/v1/users/#{matt.id}/reset_new_email"
+      post "/v1/auth/user/#{matt.id}/reset_new_email"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -983,19 +983,19 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       new_email = "new-test@email.com"
       original_email = matt.email
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
       matt = User.find_by_id(matt.id)
       
-      post "/v1/users/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
+      post "/v1/auth/user/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
       resp = JSON.parse response.body
       
       assert_response 200
       matt = User.find_by_id(matt.id)
       
-      post "/v1/users/#{matt.id}/reset_new_email"
+      post "/v1/auth/user/#{matt.id}/reset_new_email"
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)

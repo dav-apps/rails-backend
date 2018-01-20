@@ -1224,7 +1224,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/users?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/xml'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
