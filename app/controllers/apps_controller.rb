@@ -1306,16 +1306,8 @@ class AppsController < ApplicationController
                                  errors.push(Array.new([1102, "Action not allowed"]))
                                  status = 403
 										else
-											begin
-												Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-												Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-												filename = "#{app.id}/#{obj.id}"
-												client = Azure::Blob::BlobService.new
-												client.delete_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
-											rescue Exception => e
-												
-											end
+											# Delete the file if it exists
+											delete_blob(app.id, obj.id)
 
                                  obj.destroy!
                                  @result = {}

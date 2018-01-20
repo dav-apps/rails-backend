@@ -354,7 +354,8 @@ class UsersController < ApplicationController
                         status = 403
                      else
                         @result = requested_user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
-                        
+                        @result["avatar"] = get_users_avatar(user.id)
+
                         users_apps = Array.new
                         requested_user.users_apps.each {|app| users_apps.push(app.app)}
                         @result["apps"] = users_apps
@@ -543,6 +544,7 @@ class UsersController < ApplicationController
                               status = 500
                            else
                               @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
+                              @result["avatar"] = get_users_avatar(user.id)
 
                               users_apps = Array.new
                               user.users_apps.each {|app| users_apps.push(app.app)}
@@ -615,6 +617,9 @@ class UsersController < ApplicationController
                   errors.push(Array.new([1203, "Password confirmation token is not correct"]))
                   status = 400
                else
+                  # Delete the avatar of the user
+                  delete_avatar(user.id)
+
                   # Delete the user
                   user.destroy!
                   @result = {}

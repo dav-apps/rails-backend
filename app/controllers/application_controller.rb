@@ -42,4 +42,42 @@ class ApplicationController < ActionController::API
       client = Azure::Blob::BlobService.new
       blob = client.create_block_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename, contents)
    end
+
+   def delete_blob(app_id, object_id)
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      client = Azure::Blob::BlobService.new
+      begin
+         client.delete_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{app_id}/#{object_id}")
+      rescue Exception => e
+         
+      end
+   end
+
+   def get_users_avatar(user_id)
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      client = Azure::Blob::BlobService.new
+      begin
+         blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
+         url = ENV['AZURE_AVATAR_CONTAINER_URL'] + user_id.to_s + ".png"
+      rescue Exception => e
+         url = ENV['AZURE_AVATAR_CONTAINER_URL'] + "default.png"
+      end
+      return url
+   end
+
+   def delete_avatar(user_id)
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      client = Azure::Blob::BlobService.new
+      begin
+         client.delete_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
+      rescue Exception => e
+         
+      end
+   end
 end
