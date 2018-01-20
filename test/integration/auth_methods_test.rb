@@ -308,6 +308,42 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_same(apps(:Cards).id, resp2["apps"][0]["id"])
    end
+   # End get_user_by_jwt tests
+
+   # get_user_by_jwt tests
+   test "Missing fields in get_user_by_jwt" do
+      get "/v1/auth/user"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't get the user when the JWT is invalid" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      get "/v1/auth/user?jwt=#{jwt}ashd9asd"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_same(1302, resp["errors"][0][0])
+   end
+
+   test "Can get the user" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      get "/v1/auth/user?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 200
+      assert_same(matt.id, resp["id"])
+   end
    # End get_user tests
    
    # update_user tests

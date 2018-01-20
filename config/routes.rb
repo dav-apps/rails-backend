@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   match '/v1/auth/login_by_jwt', to: 'users#login_by_jwt', via: 'get'
   match '/v1/auth/signup', to: 'users#signup', via: 'post'
   match '/v1/auth/user/:id', to: 'users#get_user', via: 'get'
+  match '/v1/auth/user', to: 'users#get_user_by_jwt', via: 'get'
   match '/v1/auth/user', to: 'users#update_user', via: 'put'
   match '/v1/auth/user/:id', to: 'users#delete_user', via: 'delete'
   match '/v1/auth/app/:app_id', to: 'users#remove_app', via: 'delete'
