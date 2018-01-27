@@ -577,6 +577,7 @@ class AppsController < ApplicationController
       app_id = params["app_id"]
 		visibility = params["visibility"]
 		ext = params["ext"]
+		uuid = params["uuid"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -676,12 +677,28 @@ class AppsController < ApplicationController
 									end
 								end
 
+								# Check if the uuid is already in use
+								if uuid
+									object = TableObject.find_by(uuid: uuid)
+
+									if object
+										errors.push(Array.new([2704, "Field already taken: uuid"]))
+										status = 400
+									end
+								end
+								
 								if (request.headers["Content-Type"] == "application/json" ||
 									request.headers["Content-Type"] == "application/json; charset=utf-8") &&
 									request.content_type == "application/json"
 
 									if errors.length == 0
 										obj = TableObject.new(table_id: table.id, user_id: user.id)
+
+										if uuid
+											obj.uuid = uuid
+										else
+											obj.uuid = SecureRandom.uuid
+										end
 										
 										begin
 											if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
@@ -763,6 +780,12 @@ class AppsController < ApplicationController
 									if errors.length == 0
 										# Create table object and save it
 										obj = TableObject.new(table_id: table.id, user_id: user.id)
+
+										if uuid
+											obj.uuid = uuid
+										else
+											obj.uuid = SecureRandom.uuid
+										end
 										
 										begin
 											if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
@@ -795,7 +818,6 @@ class AppsController < ApplicationController
 													ok = true
 												end
 											rescue Exception => e
-												puts e
 												errors.push(Array.new([1103, "Unknown validation error"]))
 												status = 500
 											end
@@ -821,7 +843,7 @@ class AppsController < ApplicationController
    
    def get_object
       object_id = params["id"]
-      token = params["access_token"]
+		token = params["access_token"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -835,8 +857,12 @@ class AppsController < ApplicationController
          status = 400
       end
       
-      if errors.length == 0 
-         obj = TableObject.find_by_id(object_id)
+		if errors.length == 0 
+			obj = TableObject.find_by_id(object_id)
+
+			if !obj
+				obj = TableObject.find_by(uuid: object_id)
+			end
          
          if !obj
             errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
@@ -898,7 +924,6 @@ class AppsController < ApplicationController
                         end
                         
                         if jwt_valid
-                           
                            user_id = decoded_jwt[0]["user_id"]
                            dev_id = decoded_jwt[0]["dev_id"]
                            
@@ -1054,21 +1079,25 @@ class AppsController < ApplicationController
                if !dev     # Check if the dev exists
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
-               else
-                  obj = TableObject.find_by_id(object_id)
-               
+					else
+						obj = TableObject.find_by_id(object_id)
+
+						if !obj
+							obj = TableObject.find_by(uuid: object_id)
+						end
+						
                   if !obj
                      errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
                      status = 400
                   else
                      table = Table.find_by_id(obj.table_id)
-                  
+							
                      if !table
                         errors.push(Array.new([2804, "Resource does not exist: Table"]))
                         status = 400
                      else
                         app = App.find_by_id(table.app_id)
-                     
+								
                         if !app
                            errors.push(Array.new([2803, "Resource does not exist: App"]))
                            status = 400
@@ -1151,10 +1180,7 @@ class AppsController < ApplicationController
 														end
 													end
 													
-													@result["id"] = obj.id
-													@result["table_id"] = table.id
-													@result["user_id"] = user.id
-													@result["visibility"] = obj.visibility
+													@result = obj.attributes
 													@result["properties"] = properties
 													
 													ok = true
@@ -1178,7 +1204,7 @@ class AppsController < ApplicationController
 															status = 500
 														end
 													end
-
+													
 													if !obj.save
 														errors.push(Array.new([1103, "Unknown validation error"]))
 														status = 500
@@ -1187,7 +1213,6 @@ class AppsController < ApplicationController
 															# Upload new file
 															upload_blob(app.id, obj.id, request.body)
 														rescue Exception => e
-															puts e
 															errors.push(Array.new([1103, "Unknown validation error"]))
 															status = 500
 														end
@@ -1227,7 +1252,7 @@ class AppsController < ApplicationController
    end
    
    def delete_object
-      object_id = params["id"]
+		object_id = params["id"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -1280,6 +1305,10 @@ class AppsController < ApplicationController
                   status = 400
                else
                   obj = TableObject.find_by_id(object_id)
+
+						if !obj
+							obj = TableObject.find_by(uuid: object_id)
+						end
                
                   if !obj
                      errors.push(Array.new([2805, "Resource does not exist: TableObject"]))

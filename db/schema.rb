@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180117184437) do
+ActiveRecord::Schema.define(version: 20180127170052) do
 
   create_table "apps", force: :cascade do |t|
     t.string   "name",         limit: 255
@@ -65,7 +65,8 @@ ActiveRecord::Schema.define(version: 20180117184437) do
     t.datetime "created_at"
     t.datetime "updated_at"
     t.integer  "user_id",    limit: 4
-    t.integer  "visibility", limit: 4, default: 0
+    t.integer  "visibility", limit: 4,   default: 0
+    t.string   "uuid",       limit: 255
   end
 
   create_table "tables", force: :cascade do |t|

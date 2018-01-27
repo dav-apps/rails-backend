@@ -710,6 +710,31 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 415
       assert_same(1104, resp["errors"][0][0])
    end
+
+   test "Can create object with uuid" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&id=#{SecureRandom.uuid}", '{"test": "test"}', {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+   end
+
+   test "Can't create object with uuid that is already in use" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&uuid=#{table_objects(:third).uuid}", '{"test": "test"}', {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2704, resp["errors"][0][0])
+   end
    # End create_object tests
    
    # get_object tests
@@ -882,6 +907,40 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
    end
+
+   test "Can get object with uuid" do
+      save_users_and_devs
+
+      get "/v1/apps/object/#{table_objects(:eight).uuid}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+
+   test "Can get object with uploaded file with uuid" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      uuid = SecureRandom.uuid
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt&uuid=#{uuid}", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+
+      get "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}"
+      resp2 = response.body
+
+      assert_response 200
+      assert(!resp2.include?("id"))
+
+      # Delete object
+      delete "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}"
+      
+      assert_response 200
+   end
    # End get_object tests
    
    # update_object tests
@@ -994,6 +1053,18 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
    end
+
+   test "Can update object with uuid" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 200
+   end
    # End update_object tests
    
    # delete_object tests
@@ -1030,6 +1101,18 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
       delete "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+
+   test "Can delete object with uuid" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      delete "/v1/apps/object/#{table_objects(:first).uuid}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 200

@@ -2,32 +2,40 @@ first:
   table: card
   user: matt
   visibility: 1
+  uuid: f7c4a9c6-f80b-4a30-b446-ebd2566c5aa5
     
 second:
   table: card
   user: cato
+  uuid: 94d0f08d-6203-41cb-8667-93752aca4547
     
 third:
   table: card
   user: matt
+  uuid: 36f65622-0399-44a1-9be8-772b8968d451
     
 fourth:
   table: note
   user: cato
+  uuid: 3b22d423-cadb-44aa-9666-4bc64e4b81d4
     
 fifth:
   table: note
   user: cato
+  uuid: 8cd2c87a-c0d5-4d2f-9891-aa28cb0758a4
     
 sixth:
   table: card
   user: sherlock
+  uuid: 8d03e1b1-8deb-4dd1-8762-26c378af367a
 
 seventh:
   table: note
   user: sherlock
+  uuid: d501e586-3071-4671-ab92-62a43f9d4748
 
 eight:
   table: note
   user: matt
   visibility: 2
+  uuid: e2cf962a-bf93-45b1-9f2d-abe52c1968f0

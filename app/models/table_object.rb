@@ -5,6 +5,7 @@ class TableObject < ActiveRecord::Base
    belongs_to :user
    has_many :properties, dependent: :destroy
    has_many :object_access_tokens, dependent: :destroy
+   validates :uuid, presence: true
 
    private
    def delete_blob
