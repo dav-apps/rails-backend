@@ -616,8 +616,8 @@ class AppsController < ApplicationController
          rescue Exception
             errors.push(Array.new([1303, "JWT: unknown error"]))
             status = 401
-         end
-         
+			end
+			
 			if jwt_valid
 				user_id = decoded_jwt[0]["user_id"]
 				dev_id = decoded_jwt[0]["dev_id"]
@@ -1571,8 +1571,9 @@ class AppsController < ApplicationController
                            table.table_objects.each do |table_object|
                               if table_object.user_id == user.id
                                  object = Hash.new
-                                 object["id"] = table_object.id
-                                 object["user_id"] = table_object.user_id
+											object["id"] = table_object.id
+											object["uuid"] = table_object.uuid
+											object["user_id"] = table_object.user_id
                                  
                                  table_object.properties.each do |property|
                                     object[property.name] = property.value

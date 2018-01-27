@@ -915,6 +915,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
+      assert_equal(table_objects(:eight).uuid, resp["uuid"])
    end
 
    test "Can get object with uploaded file with uuid" do
