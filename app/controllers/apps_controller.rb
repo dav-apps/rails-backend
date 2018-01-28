@@ -1326,12 +1326,12 @@ class AppsController < ApplicationController
                            errors.push(Array.new([2803, "Resource does not exist: App"]))
                            status = 400
                         else
-                           if (app.dev_id != dev.id)    # Check if the app belongs to the dev
+									if (app.dev_id != dev.id)    # Check if the app belongs to the dev
                               errors.push(Array.new([1102, "Action not allowed"]))
                               status = 403
                            else
                               # Check if user owns the object
-                              if obj.user_id != user.id
+										if obj.user_id != user.id
                                  errors.push(Array.new([1102, "Action not allowed"]))
                                  status = 403
 										else
