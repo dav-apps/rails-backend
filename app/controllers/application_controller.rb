@@ -1,5 +1,5 @@
 class ApplicationController < ActionController::API
-  
+   
    def check_authorization(api_key, signature)
       dev = Dev.find_by(api_key: api_key)
       
@@ -23,6 +23,18 @@ class ApplicationController < ActionController::API
 
    def validate_url(url)
       url =~ /\A#{URI::regexp}\z/
+   end
+
+   def get_file_size(file)
+      size = 0
+
+      if file.class == StringIO
+         size = file.size
+      else
+         size = File.size(file)
+      end
+
+      return size
    end
 
    def upload_blob(app_id, object_id, blob)
@@ -78,6 +90,39 @@ class ApplicationController < ActionController::API
          client.delete_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
       rescue Exception => e
          
+      end
+   end
+
+   def get_used_storage_of_user(user_id)
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      client = Azure::Blob::BlobService.new
+      size = 0
+
+      User.find_by_id(user_id).table_objects.where(file: true).each do |obj|
+         begin
+            # Check if the object is a file
+            blob = client.get_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{obj.table.app_id}/#{obj.id}")
+            size += blob[0].properties[:content_length].to_i # The size of the file in bytes
+         rescue Exception => e
+            puts e
+         end
+      end
+      return size
+   end
+
+   def get_total_storage_of_user(user_id)
+      storage_on_free_plan = 10000000000 # 10 GB
+      storage_on_plus_plan = 50000000000 # 50 GB
+
+      user = User.find_by_id(user_id)
+      if user
+         if user.plan == 1 # User is on Plus plan
+            return storage_on_free_plan
+         else
+            return storage_on_plus_plan
+         end
       end
    end
 end

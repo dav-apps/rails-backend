@@ -355,6 +355,8 @@ class UsersController < ApplicationController
                      else
                         @result = requested_user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
                         @result["avatar"] = get_users_avatar(user.id)
+                        @result["total_storage"] = get_total_storage_of_user(user.id)
+                        @result["used_storage"] = get_used_storage_of_user(user.id)
 
                         users_apps = Array.new
                         requested_user.users_apps.each {|app| users_apps.push(app.app)}
@@ -426,6 +428,8 @@ class UsersController < ApplicationController
                else
                   @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
                   @result["avatar"] = get_users_avatar(user.id)
+                  @result["total_storage"] = get_total_storage_of_user(user.id)
+                  @result["used_storage"] = get_used_storage_of_user(user.id)
 
                   users_apps = Array.new
                   user.users_apps.each {|app| users_apps.push(app.app)}
@@ -614,6 +618,8 @@ class UsersController < ApplicationController
                            else
                               @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
                               @result["avatar"] = get_users_avatar(user.id)
+                              @result["total_storage"] = get_total_storage_of_user(user.id)
+                              @result["used_storage"] = get_used_storage_of_user(user.id)
 
                               users_apps = Array.new
                               user.users_apps.each {|app| users_apps.push(app.app)}
@@ -1227,7 +1233,7 @@ class UsersController < ApplicationController
    def generate_token
       SecureRandom.hex(20)
    end
-    
+   
    def validate_email(email)
       reg = Regexp.new("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
       return (reg.match(email))? true : false

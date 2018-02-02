@@ -777,9 +777,18 @@ class AppsController < ApplicationController
 										status = 415
 									end
 
+									# Check if the user has enough free storage
+									file_size = get_file_size(request.body)
+									free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
+
+									if free_storage < file_size
+										errors.push(Array.new([1110, "Not enough storage space"]))
+										status = 400
+									end
+
 									if errors.length == 0
 										# Create table object and save it
-										obj = TableObject.new(table_id: table.id, user_id: user.id)
+										obj = TableObject.new(table_id: table.id, user_id: user.id, file: true)
 
 										if uuid
 											obj.uuid = uuid
@@ -944,7 +953,7 @@ class AppsController < ApplicationController
                                     errors.push(Array.new([1102, "Action not allowed"]))
                                     status = 403
                                  else
-                                    if obj.user_id != user.id   # If the object belongs to the user
+                                    if obj.user_id != user.id   # Check if the object belongs to the user
                                        if obj.visibility == 0
                                           errors.push(Array.new([1102, "Action not allowed"]))
                                           status = 403
@@ -967,32 +976,36 @@ class AppsController < ApplicationController
          end
          
 			if errors.length == 0 && can_access
-				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-				filename = "#{app.id}/#{obj.id}"
 				file = false
 
-				begin
-					client = Azure::Blob::BlobService.new
-					blob = client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
-				rescue Exception => e
+				if obj.file
+					Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+					Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+	
+					filename = "#{app.id}/#{obj.id}"
 
+					begin
+						client = Azure::Blob::BlobService.new
+						blob = client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
+						file = true
+					rescue Exception => e
+	
+					end
 				end
 
-				if obj.properties.length == 1 && blob
+				if file
 					@result = blob[1]
 
+					# Get the file extension
 					obj.properties.each do |prop|
 						if prop.name == "ext"
 							filename += ".#{prop.value}"
 						end
 					end
 					
-					file = true
 					ok = true
 				else
-					@result = obj.attributes
+					@result = obj.attributes.except("file")
 
 					properties = Hash.new
 					obj.properties.each do |prop|
@@ -1204,6 +1217,16 @@ class AppsController < ApplicationController
 															status = 500
 														end
 													end
+
+													# Check if the user has enough free storage
+													file_size = get_file_size(request.body)
+													free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
+
+													if free_storage < file_size
+														errors.push(Array.new([1110, "Not enough storage space"]))
+														status = 400
+													end
+													
 													
 													if !obj.save
 														errors.push(Array.new([1103, "Unknown validation error"]))
