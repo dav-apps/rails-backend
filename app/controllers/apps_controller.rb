@@ -810,21 +810,34 @@ class AppsController < ApplicationController
 												upload_blob(app.id, obj.id, request.body)
 
 												# Save extension as property
-												prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+												ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
 
-												if !prop.save
+												if !ext_prop.save
 													errors.push(Array.new([1103, "Unknown validation error"]))
 													status = 500
 												else
-													@result = obj.attributes
+													size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
 
-													properties = Hash.new
-													obj.properties.each do |prop|
-														properties[prop.name] = prop.value
+													if !size_prop.save
+														errors.push(Array.new([1103, "Unknown validation error"]))
+														status = 500
+													else
+														# Save that user uses the app
+														if !user.apps.find_by_id(app.id)
+															users_app = UsersApp.create(app_id: app.id, user_id: user.id)
+															users_app.save
+														end
+
+														@result = obj.attributes
+
+														properties = Hash.new
+														obj.properties.each do |prop|
+															properties[prop.name] = prop.value
+														end
+	
+														@result["properties"] = properties
+														ok = true
 													end
-
-													@result["properties"] = properties
-													ok = true
 												end
 											rescue Exception => e
 												errors.push(Array.new([1103, "Unknown validation error"]))
@@ -1241,15 +1254,22 @@ class AppsController < ApplicationController
 														end
 
 														if errors.length == 0
-															@result = obj.attributes
+															size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
 
-															properties = Hash.new
-															obj.properties.each do |prop|
-																properties[prop.name] = prop.value
+															if !size_prop.save
+																errors.push(Array.new([1103, "Unknown validation error"]))
+																status = 500
+															else
+																@result = obj.attributes
+
+																properties = Hash.new
+																obj.properties.each do |prop|
+																	properties[prop.name] = prop.value
+																end
+			
+																@result["properties"] = properties
+																ok = true
 															end
-		
-															@result["properties"] = properties
-															ok = true
 														end
 													end
 												end
@@ -1819,7 +1839,6 @@ class AppsController < ApplicationController
                         status = 400
                      else
                         # Make sure this gets only called from the website
-                        #puts "#{dev.user.username} == Dev.first &&  #{app.dev.user.username} == #{user.dev.user.username}"
                         if !((dev == Dev.first) && (app.dev == user.dev))
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403

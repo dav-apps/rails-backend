@@ -93,22 +93,53 @@ class ApplicationController < ActionController::API
       end
    end
 
-   def get_used_storage_of_user(user_id)
+   def get_used_storage_by_app(app_id, user_id)
+      size = 0
+      app = App.find_by_id(app_id)
+
+      if app
+         app.tables.each do |table|
+            table.table_objects.where(user_id: user_id, file: true).each do |obj|
+               size += get_file_size_of_table_object(obj.id)
+            end
+         end
+      end
+      
+      return size
+   end
+
+   def get_file_size_of_table_object(obj_id)
+      obj = TableObject.find_by_id(obj_id)
+
+      obj.properties.each do |prop| # Get the size property of the table_object
+         if prop.name == "size"
+            return prop.value.to_i
+         end
+      end
+
+      # If size property was not saved, get file size directly from Azure
       Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
       Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
       client = Azure::Blob::BlobService.new
+
+      begin
+         # Check if the object is a file
+         blob = client.get_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{obj.table.app_id}/#{obj.id}")
+         return blob[0].properties[:content_length].to_i # The size of the file in bytes
+      rescue Exception => e
+         puts e
+      end
+
+      return 0
+   end
+
+   def get_used_storage_of_user(user_id)
       size = 0
 
       User.find_by_id(user_id).table_objects.where(file: true).each do |obj|
-         begin
-            # Check if the object is a file
-            blob = client.get_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{obj.table.app_id}/#{obj.id}")
-            size += blob[0].properties[:content_length].to_i # The size of the file in bytes
-         rescue Exception => e
-            puts e
-         end
+         size += get_file_size_of_table_object(obj.id)
       end
+
       return size
    end
 

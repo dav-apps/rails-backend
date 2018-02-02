@@ -359,7 +359,11 @@ class UsersController < ApplicationController
                         @result["used_storage"] = get_used_storage_of_user(user.id)
 
                         users_apps = Array.new
-                        requested_user.users_apps.each {|app| users_apps.push(app.app)}
+                        requested_user.apps.each do |app|
+                           app_hash = app.attributes
+                           app_hash["used_storage"] = get_used_storage_by_app(app.id, requested_user.id)
+                           users_apps.push(app_hash)
+                        end
                         @result["apps"] = users_apps
 
                         ok = true
@@ -432,7 +436,11 @@ class UsersController < ApplicationController
                   @result["used_storage"] = get_used_storage_of_user(user.id)
 
                   users_apps = Array.new
-                  user.users_apps.each {|app| users_apps.push(app.app)}
+                  user.apps.each do |app|
+                     app_hash = app.attributes
+                     app_hash["used_storage"] = get_used_storage_by_app(app.id, user.id)
+                     users_apps.push(app_hash)
+                  end
                   @result["apps"] = users_apps
 
                   ok = true
