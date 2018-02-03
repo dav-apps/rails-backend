@@ -830,12 +830,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       object_id = table_objects(:third).id
       
-      post "/v1/apps/access_token?object_id=#{object_id}&jwt=#{matts_jwt}"
+      post "/v1/apps/object/#{object_id}/access_token?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 201
       
-      token = resp["access_token"]
+      token = resp["token"]
       
       get "/v1/apps/object/#{object_id}?access_token=#{token}"
       resp = JSON.parse response.body
@@ -1508,12 +1508,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # create_access_token tests
    test "Missing fields in create_access_token" do
-      post "/v1/apps/access_token"
+      post "/v1/apps/object/1/access_token"
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2115, resp["errors"][0][0])
-      assert_same(2102, resp["errors"][1][0])
+      assert_same(2102, resp["errors"][0][0])
    end
    
    test "Can't create access tokens for objects of another user" do
@@ -1521,8 +1520,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      object = table_objects(:fourth)
       
-      post "/v1/apps/access_token?object_id=#{table_objects(:fifth).id}&jwt=#{matts_jwt}"
+      post "/v1/apps/object/#{object.id}/access_token?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1534,14 +1534,179 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       sherlock = users(:sherlock)
       sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      
-      post "/v1/apps/access_token?object_id=#{table_objects(:seventh).id}&jwt=#{sherlocks_jwt}"
+      object = table_objects(:seventh)
+
+      post "/v1/apps/object/#{object.id}/access_token?jwt=#{sherlocks_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
    # End create_access_token tests
+
+   # add_access_token_to_object tests
+   test "Missing fields in add_access_token_to_object" do
+      put "/v1/apps/object/1/access_token/token"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can add access token to object" do
+      save_users_and_devs
+
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      access_token = access_tokens(:first_test_token)
+      object = table_objects(:sixth)
+
+      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 200
+      assert_equal(access_token.id, resp["id"])
+   end
+
+   test "Can't add access token to object of another user" do
+      save_users_and_devs
+
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      access_token = access_tokens(:first_test_token)
+      object = table_objects(:third)
+
+      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can't add access token to object of the table of another dev" do
+      save_users_and_devs
+
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      access_token = access_tokens(:first_test_token)
+      object = table_objects(:seventh)
+
+      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   # End add_access_token_to_object tests
+
+   # remove_access_token_from_object tests
+   test "Missing fields in remove_access_token_from_objects" do
+      put "/v1/apps/object/1/access_token/token"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Access token will be destroyed in remove_access_token_from_object" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      object = table_objects(:third)
+
+      # Create new access_token and add it to an object
+      post "/v1/apps/object/#{object.id}/access_token?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 201
+      token = resp["token"]
+
+      # Try to get the object as not logged in user
+      get "/v1/apps/object/#{object.id}?access_token=#{token}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(resp2["id"], object.id)
+
+      # Remove the access token from the object and check if the access token was deleted
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{jwt}"
+      assert_response 200
+      
+      get "/v1/apps/object/#{object.id}?access_token=#{token}"
+      resp3 = JSON.parse response.body
+      assert_response 403
+   end
+
+   test "Can't remove access token from object of another user" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matt_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      object = table_objects(:third)
+      sherlock = users(:sherlock)
+      sherlock_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+
+      # Create new access_token and add it to an object
+      post "/v1/apps/object/#{object.id}/access_token?jwt=#{matt_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 201
+      token = resp["token"]
+
+      # Try to get the object as not logged in user
+      get "/v1/apps/object/#{object.id}?access_token=#{token}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(resp2["id"], object.id)
+
+      # Try to remove the access token as another user
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{sherlock_jwt}"
+      resp3 = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp3["errors"][0][0])
+
+      # Remove the access token
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{matt_jwt}"
+      assert_response 200
+   end
+
+   test "Can't remove access token from object of the table of another dev" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      mattXmatt_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      mattXsherlock_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      object = table_objects(:eight)
+
+      # Create new access_token and add it to an object
+      post "/v1/apps/object/#{object.id}/access_token?jwt=#{mattXmatt_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 201
+      token = resp["token"]
+
+      # Try to get the object as not logged in user
+      get "/v1/apps/object/#{object.id}?access_token=#{token}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(resp2["id"], object.id)
+
+      # Try to remove the access token with another jwt
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{mattXsherlock_jwt}"
+      resp3 = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp3["errors"][0][0])
+
+      # Remove the access token
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{mattXmatt_jwt}"
+      assert_response 200
+   end
+   # End remove_access_token_from_object tests
    
    # users_apps tests
    test "UsersApp object gets created and deleted when user creates object and deletes it" do
