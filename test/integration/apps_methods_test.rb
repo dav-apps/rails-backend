@@ -480,7 +480,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(resp["errors"].length, 3)
    end
    
-   test "Can't save json when using another Content-Type than json in create_object" do
+   test "Can't save json when using another Content-Type than application/json in create_object" do
       save_users_and_devs
       
       matt = users(:matt)
@@ -489,8 +489,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", "{\"test\": \"test\"}", {'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
-      assert_response 400
-      assert_same(2119, resp["errors"][0][0])
+      assert_response 415
+      assert_same(1104, resp["errors"][0][0])
    end
    
    test "Table does not exist and gets created when the user is the dev" do
@@ -659,8 +659,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
       resp = JSON.parse response.body
 
-      assert_response 400
-      assert_same(2119, resp["errors"][0][0])
+      assert_response 415
+      assert_same(1104, resp["errors"][0][0])
    end
 
    test "Can create object and upload text file" do
@@ -913,7 +913,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
       assert_response 201
 
-      get "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      get "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&file=true"
       resp2 = response.body
 
       assert_response 200
@@ -948,7 +948,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
       assert_response 201
 
-      get "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}"
+      get "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}&file=true"
       resp2 = response.body
 
       assert_response 200

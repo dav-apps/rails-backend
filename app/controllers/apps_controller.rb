@@ -686,100 +686,102 @@ class AppsController < ApplicationController
 										status = 400
 									end
 								end
+
+								if request.headers["Content-Type"] == "application/x-www-form-urlencoded"
+									errors.push(Array.new([1104, "Content-type not supported"]))
+									status = 415
+								end
+
+
+								obj = TableObject.new(table_id: table.id, user_id: user.id)
+
+								if uuid
+									obj.uuid = uuid
+								else
+									obj.uuid = SecureRandom.uuid
+								end
 								
-								if (request.headers["Content-Type"] == "application/json" ||
-									request.headers["Content-Type"] == "application/json; charset=utf-8") &&
-									request.content_type == "application/json"
+								begin
+									if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
+										obj.visibility = visibility.to_i
+									end
+								end
 
-									if errors.length == 0
-										obj = TableObject.new(table_id: table.id, user_id: user.id)
 
-										if uuid
-											obj.uuid = uuid
-										else
-											obj.uuid = SecureRandom.uuid
-										end
-										
-										begin
-											if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
-												obj.visibility = visibility.to_i
-											end
-										end
-										
-										if !obj.save
-											errors.push(Array.new([1103, "Unknown validation error"]))
-											status = 500
-										else
-											# Get the body of the request
-											object = request.request_parameters
-											
-											if object.length < 1
-												errors.push(Array.new([2116, "Missing field: object"]))
-												status = 400
+								# If ext there is an ext property, save object as a file
+								if !ext || ext.length < 1
+									# If there is no ext, Content-Type must be application/json
+									if !request.headers["Content-Type"].include? "application/json"
+										errors.push(Array.new([1104, "Content-type not supported"]))
+										status = 415
+									else		# Save object normally
+										if errors.length == 0
+											if !obj.save
+												errors.push(Array.new([1103, "Unknown validation error"]))
+												status = 500
 											else
-												object.each do |key, value|
-													# Validate the length of the properties
-													if key.length > max_property_name_length
-														errors.push(Array.new([2306, "Field too long: Property.name"]))
-														status = 400
-													end
-													
-													if key.length < min_property_name_length
-														errors.push(Array.new([2206, "Field too short: Property.name"]))
-														status = 400
-													end
-													
-													if value.length > max_property_value_length
-														errors.push(Array.new([2307, "Field too long: Property.value"]))
-														status = 400
-													end
-													
-													if value.length < min_property_value_length
-														errors.push(Array.new([2207, "Field too short: Property.value"]))
-														status = 400
-													end
-												end
-											end
-											
-											if errors.length == 0
-												properties = Hash.new
+												# Get the body of the request
+												object = request.request_parameters
 												
-												object.each do |key, value|
-													if !Property.create(table_object_id: obj.id, name: key, value: value)
-														errors.push(Array.new([1103, "Unknown validation error"]))
-														status = 500
-													else
-														properties[key] = value
+												if object.length < 1
+													errors.push(Array.new([2116, "Missing field: object"]))
+													status = 400
+												else
+													object.each do |key, value|
+														# Validate the length of the properties
+														if key.length > max_property_name_length
+															errors.push(Array.new([2306, "Field too long: Property.name"]))
+															status = 400
+														end
+														
+														if key.length < min_property_name_length
+															errors.push(Array.new([2206, "Field too short: Property.name"]))
+															status = 400
+														end
+														
+														if value.length > max_property_value_length
+															errors.push(Array.new([2307, "Field too long: Property.value"]))
+															status = 400
+														end
+														
+														if value.length < min_property_value_length
+															errors.push(Array.new([2207, "Field too short: Property.value"]))
+															status = 400
+														end
 													end
 												end
 												
-												# Save that user uses the app
-												if !user.apps.find_by_id(app.id)
-													users_app = UsersApp.create(app_id: app.id, user_id: user.id)
-													users_app.save
+												if errors.length == 0
+													properties = Hash.new
+													
+													object.each do |key, value|
+														if !Property.create(table_object_id: obj.id, name: key, value: value)
+															errors.push(Array.new([1103, "Unknown validation error"]))
+															status = 500
+														else
+															properties[key] = value
+														end
+													end
+													
+													# Save that user uses the app
+													if !user.apps.find_by_id(app.id)
+														users_app = UsersApp.create(app_id: app.id, user_id: user.id)
+														users_app.save
+													end
+													
+													@result = obj.attributes
+													@result["properties"] = properties
+													
+													ok = true
 												end
-												
-												@result = obj.attributes
-												@result["properties"] = properties
-												
-												ok = true
 											end
 										end
 									end
 								else
-									if !ext || ext.length < 1
-										errors.push(Array.new([2119, "Missing field: ext"]))
-										status = 400
-									end
-
-									if request.headers["Content-Type"] == "application/x-www-form-urlencoded"
-										errors.push(Array.new([1104, "Content-type not supported"]))
-										status = 415
-									end
-
 									# Check if the user has enough free storage
 									file_size = get_file_size(request.body)
 									free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
+									obj.file = true
 
 									if free_storage < file_size
 										errors.push(Array.new([1110, "Not enough storage space"]))
@@ -787,21 +789,6 @@ class AppsController < ApplicationController
 									end
 
 									if errors.length == 0
-										# Create table object and save it
-										obj = TableObject.new(table_id: table.id, user_id: user.id, file: true)
-
-										if uuid
-											obj.uuid = uuid
-										else
-											obj.uuid = SecureRandom.uuid
-										end
-										
-										begin
-											if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
-												obj.visibility = visibility.to_i
-											end
-										end
-										
 										if !obj.save
 											errors.push(Array.new([1103, "Unknown validation error"]))
 											status = 500
@@ -866,6 +853,7 @@ class AppsController < ApplicationController
    def get_object
       object_id = params["id"]
 		token = params["access_token"]
+		file = params["file"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
@@ -981,7 +969,8 @@ class AppsController < ApplicationController
                            end
                         end
                      end
-                  else
+						else
+							# Visibility == 2
                      can_access = true
                   end
                end
@@ -989,37 +978,33 @@ class AppsController < ApplicationController
          end
          
 			if errors.length == 0 && can_access
-				file = false
-
-				if obj.file
+				if file == "true" && obj.file
+					# Return the file
 					Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
 					Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-	
 					filename = "#{app.id}/#{obj.id}"
 
 					begin
 						client = Azure::Blob::BlobService.new
 						blob = client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
+
+						@result = blob[1]
+
+						# Get the file extension
+						obj.properties.each do |prop|
+							if prop.name == "ext"
+								filename += ".#{prop.value}"
+							end
+						end
+						
+						ok = true
 						file = true
 					rescue Exception => e
-	
+						errors.push(Array.new([1111, "File does not exist"]))
+            		status = 400
 					end
-				end
-
-				if file
-					@result = blob[1]
-
-					# Get the file extension
-					obj.properties.each do |prop|
-						if prop.name == "ext"
-							filename += ".#{prop.value}"
-						end
-					end
-					
-					ok = true
 				else
-					@result = obj.attributes.except("file")
-
+					@result = obj.attributes
 					properties = Hash.new
 					obj.properties.each do |prop|
 						properties[prop.name] = prop.value
@@ -1027,8 +1012,9 @@ class AppsController < ApplicationController
 					@result["properties"] = properties
 
 					ok = true
+					file = false
 				end
-         elsif errors.length == 0
+         elsif errors.length == 0 && !can_access
             errors.push(Array.new([1102, "Action not allowed"]))
             status = 403
          end
