@@ -735,6 +735,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 400
       assert_same(2704, resp["errors"][0][0])
    end
+
+   test "Can create object with binary file" do
+      save_users_and_devs
+
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", body: fixture_file_upload('test/files/test.png', 'image/png', true)
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_equal(tables(:card).id, resp["table_id"])
+
+      # Delete the object
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      assert_response 200
+   end
    # End create_object tests
    
    # get_object tests
@@ -1064,6 +1081,30 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
 
+      assert_response 200
+   end
+
+   test "Can update object and replace uploaded file" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      file1Path = "test/files/test.png"
+      file2Path = "test/files/test2.mp3"
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", File.open(file1Path, "rb").read, {'Content-Type' => 'image/png'}
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      assert_equal(File.size(file1Path), resp["properties"]["size"].to_i)
+
+      put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&ext=mp3", File.open(file2Path, "rb").read, {'Content-Type' => 'audio/mpeg'}
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(File.size(file2Path), resp2["properties"]["size"].to_i)
+
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
       assert_response 200
    end
    # End update_object tests

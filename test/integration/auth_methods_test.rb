@@ -343,6 +343,29 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       assert_response 200
       assert_same(matt.id, resp["id"])
+      assert_same(0, resp["used_storage"])
+   end
+
+   test "Can get user and used storage of apps" do
+      save_users_and_devs
+      
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      file1Path = "test/files/test.png"
+
+      post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", File.open(file1Path, "rb").read, {'Content-Type' => 'image/png'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+
+      get "/v1/auth/user?jwt=#{jwt}"
+      resp2 = JSON.parse response.body
+
+      assert_response 200
+      assert_equal(File.size(file1Path), resp2["apps"][0]["used_storage"])
+
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      assert_response 200
    end
    # End get_user tests
    
