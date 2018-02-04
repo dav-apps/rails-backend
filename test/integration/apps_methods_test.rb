@@ -1544,6 +1544,58 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End create_access_token tests
 
+   # get_access_token tests
+   test "Missing fields in get_access_token" do
+      get "/v1/apps/object/1/access_token"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can get access token" do
+      save_users_and_devs
+
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      obj = table_objects(:sixth)
+
+      get "/v1/apps/object/#{obj.id}/access_token?jwt=#{jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_not_nil(resp["access_token"][0]["id"])
+   end
+
+   test "Can't get access token of object of another user" do
+      save_users_and_devs
+
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      obj = table_objects(:third)
+
+      get "/v1/apps/object/#{obj.id}/access_token?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can't get access token of object of the app of another dev" do
+      save_users_and_devs
+
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      obj = table_objects(:seventh)
+
+      get "/v1/apps/object/#{obj.id}/access_token?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+   # End get_access_token
+
    # add_access_token_to_object tests
    test "Missing fields in add_access_token_to_object" do
       put "/v1/apps/object/1/access_token/token"

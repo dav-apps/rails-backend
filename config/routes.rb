@@ -44,6 +44,7 @@ Rails.application.routes.draw do
   match '/v1/apps/app/:id', to: 'apps#delete_app', via: 'delete'
   
   match '/v1/apps/object/:id/access_token', to: 'apps#create_access_token', via: 'post'
+  match '/v1/apps/object/:id/access_token', to: 'apps#get_access_token', via: 'get'
   match '/v1/apps/object/:id/access_token/:token', to: 'apps#add_access_token_to_object', via: 'put'
   match '/v1/apps/object/:id/access_token/:token', to: 'apps#remove_access_token_from_object', via: 'delete'
   
