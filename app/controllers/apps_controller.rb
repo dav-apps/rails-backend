@@ -1122,12 +1122,70 @@ class AppsController < ApplicationController
                                  errors.push(Array.new([1102, "Action not allowed"]))
                                  status = 403
 										else
-											if (request.headers["Content-Type"] == "application/json" ||
-												request.headers["Content-Type"] == "application/json; charset=utf-8") &&
-												request.content_type == "application/json"
 
+											# If there is a new visibility, save it
+											begin
+												if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
+													obj.visibility = visibility.to_i
+													
+													if !obj.save
+														errors.push(Array.new([1103, "Unknown validation error"]))
+														status = 500
+													end
+												end
+											end
+
+											if obj.file
+												if errors.length == 0
+													if ext && ext.length > 0
+														# Update ext property
+														ext_prop = Property.find_by(name: "ext", table_object_id: obj.id)
+														ext_prop.value = ext
+
+														if !ext_prop.save
+															errors.push(Array.new([1103, "Unknown validation error"]))
+															status = 500
+														end
+													end
+
+													# Check if the user has enough free storage
+													file_size = get_file_size(request.body)
+													free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
+
+													if free_storage < file_size
+														errors.push(Array.new([1110, "Not enough storage space"]))
+														status = 400
+													end
+													
+													begin
+														# Upload new file
+														upload_blob(app.id, obj.id, request.body)
+													rescue Exception => e
+														errors.push(Array.new([1103, "Unknown validation error"]))
+														status = 500
+													end
+
+													if errors.length == 0
+														size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+
+														if !size_prop.save
+															errors.push(Array.new([1103, "Unknown validation error"]))
+															status = 500
+														else
+															@result = obj.attributes
+
+															properties = Hash.new
+															obj.properties.each do |prop|
+																properties[prop.name] = prop.value
+															end
+		
+															@result["properties"] = properties
+															ok = true
+														end
+													end
+												end
+											else # If the object is not a file
 												# Update the properties of the object
-												# Get the body of the request
 												object = request.request_parameters
 												
 												object.each do |key, value|
@@ -1152,7 +1210,7 @@ class AppsController < ApplicationController
 														status = 400
 													end
 												end
-												
+
 												if errors.length == 0
 													properties = Hash.new
 													object.each do |key, value|
@@ -1179,84 +1237,10 @@ class AppsController < ApplicationController
 														end
 													end
 													
-													# If there is a new visibility, save it
-													begin
-														if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
-															obj.visibility = visibility.to_i
-															
-															if !obj.save
-																errors.push(Array.new([1103, "Unknown validation error"]))
-																status = 500
-															end
-														end
-													end
-													
 													@result = obj.attributes
 													@result["properties"] = properties
 													
 													ok = true
-												end
-											else
-												if errors.length == 0
-													# If there is a new visibility, save it
-													begin
-														if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
-															obj.visibility = visibility.to_i
-														end
-													end
-
-													if ext && ext.length > 0
-														# Update ext property
-														ext_prop = Property.find_by(name: "ext", table_object_id: obj.id)
-														ext_prop.value = ext
-
-														if !ext_prop.save
-															errors.push(Array.new([1103, "Unknown validation error"]))
-															status = 500
-														end
-													end
-
-													# Check if the user has enough free storage
-													file_size = get_file_size(request.body)
-													free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
-
-													if free_storage < file_size
-														errors.push(Array.new([1110, "Not enough storage space"]))
-														status = 400
-													end
-													
-													
-													if !obj.save
-														errors.push(Array.new([1103, "Unknown validation error"]))
-														status = 500
-													else
-														begin
-															# Upload new file
-															upload_blob(app.id, obj.id, request.body)
-														rescue Exception => e
-															errors.push(Array.new([1103, "Unknown validation error"]))
-															status = 500
-														end
-
-														if errors.length == 0
-															size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
-
-															if !size_prop.save
-																errors.push(Array.new([1103, "Unknown validation error"]))
-																status = 500
-															else
-																@result = obj.attributes
-
-																properties = Hash.new
-																obj.properties.each do |prop|
-																	properties[prop.name] = prop.value
-																end
-			
-																@result["properties"] = properties
-																ok = true
-															end
-														end
-													end
 												end
 											end
                               end
