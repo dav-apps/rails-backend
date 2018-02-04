@@ -145,14 +145,14 @@ class ApplicationController < ActionController::API
 
    def get_total_storage_of_user(user_id)
       storage_on_free_plan = 10000000000 # 10 GB
-      storage_on_plus_plan = 50000000000 # 50 GB
+		storage_on_plus_plan = 50000000000 # 50 GB
 
       user = User.find_by_id(user_id)
       if user
          if user.plan == 1 # User is on Plus plan
-            return storage_on_free_plan
-         else
             return storage_on_plus_plan
+         else
+            return storage_on_free_plan
          end
       end
    end
