@@ -84,7 +84,7 @@ class AnalyticsController < ApplicationController
                         errors.push(Array.new([1103, "Unknown validation error"]))
                         status = 500
                      else
-                        @result = event_log
+                        @result = event_log.attributes
                         ok = true
                      end
                   end
@@ -172,13 +172,8 @@ class AnalyticsController < ApplicationController
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           @result["event"] = event.attributes
-                           
-                           logs = Array.new
-                           
-                           event.event_logs.each { |log| logs.push(log.attributes) }
-                           
-                           @result["event"]["logs"] = logs
+                           @result = event.attributes
+                           @result["logs"] = event.event_logs
                            ok = true
                         end
                      end
@@ -268,13 +263,8 @@ class AnalyticsController < ApplicationController
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           @result["event"] = event.attributes
-                           
-                           logs = Array.new
-                           
-                           event.event_logs.each { |log| logs.push(log.attributes) }
-                           
-                           @result["event"]["logs"] = logs
+                           @result = event.attributes
+                           @result["logs"] = event.event_logs
                            ok = true
                         end
                      end
@@ -398,7 +388,7 @@ class AnalyticsController < ApplicationController
                                  errors.push(Array.new([1103, "Unknown validation error"]))
                                  status = 500
                               else
-                                 @result = event
+                                 @result = event.attributes
                                  ok = true
                               end
                            end

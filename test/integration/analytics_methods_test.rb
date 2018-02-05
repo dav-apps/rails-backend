@@ -45,12 +45,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 201
       assert_same(Event.find_by(name: "NewEvent").id, resp["event_id"])
    end
-   
    # End create_event tests
    
-   
    # get_event tests
-   
    test "Can get all logs of an event" do
       save_users_and_devs
       
@@ -61,7 +58,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      resp["event"]["logs"].each do |e|
+      resp["logs"].each do |e|
          assert_same(events(:Login).id, e["event_id"])
       end
    end
@@ -76,7 +73,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      resp["event"]["logs"].each do |e|
+      resp["logs"].each do |e|
          assert_same(events(:Login).id, e["event_id"])
       end
    end
@@ -146,7 +143,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    # End get_event tests
    
    # update_event tests
-   
    test "Missing fields in update_event" do
       put "/v1/analytics/event/#{events(:CreateCard).id}"
       resp = JSON.parse response.body
@@ -316,6 +312,5 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_nil(Event.find_by_id(event_id))
    end
-   
    # End delete_event tests
 end
