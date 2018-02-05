@@ -235,13 +235,18 @@ class AppsController < ApplicationController
                         status = 403
                      else
                         tables = Array.new
-                        
                         app.tables.each do |table|
                            tables.push(table)
-                        end
-                     
+								end
+								
+								events = Array.new
+								app.events.each do |event|
+									events.push(event)
+								end
+								
                         @result = app.attributes
-                        @result["tables"] = tables
+								@result["tables"] = tables
+								@result["events"] = events
                         ok = true
                      end
                   end
