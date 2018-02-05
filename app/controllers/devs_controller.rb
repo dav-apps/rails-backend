@@ -137,7 +137,13 @@ class DevsController < ApplicationController
                      status = 403
                   else
                      # Return the dev object
-                     @result = user.dev
+							@result = user.dev.attributes
+
+							apps_array = Array.new
+							user.dev.apps.each { |app| apps_array.push(app) }
+
+							@result["apps"] = apps_array
+
                      ok = true
                   end
                end
@@ -194,7 +200,13 @@ class DevsController < ApplicationController
                      errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                      status = 400
                   else
-                     @result = requested_dev
+							@result = requested_dev.attributes
+							
+							apps_array = Array.new
+							requested_dev.apps.each { |app| apps_array.push(app) }
+
+							@result["apps"] = apps_array
+
                      ok = true
                   end
                end

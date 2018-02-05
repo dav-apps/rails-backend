@@ -61,6 +61,8 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
+      assert_equal(devs(:matt).id, resp["id"])
+      assert_not_nil(resp["apps"][0]["id"])
    end
    
    test "Can't get dev from outside the website" do
@@ -107,6 +109,8 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
+      assert_same(devs(:matt).id, resp["id"])
+      assert_not_nil(resp["apps"][0]["id"])
    end
    # End get_dev_by_api_key_tests
    
