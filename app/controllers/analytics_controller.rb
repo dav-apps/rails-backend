@@ -103,7 +103,8 @@ class AnalyticsController < ApplicationController
    end
    
    def get_event
-      event_id = params["id"]
+		event_id = params["id"]
+		app_id = params["app_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
@@ -112,6 +113,11 @@ class AnalyticsController < ApplicationController
       
       if !event_id
          errors.push(Array.new([2103, "Missing field: id"]))
+         status = 400
+		end
+		
+		if !app_id
+         errors.push(Array.new([2110, "Missing field: app_id"]))
          status = 400
       end
       
@@ -153,31 +159,31 @@ class AnalyticsController < ApplicationController
                if !dev
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
-               else
-                  # Get the app of the event
-                  event = Event.find_by_id(event_id)
+					else
+						app = App.find_by_id(app_id)
                   
-                  if !event
-                     errors.push(Array.new([2807, "Resource does not exist: Event"]))
-                     status = 400
-                  else
-                     app = App.find_by_id(event.app_id)
-                     
-                     if !app
-                        errors.push(Array.new([2803, "Resource does not exist: App"]))
-                        status = 400
-                     else
-                        # Make sure this can only be called from the website
-                        if !((dev == Dev.first) && (app.dev == user.dev))
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
-                        else
-                           @result = event.attributes
-                           @result["logs"] = event.event_logs
-                           ok = true
-                        end
-                     end
-                  end
+						if !app
+							errors.push(Array.new([2803, "Resource does not exist: App"]))
+							status = 400
+						else
+							# Get the app of the event
+							event = Event.find_by(id: event_id, app: app_id)
+
+							if !event
+								errors.push(Array.new([2807, "Resource does not exist: Event"]))
+								status = 400
+							else
+								# Make sure this can only be called from the website
+								if !((dev == Dev.first) && (app.dev == user.dev))
+									errors.push(Array.new([1102, "Action not allowed"]))
+									status = 403
+								else
+									@result = event.attributes
+									@result["logs"] = event.event_logs
+									ok = true
+								end
+							end
+						end
                end
             end
          end
@@ -194,7 +200,8 @@ class AnalyticsController < ApplicationController
    end
    
    def get_event_by_name
-      event_name = params["name"]
+		event_name = params["name"]
+		app_id = params["app_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
@@ -203,6 +210,11 @@ class AnalyticsController < ApplicationController
       
       if !event_name || event_name.length < 1
          errors.push(Array.new([2111, "Missing field: name"]))
+         status = 400
+		end
+		
+		if !app_id
+         errors.push(Array.new([2110, "Missing field: app_id"]))
          status = 400
       end
       
@@ -244,31 +256,31 @@ class AnalyticsController < ApplicationController
                if !dev
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
-               else
-                  # Get the app of the event
-                  event = Event.find_by(name: event_name)
+					else
+						app = App.find_by_id(app_id)
                   
-                  if !event
-                     errors.push(Array.new([2807, "Resource does not exist: Event"]))
-                     status = 404
-                  else
-                     app = App.find_by_id(event.app_id)
-                     
-                     if !app
-                        errors.push(Array.new([2803, "Resource does not exist: App"]))
-                        status = 400
-                     else
-                        # Make sure this can only be called from the website
-                        if !((dev == Dev.first) && (app.dev == user.dev))
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
-                        else
-                           @result = event.attributes
-                           @result["logs"] = event.event_logs
-                           ok = true
-                        end
-                     end
-                  end
+						if !app
+							errors.push(Array.new([2803, "Resource does not exist: App"]))
+							status = 400
+						else
+							# Get the app of the event
+							event = Event.find_by(name: event_name, app: app_id)
+							
+							if !event
+								errors.push(Array.new([2807, "Resource does not exist: Event"]))
+								status = 404
+							else
+								# Make sure this can only be called from the website
+								if !((dev == Dev.first) && (app.dev == user.dev))
+									errors.push(Array.new([1102, "Action not allowed"]))
+									status = 403
+								else
+									@result = event.attributes
+									@result["logs"] = event.event_logs
+									ok = true
+								end
+							end
+						end
                end
             end
          end

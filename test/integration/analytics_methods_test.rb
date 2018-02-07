@@ -54,7 +54,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
+      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&app_id=#{events(:Login).app_id}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -69,7 +69,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}"
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
       resp = JSON.parse response.body
       
       assert_response 200
@@ -84,7 +84,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
+      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&app_id=#{events(:Login).app_id}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -97,7 +97,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}"
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -110,7 +110,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}"
+      get "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}&app_id=#{events(:CreateCard).app_id}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -123,7 +123,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:CreateCard).name}"
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:CreateCard).name}&app_id=#{events(:CreateCard).app_id}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -138,7 +138,8 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       
       assert(response.status == 400 || response.status ==  401)
       assert_same(2111, resp["errors"][0][0])
-      assert_same(2102, resp["errors"][1][0])
+      assert_same(2110, resp["errors"][1][0])
+      assert_same(2102, resp["errors"][2][0])
    end
    # End get_event tests
    
