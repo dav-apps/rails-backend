@@ -1,4 +1,4 @@
-class CreateTableObjectsAccessToken < ActiveRecord::Migration
+class CreateTableObjectsAccessTokens < ActiveRecord::Migration
   def change
     create_table :table_objects_access_tokens do |t|
       t.integer :table_object_id
