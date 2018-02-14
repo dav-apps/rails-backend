@@ -799,12 +799,17 @@ class AppsController < ApplicationController
 											status = 500
 										else
 											begin
-												upload_blob(app.id, obj.id, request.body)
+												blob = upload_blob(app.id, obj.id, request.body)
+												etag = blob.properties[:etag]
+												# Remove the first and the last character of etag, because they are "" for whatever reason
+												etag = etag[1...etag.size-1]
 
 												# Save extension as property
 												ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+												# Save etag as property
+												etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
 
-												if !ext_prop.save
+												if !ext_prop.save || !etag_prop.save
 													errors.push(Array.new([1103, "Unknown validation error"]))
 													status = 500
 												else
@@ -847,7 +852,15 @@ class AppsController < ApplicationController
       
       if ok && errors.length == 0
          status = 201
-      else
+		else
+			# Delete the uploaded blob and the object
+			begin
+				delete_blob(app.id, obj.id)
+				TableObject.find_by_id(obj.id).destroy!
+			rescue Exception => e
+				
+			end
+
          @result.clear
          @result["errors"] = errors
       end
@@ -901,15 +914,15 @@ class AppsController < ApplicationController
                      if !jwt || jwt.length < 1
                         # Check access_token
                         if !token || token.length < 1
-                           # Token and JWT missing
+									# Token and JWT missing
+									if !jwt || jwt.length < 1
+                              errors.push(Array.new([2102, "Missing field: jwt"]))
+                              status = 401
+                           end
+
                            if !token || token.length < 1
                               errors.push(Array.new([2117, "Missing field: access_token"]))
                               status = 400
-                           end
-                           
-                           if !jwt || jwt.length < 1
-                              errors.push(Array.new([2102, "Missing field: jwt"]))
-                              status = 401
                            end
                         else
                            # Check if the token is valid
@@ -1164,16 +1177,34 @@ class AppsController < ApplicationController
 													
 													begin
 														# Upload new file
-														upload_blob(app.id, obj.id, request.body)
+														blob = upload_blob(app.id, obj.id, request.body)
+														etag = blob.properties[:etag]
+														etag = etag[1...etag.size-1]
 													rescue Exception => e
 														errors.push(Array.new([1103, "Unknown validation error"]))
 														status = 500
 													end
 
 													if errors.length == 0
-														size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+														# Update the size and etag properties
+														size_prop = Property.find_by(table_object_id: obj.id, name: "size")
 
-														if !size_prop.save
+														if !size_prop
+															size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+														else
+															size_prop.value = file_size
+														end
+
+														etag_prop = Property.find_by(table_object_id: obj.id, name: "etag")
+
+														if !etag_prop
+															etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+														else
+															etag_prop.value = etag
+														end
+
+
+														if !size_prop.save || !etag_prop.save
 															errors.push(Array.new([1103, "Unknown validation error"]))
 															status = 500
 														else

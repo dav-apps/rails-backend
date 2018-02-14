@@ -747,6 +747,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 201
       assert_equal(tables(:card).id, resp["table_id"])
+      assert_not_nil(resp["properties"]["etag"])
 
       # Delete the object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
@@ -818,9 +819,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       get "/v1/apps/object/#{table_objects(:second).id}"
       resp = JSON.parse response.body
       
-      assert_response 401
-      assert_same(2117, resp["errors"][0][0])
-      assert_same(2102, resp["errors"][1][0])
+      assert_response 400
+      assert_same(2102, resp["errors"][0][0])
+      assert_same(2117, resp["errors"][1][0])
    end
    
    test "Can get object with access token without logging in" do
@@ -912,6 +913,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 201
+      assert_not_nil(resp["properties"]["etag"])
 
       get "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&file=true"
       resp2 = response.body
@@ -1054,6 +1056,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 201
+      
+      etag = resp["properties"]["etag"]
+      assert_not_nil(etag)
 
       new_ext = "html"
       new_visibility = 2
@@ -1096,13 +1101,18 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 201
+      etag = resp["properties"]["etag"]
       assert_equal(File.size(file1Path), resp["properties"]["size"].to_i)
+      assert_not_nil(etag)
 
       put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&ext=mp3", File.open(file2Path, "rb").read, {'Content-Type' => 'audio/mpeg'}
       resp2 = JSON.parse response.body
       
       assert_response 200
+      etag2 = resp2["properties"]["etag"]
       assert_equal(File.size(file2Path), resp2["properties"]["size"].to_i)
+      assert_not_nil(etag2)
+      assert(etag != etag2)
 
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
       assert_response 200
