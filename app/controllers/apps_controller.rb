@@ -1045,7 +1045,7 @@ class AppsController < ApplicationController
          @result["errors"] = errors
       end
 		
-		if file
+		if file && errors.length == 0
 			if status
 				send_data(@result, status: status, filename: filename)
 			else
