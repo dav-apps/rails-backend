@@ -38,8 +38,11 @@ gem 'azure'
 # RMagick for image processing
 gem 'rmagick'
 
-# Use #Puma as the app server
+# Use Puma as the app server
 gem 'puma'
+
+# mysql for development database
+gem 'mysql2'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
@@ -53,7 +56,6 @@ group :development do
 
   # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
   gem 'spring'
-  gem 'mysql2'
   
   gem 'capistrano',         require: false
   gem 'capistrano-rvm',     require: false
