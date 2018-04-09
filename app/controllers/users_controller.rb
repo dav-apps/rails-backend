@@ -185,7 +185,7 @@ class UsersController < ApplicationController
       
       if ok && errors.length == 0
          # Create JWT and result
-         expHours = Rails.env.production? ? 6 : 10000000
+         expHours = Rails.env.production? ? 7000 : 10000000
          exp = Time.now.to_i + expHours * 3600
          payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
          token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
@@ -274,7 +274,7 @@ class UsersController < ApplicationController
 
       if ok && errors.length == 0
          # Create JWT and result
-         expHours = Rails.env.production? ? 8500 : 10000000
+         expHours = Rails.env.production? ? 7000 : 10000000
          exp = Time.now.to_i + expHours * 3600
          payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev_api_key.id, :exp => exp}
          token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
