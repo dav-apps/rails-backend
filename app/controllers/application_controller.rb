@@ -70,15 +70,22 @@ class ApplicationController < ActionController::API
    def get_users_avatar(user_id)
       Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
       Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+      avatar = Hash.new
 
       client = Azure::Blob::BlobService.new
       begin
          blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
-         url = ENV['AZURE_AVATAR_CONTAINER_URL'] + user_id.to_s + ".png"
+         avatar['url'] = ENV['AZURE_AVATAR_CONTAINER_URL'] + user_id.to_s + ".png"
+         etag = blob[0].properties[:etag]
+         avatar['etag'] = etag[1...etag.size-1]
       rescue Exception => e
-         url = ENV['AZURE_AVATAR_CONTAINER_URL'] + "default.png"
+         # Get the blob of the default avatar
+         default_blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], "default.png")
+         avatar['url'] = ENV['AZURE_AVATAR_CONTAINER_URL'] + "default.png"
+         etag = default_blob[0].properties[:etag]
+         avatar['etag'] = etag[1...etag.size-1]
       end
-      return url
+      return avatar
    end
 
    def delete_avatar(user_id)

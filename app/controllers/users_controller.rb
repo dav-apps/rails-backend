@@ -354,7 +354,9 @@ class UsersController < ApplicationController
                         status = 403
                      else
                         @result = requested_user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
-                        @result["avatar"] = get_users_avatar(user.id)
+                        avatar = get_users_avatar(user.id)
+                        @result["avatar"] = avatar["url"]
+                        @result["avatar_etag"] = avatar["etag"]
                         @result["total_storage"] = get_total_storage_of_user(user.id)
                         @result["used_storage"] = get_used_storage_of_user(user.id)
 
@@ -431,7 +433,9 @@ class UsersController < ApplicationController
                   status = 400
                else
                   @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
-                  @result["avatar"] = get_users_avatar(user.id)
+                  avatar = get_users_avatar(user.id)
+                  @result["avatar"] = avatar["url"]
+                  @result["avatar_etag"] = avatar["etag"]
                   @result["total_storage"] = get_total_storage_of_user(user.id)
                   @result["used_storage"] = get_used_storage_of_user(user.id)
 
@@ -625,7 +629,9 @@ class UsersController < ApplicationController
                               status = 500
                            else
                               @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
-                              @result["avatar"] = get_users_avatar(user.id)
+                              avatar = get_users_avatar(user.id)
+                              @result["avatar"] = avatar["url"]
+                              @result["avatar_etag"] = avatar["etag"]
                               @result["total_storage"] = get_total_storage_of_user(user.id)
                               @result["used_storage"] = get_used_storage_of_user(user.id)
 

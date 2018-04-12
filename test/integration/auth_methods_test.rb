@@ -293,7 +293,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2801, resp["errors"][0][0])
    end
    
-   test "Can see apps of the user in get_user" do
+   test "Can see apps, avatar url and avatar_etag of the user in get_user" do
       save_users_and_devs
       
       matt = users(:matt)
@@ -307,6 +307,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_same(apps(:Cards).id, resp2["apps"][0]["id"])
+      assert_not_nil(resp2["avatar"])
+      assert_not_nil(resp2["avatar_etag"])
    end
    # End get_user_by_jwt tests
 
@@ -332,7 +334,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1302, resp["errors"][0][0])
    end
 
-   test "Can get the user" do
+   test "Can get the user and can see avatar url, avatar_etag" do
       save_users_and_devs
       
       matt = users(:matt)
@@ -344,6 +346,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_same(matt.id, resp["id"])
       assert_same(0, resp["used_storage"])
+      assert_not_nil(resp["avatar"])
+      assert_not_nil(resp["avatar_etag"])
    end
 
    test "Can get user and used storage of apps" do
@@ -367,7 +371,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
       assert_response 200
    end
-   # End get_user tests
+   # End get_user_by_jwt tests
    
    # update_user tests
    test "Can't use another content type but json in update_user" do
@@ -588,6 +592,30 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
+   end
+
+   test "Can upload an avatar and the etag updates in update_user" do
+      save_users_and_devs
+
+      avatarPath = "test/files/test.png"
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      get "/v1/auth/user/#{matt.id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 200
+      avatar_etag = resp["avatar_etag"]
+
+      avatar = File.open(avatarPath, "rb")
+      avatar_content = Base64.encode64(avatar.read)
+
+      put "/v1/auth/user?jwt=#{matts_jwt}", {avatar: avatar_content}.to_json, {'Content-Type' => 'application/json'}
+      resp2 = JSON.parse response.body
+      avatar_etag2 = resp2["avatar_etag"]
+
+      assert_response 200
+      assert(avatar_etag != avatar_etag2)
    end
    # End update_user tests
    
