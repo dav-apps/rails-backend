@@ -791,22 +791,13 @@ class UsersController < ApplicationController
                            errors.push(Array.new([1102, "Action not allowed"]))
                            status = 403
                         else
-                           # Delete all user data associated with the app
-                           user_objects = TableObject.where(user_id: user.id)
-                           user_objects.each do |obj|
-                              if obj.table.app_id == app.id
-                                 obj.properties.each do |property|
-                                    property.destroy!
-                                 end
-                                 obj.destroy!
-                              end
-                           end
-
-                           # Delete user and app association
-                           ua = UsersApp.find_by(user_id: user.id, app_id: app.id)
+                           # Delete user app association
+                           ua = UsersApp.find_by(user_id: user_id, app_id: app_id)
                            if ua
                               ua.destroy!
                            end
+
+                           RemoveAppWorker.perform_async(user.id, app.id)
 
                            @result = {}
                            ok = true
