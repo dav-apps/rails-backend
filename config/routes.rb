@@ -4,7 +4,7 @@ Rails.application.routes.draw do
   match '/v1/auth/login', to: 'users#login', via: 'get'
   match '/v1/auth/login_by_jwt', to: 'users#login_by_jwt', via: 'get'
   match '/v1/auth/signup', to: 'users#signup', via: 'post'
-  match '/v1/auth/user/:id', to: 'users#get_user', via: 'get'
+  match '/v1/auth/user/:id', to: 'users#get_user', via: 'get', :constraints => { :id => "^[0-9]+$" }
   match '/v1/auth/user', to: 'users#get_user_by_jwt', via: 'get'
   match '/v1/auth/user', to: 'users#update_user', via: 'put'
   match '/v1/auth/user/:id', to: 'users#delete_user', via: 'delete'
@@ -18,6 +18,7 @@ Rails.application.routes.draw do
   match '/v1/auth/user/:id/save_new_email/:email_confirmation_token', to: 'users#save_new_email', via: 'post'
   match '/v1/auth/user/:id/reset_new_email', to: 'users#reset_new_email', via: 'post'
   match '/v1/auth/user/:id/confirm', to: 'users#confirm_user', via: 'post'
+  match '/v1/auth/user/export_data', to: 'users#export_data', via: 'get'
   
   # Dev routes
   match '/v1/devs/dev', to: 'devs#create_dev', via: 'post'

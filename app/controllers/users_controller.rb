@@ -1232,7 +1232,141 @@ class UsersController < ApplicationController
       end
       
       render json: @result, status: status if status
-   end
+	end
+	
+	def export_data
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		errors = Array.new
+      @result = Hash.new
+		ok = false
+		
+		if !jwt || jwt.length < 1
+         errors.push(Array.new([2102, "Missing field: jwt"]))
+         status = 401
+		end
+		
+		if errors.length == 0
+			jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([1301, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([1302, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([1303, "JWT: unknown error"]))
+            status = 401
+			end
+			
+			if jwt_valid
+				user_id = decoded_jwt[0]["user_id"]
+				dev_id = decoded_jwt[0]["dev_id"]
+				
+				user = User.find_by_id(user_id)
+
+				if !user
+					errors.push(Array.new([2801, "Resource does not exist: User"]))
+               status = 400
+				else
+					dev = Dev.find_by_id(dev_id)
+
+					if !dev
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                  status = 400
+					else
+						# Check if the call was made from the website
+                  if dev != Dev.first
+                     errors.push(Array.new([1102, "Action not allowed"]))
+                     status = 403
+						else
+							@result = export(user.id)
+
+							ok = true
+						end
+					end
+				end
+			end
+		end
+
+		if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+	end
+
+	def export(user_id)
+		user = User.find_by_id(user_id)
+
+		if user
+			root_hash = Hash.new
+
+			# Get the user data
+			user_data = Hash.new
+			user_data["email"] = user.email
+			user_data["username"] = user.username
+			user_data["new_email"] = user.new_email
+			user_data["old_email"] = user.old_email
+			user_data["plan"] = user.plan
+			user_data["created_at"] = user.created_at
+			user_data["updated_at"] = user.updated_at
+
+			root_hash["user"] = user_data
+
+			apps_array = Array.new
+
+			# Loop through all apps of the user
+			user.apps.each do |app|
+				app_hash = Hash.new
+				table_array = Array.new
+
+				app_hash["name"] = app.name
+
+				# Loop through all tables of each app
+				app.tables.each do |table|
+					table_hash = Hash.new
+					object_array = Array.new
+
+					table_hash["name"] = table.name
+
+					# Find all table_objects of the user in the table
+					table.table_objects.where(user_id: user.id).each do |obj|
+						object_hash = Hash.new
+						property_hash = Hash.new
+
+						object_hash["uuid"] = obj.uuid
+						object_hash["visibility"] = obj.visibility # TODO: Change to string
+
+						# Get the properties of the table_object
+						obj.properties.each do |prop|
+							property_hash[prop.name] = prop.value
+						end
+
+						object_hash["properties"] = property_hash
+						object_array.push(object_hash)
+					end
+
+					table_hash["table_objects"] = object_array
+					table_array.push(table_hash)
+				end
+
+				app_hash["tables"] = table_array
+				apps_array.push(app_hash)
+			end
+
+			root_hash["apps"] = apps_array
+			root_hash
+		end
+	end
    
    private
    def generate_token
