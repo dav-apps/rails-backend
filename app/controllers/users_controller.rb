@@ -94,12 +94,12 @@ class UsersController < ApplicationController
                         @user = User.new(email: email, password: password, username: username)
                         # Save the new user
                         @user.email_confirmation_token = generate_token
-               
+								
                         if !@user.save
                            errors.push(Array.new([1103, "Unknown validation error"]))
                            status = 500
                         else
-                           UserNotifier.send_verification_email(@user).deliver_later
+                           SendVerificationEmailWorker.perform_async(@user)
                            ok = true
                         end
                      end
@@ -642,11 +642,11 @@ class UsersController < ApplicationController
                               ok = true
                               
                               if email_changed
-                                 UserNotifier.send_change_email_email(user).deliver_later
+                                 SendChangeEmailEmailWorker.perform_async(user)
                               end
                               
-                              if password_changed
-                                 UserNotifier.send_change_password_email(user).deliver_later
+										if password_changed
+											SendChangePasswordEmailWorker.perform_async(user)
                               end
                            end
                         end
@@ -908,8 +908,8 @@ class UsersController < ApplicationController
       
       if ok && errors.length == 0
          status = 200
-         # Send email
-         UserNotifier.send_verification_email(user).deliver_later
+			# Send email
+			SendVerificationEmailWorker.perform_async(user)
       else
          @result.clear
          @result["errors"] = errors
@@ -952,8 +952,8 @@ class UsersController < ApplicationController
 
       if ok && errors.length == 0
          status = 200
-         # Send email
-         UserNotifier.send_delete_account_email(user).deliver_later
+			# Send email
+			SendDeleteAccountEmailWorker.perform_async(user)
       else
          @result.clear
          @result["errors"] = errors
@@ -994,8 +994,8 @@ class UsersController < ApplicationController
       
       if ok && errors.length == 0
          status = 200
-         # Send email
-         UserNotifier.send_reset_password_email(user).deliver_later
+			# Send email
+			SendResetPasswordEmailWorker.perform_async(user)
       else
          @result.clear
          @result["errors"] = errors
@@ -1176,8 +1176,8 @@ class UsersController < ApplicationController
       end
       
       if ok && errors.length == 0
-         status = 200
-         UserNotifier.send_reset_new_email_email(user).deliver_later
+			status = 200
+			SendResetNewEmailEmailWorker.perform_async(user)
       else
          @result.clear
          @result["errors"] = errors

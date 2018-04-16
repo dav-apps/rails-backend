@@ -236,7 +236,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1102, resp["errors"][0][0])
    end
    
-   test "Verification email gets send in signup" do
+   test "Can successfully sign up" do
       save_users_and_devs
       
       matts_auth_token = generate_auth_token(devs(:sherlock))
@@ -244,10 +244,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/auth/signup?auth=#{matts_auth_token}&email=test@example.com&password=testtest&username=testuser"
       resp = JSON.parse response.body
       
-      email = ActionMailer::Base.deliveries.last
-      
       assert_response 201
-      assert_equal(resp["email"], email.to[0])
    end
    # End signup tests
    
@@ -504,23 +501,23 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1108, resp["errors"][0][0])
    end
    
-   test "New password email gets send in update_user" do
+   test "Can update the password in update_user" do
       save_users_and_devs
       
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      new_password = "testpassword"
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\":\"testpassword\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\":\"#{new_password}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
-      
-      email = ActionMailer::Base.deliveries.last
+
+      matt = User.find_by_id(matt.id)
       
       assert_response 200
-      assert_not_nil(email)
-      assert_equal(matt.email, email.to[0])
+      assert_equal(new_password, matt.new_password)
    end
    
-   test "New email email gets send in update_user" do
+   test "Can update the email in update_user" do
       save_users_and_devs
       
       matt = users(:matt)
@@ -529,14 +526,13 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\":\"test14@example.com\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      email = ActionMailer::Base.deliveries.last
-      
+      matt = User.find_by_id(matt.id)
+
       assert_response 200
-      assert_not_nil(email)
-      assert_equal(resp["new_email"], email.to[0])
+      assert_equal(resp["new_email"], matt.new_email)
    end
    
-   test "username gets changed in update_user" do
+   test "Can update username in update_user" do
       save_users_and_devs
       
       matt = users(:matt)
@@ -802,7 +798,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1106, resp["errors"][0][0])
    end
    
-   test "Verification email gets send" do
+   test "Can send verification email" do
       save_users_and_devs
       
       tester = users(:tester)
@@ -810,11 +806,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/auth/send_verification_email?email=#{tester.email}"
       resp = JSON.parse response.body
       
-      email = ActionMailer::Base.deliveries.last
-      
       assert_response 200
-      assert_not_nil(email)
-      assert_equal(tester.email, email.to[0])
    end
    # End send_verification_email tests
 
@@ -835,7 +827,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2801, resp["errors"][0][0])
    end
 
-   test "delete account email gets send" do
+   test "Can send delete account email" do
       save_users_and_devs
       
       tester = users(:tester)
@@ -843,11 +835,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/auth/send_delete_account_email?email=#{tester.email}"
       resp = JSON.parse response.body
       
-      email = ActionMailer::Base.deliveries.last
-      
       assert_response 200
-      assert_not_nil(email)
-      assert_equal(tester.email, email.to[0])
    end
    # End send_delete_account_email tests
    
@@ -860,7 +848,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2106, resp["errors"][0][0])
    end
    
-   test "Password reset email gets send" do
+   test "Can send password reset email" do
       save_users_and_devs
       
       matt = users(:matt)
@@ -868,11 +856,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/auth/send_reset_password_email?email=#{matt.email}"
       resp = JSON.parse response.body
       
-      email = ActionMailer::Base.deliveries.last
-      
       assert_response 200
-      assert_not_nil(email)
-      assert_equal(matt.email, email.to[0])
    end
    # End send_reset_password_email tests
    
@@ -1025,11 +1009,12 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2601, resp["errors"][0][0])
    end
    
-   test "reset_new_email_email gets send" do
+   test "Can send reset new email email" do
       save_users_and_devs
       
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      old_email = matt.email
       new_email = "new-test@email.com"
       
       put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
@@ -1042,10 +1027,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
-      email = ActionMailer::Base.deliveries.last
       
       assert_response 200
-      assert_equal(matt.old_email, email.to[0])
+      assert_equal(matt.old_email, old_email)
    end
    # End save_new_email tests
    
