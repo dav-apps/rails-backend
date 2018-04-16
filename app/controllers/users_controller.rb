@@ -1323,6 +1323,7 @@ class UsersController < ApplicationController
 			root_hash["user"] = user_data
 
 			apps_array = Array.new
+			files_array = Array.new		# Contains the info of the file in the form of a hash with ext and uuid
 
 			# Loop through all apps of the user
 			user.apps.each do |app|
@@ -1343,8 +1344,19 @@ class UsersController < ApplicationController
 						object_hash = Hash.new
 						property_hash = Hash.new
 
+						object_hash["id"] = obj.id
 						object_hash["uuid"] = obj.uuid
 						object_hash["visibility"] = obj.visibility # TODO: Change to string
+						object_hash["file"] = obj.file
+
+						# If the object is a file, save the info for later
+						if obj.file && obj.properties.where(name: "ext").count > 0
+							file_object = Hash.new
+							file_object["ext"] = obj.properties.where(name: "ext").first.value
+							file_object["id"] = obj.id
+							file_object["app_id"] = app.id
+							files_array.push(file_object)
+						end
 
 						# Get the properties of the table_object
 						obj.properties.each do |prop|
@@ -1364,7 +1376,40 @@ class UsersController < ApplicationController
 			end
 
 			root_hash["apps"] = apps_array
-			root_hash
+
+			require 'ZipFileGenerator'
+			require 'open-uri'
+
+			# Create the necessary export directories
+			# TODO: Add id of the archive in the DB to the file name
+			exportZipFilePath = "/tmp/dav-export.zip"
+			exportFolderPath = "/tmp/dav-export/"
+			filesExportFolderPath = exportFolderPath + "files/"
+			Dir.mkdir(exportFolderPath) unless File.exists?(exportFolderPath)
+			Dir.mkdir(filesExportFolderPath) unless File.exists?(filesExportFolderPath)
+
+			# Download the avatar
+			avatar = get_users_avatar(user_id)
+
+			open(exportFolderPath + "avatar.png", 'wb') do |file|
+				file << open(avatar["url"]).read
+			end
+
+			# Download all files
+			files_array.each do |file|
+				download_blob(file["app_id"], file["id"], file["ext"], filesExportFolderPath)
+			end
+
+			# Create the json file
+			File.open(exportFolderPath + "data.json", "w") { |f| f.write(root_hash.to_json) }
+
+			# Delete the old zip file
+			File.delete(exportZipFilePath)
+
+			zf = ZipFileGenerator.new(exportFolderPath, "/tmp/dav-export.zip")
+			zf.write
+
+			return root_hash.to_json
 		end
 	end
    

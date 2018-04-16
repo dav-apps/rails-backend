@@ -55,6 +55,22 @@ class ApplicationController < ActionController::API
       blob = client.create_block_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename, contents)
    end
 
+   def download_blob(app_id, object_id, object_ext, path)
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      begin
+         full_path = path + object_id.to_s + "." + object_ext
+         filename = "#{app_id}/#{object_id}"
+         
+         client = Azure::Blob::BlobService.new
+         blob, content = client.get_blob(ENV['AZURE_FILES_CONTAINER_NAME'], filename)
+         File.open(full_path,"wb") {|f| f.write(content)}
+      rescue Exception => e
+         puts e
+      end
+   end
+
    def delete_blob(app_id, object_id)
       Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
       Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
