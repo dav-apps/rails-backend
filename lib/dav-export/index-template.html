@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="source/bootstrap.min.css">
+	
+	<!-- Font Awesome -->
+	<script defer src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
+
+	<title>Your Archive</title>
+</head>
+<body>
+	<div class="container">
+		<h1 class="mt-2 mb-3">Your Archive</h1>
+		
+		<!-- User details -->
+		<div class="card bg-light mb-3">
+			<div class="card-header">User details</div>
+		  	<div class="card-body">
+				<img class="card-img-top" src="files/avatar.png" alt="Card image cap"  style="max-width: 10rem;">
+		    	<p class="card-text">
+			 	<table class="table">
+					<tbody>
+						<tr>
+							<th scope="row">Username</th>
+							<td id="username"></td>
+						</tr>
+						<tr>
+							<th scope="row">Email</th>
+							<td id="email"></td>
+						</tr>
+						<tr>
+							<th scope="row">New Email</th>
+							<td id="newEmail"></td>
+						</tr>
+						<tr>
+							<th scope="row">Old Email</th>
+							<td id="oldEmail"></td>
+						</tr>
+						<tr>
+							<th scope="row">Plan</th>
+							<td id="plan"></td>
+						</tr>
+						<tr>
+							<th scope="row">Created</th>
+							<td id="createdAt"></td>
+						</tr>
+						<tr>
+							<th scope="row">Last updated</th>
+							<td id="updatedAt"></td>
+						</tr>
+					</tbody>
+				</table>
+			 </p>
+		  </div>
+		</div>
+		<!-- End User details -->
+		
+		<!-- Apps -->
+		<h2 class="my-3">Apps</h2>
+		<div class="list-group mb-5" id="appAccordion">
+			
+		</div>
+	</div>
+	
+	<!-- Jquery and Bootstrap -->
+	<script src="source/jquery.slim.min.js"></script>
+	<script src="source/bootstrap.min.js"></script>
+	
+	<script>
+		function processData(json){
+			$("#username").text(json.user.username);
+			$("#email").text(json.user.email);
+			$("#newEmail").text(json.user.new_email);
+			$("#oldEmail").text(json.user.old_email);
+			if(json.user.plan == 0){
+				$("#plan").text("Free");
+			}else if(json.user.plan == 1){
+				$("#plan").text("Plus");
+			}else{
+				$("#plan").text(json.user.plan);
+			}
+			$("#createdAt").text(new Date(json.user.created_at).toString());
+			$("#updatedAt").text(new Date(json.user.updated_at).toString());
+			
+			json.apps.forEach(function(app, appIndex, array) {
+			
+				var tablesTemplate = '';
+			
+				app.tables.forEach(function(table, tableIndex, array){
+					var objectsTemplate = '';
+					
+					table.table_objects.forEach(function(object, objectIndex, array){
+					
+						var propertiesTemplate = '';
+						
+						$.each(object.properties, function(key, value){
+  							var propertyTemplate = '<tr>' +
+																						'<td>' + key + '</th>' +
+																						'<td>' + value + '</td>' +
+																					'</tr>';
+							
+							propertiesTemplate += propertyTemplate;
+						});
+						
+						var fileTemplate = '';
+						if(object.file){
+							var filename = object.id + "." + object.properties.ext;
+							fileTemplate = 	'<tr>' +
+																	'<td>File</th>' +
+																	'<td><a href="' + 'files/' + filename + '" target="blank">' + filename + '</a></td>' +
+																'</tr>';
+						}
+						
+						var visibilityTemplate = '';
+						switch (object.visibility) {
+							case 0:
+								visibilityTemplate = 'private';
+								break;
+							case 1:
+								visibilityTemplate = 'protected';
+								break;
+							case 2:
+								visibilityTemplate = 'public';
+								break;
+							default:
+								visibilityTemplate = 'private';
+								break;
+						}
+					
+						var objectTemplate = '<div class="card m-3">' +
+																				'<table class="table">' +
+																					'<tbody>' +
+																						'<tr>' +
+																							'<td>ID</th>' +
+																							'<td>' + object.id + '</td>' +
+																						'</tr>' +
+																						'<tr>' +
+																							'<td>UUID</th>' +
+																							'<td>' + object.uuid + '</td>' +
+																						'</tr>' +
+																						'<tr>' +
+																							'<td>Visibility</th>' +
+																							'<td>' + visibilityTemplate + '</td>' +
+																						'</tr>' +
+																						fileTemplate +
+																						'<tr>' +
+																							'<th class="border-left-0 border-right-0">Properties: </th>' +
+																							'<td></td>' +
+																						'</tr>' +
+																						propertiesTemplate +
+																					'</tbody>' +
+																				'</table>' +
+																			'</div>';
+						
+						objectsTemplate += objectTemplate;
+					});
+				
+					var tableTemplate = '<li class="list-group-item d-flex justify-content-between align-items-center" style="cursor: pointer;" id="table-header-' + table.id + '"' +
+																		'data-toggle="collapse" data-target="#table-collapse-' + table.id + '" aria-expanded="false" aria-controls="table-collapse-' + table.id + '">' +
+																	'<h4>' + table.name + '</h4>' +
+																	'<i class="fas fa-angle-down fa-2x"></i>' +
+																'</li>' +
+																'<div class="card">' +
+																	'<div id="table-collapse-' + table.id + '" class="collapse" aria-labelledby="table-header-' + table.id + '" data-parent="#tableAccordion">' +
+																		'<div class="card-body">' +
+																			'<h5>Objects</h5>' +
+																			
+																			objectsTemplate +
+																			
+																		'</div>' +
+																	'</div>' +
+																'</div>';
+					
+					tablesTemplate += tableTemplate;
+				});
+			
+				var appTemplate = 	'<li class="list-group-item d-flex justify-content-between align-items-center" style="cursor: pointer;" id="app-header-' + app.id + '"' +
+																		'data-toggle="collapse" data-target="#app-collapse-' + app.id + '" aria-expanded="false" aria-controls="app-collapse-' + app.id + '">' +
+																	'<h4>' + app.name + '</h4>' +
+																	'<i class="fas fa-angle-down fa-2x"></i>' +
+																'</li>' +
+																'<div class="card">' +
+																	'<div id="app-collapse-' + app.id + '" class="collapse" aria-labelledby="app-header-' + app.id + '" data-parent="#appAccordion">' +
+																		'<div class="card-body">' +
+																			'<div class="list-group" id="tableAccordion">' +
+																				tablesTemplate +
+																			'</div>' +
+																		'</div>' +
+																	'</div>' +
+																'</div>';
+				
+				// Add the template to the html
+				$("#appAccordion").append(appTemplate);
+			});
+		}
+		
+		function readTextFile(file, callback) {
+			var rawFile = new XMLHttpRequest();
+    		rawFile.overrideMimeType("application/json");
+    		rawFile.open("GET", file, true);
+    		rawFile.onreadystatechange = function() {
+	 			if (rawFile.status == "200") {
+            	callback(rawFile.responseText);
+        		}else{
+					alert("This browser is not supported. Please open the file with another browser.");
+				}
+    		}
+    		rawFile.send(null);
+		}
+		
+		$(document).ready(function(){
+			var loaded = false;
+			readTextFile("data/data.json", function(data){
+				if(!loaded){
+					var json = JSON.parse(data);
+					processData(json);
+					loaded = true;
+				}
+			});
+		});
+	</script>
+</body>
+</html>

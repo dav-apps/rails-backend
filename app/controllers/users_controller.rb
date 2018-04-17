@@ -1330,6 +1330,7 @@ class UsersController < ApplicationController
 				app_hash = Hash.new
 				table_array = Array.new
 
+				app_hash["id"] = app.id
 				app_hash["name"] = app.name
 
 				# Loop through all tables of each app
@@ -1337,6 +1338,7 @@ class UsersController < ApplicationController
 					table_hash = Hash.new
 					object_array = Array.new
 
+					table_hash["id"] = table.id
 					table_hash["name"] = table.name
 
 					# Find all table_objects of the user in the table
@@ -1385,13 +1387,23 @@ class UsersController < ApplicationController
 			exportZipFilePath = "/tmp/dav-export.zip"
 			exportFolderPath = "/tmp/dav-export/"
 			filesExportFolderPath = exportFolderPath + "files/"
+			dataExportFolderPath = exportFolderPath + "data/"
+			sourceExportFolderPath = exportFolderPath + "source/"
+
+			# Delete the old zip file and the folder
+			FileUtils.rm_rf(Dir.glob(exportFolderPath + "*"))
+			File.delete(exportZipFilePath) if File.exists?(exportZipFilePath)
+
+			# Create the directories
 			Dir.mkdir(exportFolderPath) unless File.exists?(exportFolderPath)
 			Dir.mkdir(filesExportFolderPath) unless File.exists?(filesExportFolderPath)
+			Dir.mkdir(dataExportFolderPath) unless File.exists?(dataExportFolderPath)
+			Dir.mkdir(sourceExportFolderPath) unless File.exists?(sourceExportFolderPath)
 
 			# Download the avatar
 			avatar = get_users_avatar(user_id)
 
-			open(exportFolderPath + "avatar.png", 'wb') do |file|
+			open(filesExportFolderPath + "avatar.png", 'wb') do |file|
 				file << open(avatar["url"]).read
 			end
 
@@ -1401,12 +1413,16 @@ class UsersController < ApplicationController
 			end
 
 			# Create the json file
-			File.open(exportFolderPath + "data.json", "w") { |f| f.write(root_hash.to_json) }
+			File.open(dataExportFolderPath + "data.json", "w") { |f| f.write(root_hash.to_json) }
 
-			# Delete the old zip file
-			File.delete(exportZipFilePath)
+			# Copy the contents of the source folder
+			FileUtils.cp_r(Rails.root + "lib/dav-export/source/", exportFolderPath)
 
-			zf = ZipFileGenerator.new(exportFolderPath, "/tmp/dav-export.zip")
+			# Copy the index.html
+			FileUtils.cp(Rails.root + "lib/dav-export/index.html", exportFolderPath)
+
+			# Create the zip file
+			zf = ZipFileGenerator.new(exportFolderPath, exportZipFilePath)
 			zf.write
 
 			return root_hash.to_json
