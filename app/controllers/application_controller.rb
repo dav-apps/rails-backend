@@ -79,7 +79,51 @@ class ApplicationController < ActionController::API
       begin
          client.delete_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{app_id}/#{object_id}")
       rescue Exception => e
-         
+         puts e
+      end
+   end
+
+   def upload_archive(archive_path)
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      file = File.open(archive_path, "rb")
+      contents = file.read
+      filename = File.basename(archive_path)
+      
+      puts filename
+
+      client = Azure::Blob::BlobService.new
+      begin
+         blob = client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, contents)
+      rescue Exception => e
+         puts "There was an error with uploading an archive"
+         puts e
+      end
+   end
+
+   def download_archive(archive_name)
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      begin
+         client = Azure::Blob::BlobService.new
+         blob = client.get_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive_name)
+         return blob
+      rescue Exception => e
+         puts e
+      end
+   end
+
+   def delete_archive(archive_name)
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      client = Azure::Blob::BlobService.new
+      begin
+         client.delete_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive_name)
+      rescue Exception => e
+         puts e
       end
    end
 
@@ -112,7 +156,8 @@ class ApplicationController < ActionController::API
       begin
          client.delete_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
       rescue Exception => e
-         
+         puts "There was an error with deleting an avatar"
+         puts e
       end
    end
 

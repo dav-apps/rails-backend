@@ -1234,7 +1234,7 @@ class UsersController < ApplicationController
       render json: @result, status: status if status
 	end
 	
-	def export_data
+	def create_archive
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		errors = Array.new
@@ -1285,8 +1285,11 @@ class UsersController < ApplicationController
                      errors.push(Array.new([1102, "Action not allowed"]))
                      status = 403
 						else
-							@result = export(user.id)
+							archive = Archive.new(user: user)
+							archive.save
 
+							ExportDataWorker.perform_async(user.id, archive.id)
+							@result = archive.attributes
 							ok = true
 						end
 					end
@@ -1304,129 +1307,193 @@ class UsersController < ApplicationController
       render json: @result, status: status if status
 	end
 
-	def export(user_id)
-		user = User.find_by_id(user_id)
+	def get_archive
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		archive_id = params[:id]
+		file = params[:file]
 
-		if user
-			root_hash = Hash.new
+		errors = Array.new
+      @result = Hash.new
+		ok = false
 
-			# Get the user data
-			user_data = Hash.new
-			user_data["email"] = user.email
-			user_data["username"] = user.username
-			user_data["new_email"] = user.new_email
-			user_data["old_email"] = user.old_email
-			user_data["plan"] = user.plan
-			user_data["created_at"] = user.created_at
-			user_data["updated_at"] = user.updated_at
-
-			root_hash["user"] = user_data
-
-			apps_array = Array.new
-			files_array = Array.new		# Contains the info of the file in the form of a hash with ext and uuid
-
-			# Loop through all apps of the user
-			user.apps.each do |app|
-				app_hash = Hash.new
-				table_array = Array.new
-
-				app_hash["id"] = app.id
-				app_hash["name"] = app.name
-
-				# Loop through all tables of each app
-				app.tables.each do |table|
-					table_hash = Hash.new
-					object_array = Array.new
-
-					table_hash["id"] = table.id
-					table_hash["name"] = table.name
-
-					# Find all table_objects of the user in the table
-					table.table_objects.where(user_id: user.id).each do |obj|
-						object_hash = Hash.new
-						property_hash = Hash.new
-
-						object_hash["id"] = obj.id
-						object_hash["uuid"] = obj.uuid
-						object_hash["visibility"] = obj.visibility # TODO: Change to string
-						object_hash["file"] = obj.file
-
-						# If the object is a file, save the info for later
-						if obj.file && obj.properties.where(name: "ext").count > 0
-							file_object = Hash.new
-							file_object["ext"] = obj.properties.where(name: "ext").first.value
-							file_object["id"] = obj.id
-							file_object["app_id"] = app.id
-							files_array.push(file_object)
-						end
-
-						# Get the properties of the table_object
-						obj.properties.each do |prop|
-							property_hash[prop.name] = prop.value
-						end
-
-						object_hash["properties"] = property_hash
-						object_array.push(object_hash)
-					end
-
-					table_hash["table_objects"] = object_array
-					table_array.push(table_hash)
-				end
-
-				app_hash["tables"] = table_array
-				apps_array.push(app_hash)
-			end
-
-			root_hash["apps"] = apps_array
-
-			require 'ZipFileGenerator'
-			require 'open-uri'
-
-			# Create the necessary export directories
-			# TODO: Add id of the archive in the DB to the file name
-			exportZipFilePath = "/tmp/dav-export.zip"
-			exportFolderPath = "/tmp/dav-export/"
-			filesExportFolderPath = exportFolderPath + "files/"
-			dataExportFolderPath = exportFolderPath + "data/"
-			sourceExportFolderPath = exportFolderPath + "source/"
-
-			# Delete the old zip file and the folder
-			FileUtils.rm_rf(Dir.glob(exportFolderPath + "*"))
-			File.delete(exportZipFilePath) if File.exists?(exportZipFilePath)
-
-			# Create the directories
-			Dir.mkdir(exportFolderPath) unless File.exists?(exportFolderPath)
-			Dir.mkdir(filesExportFolderPath) unless File.exists?(filesExportFolderPath)
-			Dir.mkdir(dataExportFolderPath) unless File.exists?(dataExportFolderPath)
-			Dir.mkdir(sourceExportFolderPath) unless File.exists?(sourceExportFolderPath)
-
-			# Download the avatar
-			avatar = get_users_avatar(user_id)
-
-			open(filesExportFolderPath + "avatar.png", 'wb') do |file|
-				file << open(avatar["url"]).read
-			end
-
-			# Download all files
-			files_array.each do |file|
-				download_blob(file["app_id"], file["id"], file["ext"], filesExportFolderPath)
-			end
-
-			# Create the json file
-			File.open(dataExportFolderPath + "data.json", "w") { |f| f.write(root_hash.to_json) }
-
-			# Copy the contents of the source folder
-			FileUtils.cp_r(Rails.root + "lib/dav-export/source/", exportFolderPath)
-
-			# Copy the index.html
-			FileUtils.cp(Rails.root + "lib/dav-export/index.html", exportFolderPath)
-
-			# Create the zip file
-			zf = ZipFileGenerator.new(exportFolderPath, exportZipFilePath)
-			zf.write
-
-			return root_hash.to_json
+		if !archive_id
+         errors.push(Array.new([2119, "Missing field: archive_id"]))
+         status = 400
+      end
+		
+		if !jwt || jwt.length < 1
+         errors.push(Array.new([2102, "Missing field: jwt"]))
+         status = 401
 		end
+
+		if errors.length == 0
+			jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([1301, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([1302, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([1303, "JWT: unknown error"]))
+            status = 401
+			end
+			
+			if jwt_valid
+            user_id = decoded_jwt[0]["user_id"]
+				dev_id = decoded_jwt[0]["dev_id"]
+				
+				user = User.find_by_id(user_id)
+
+				if !user
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
+               status = 400
+				else
+					dev = Dev.find_by_id(dev_id)
+               
+               if !dev
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                  status = 400
+					else
+						if dev != Dev.first
+                     errors.push(Array.new([1102, "Action not allowed"]))
+                     status = 403
+						else
+							archive = Archive.find_by_id(archive_id)
+
+							if !archive
+								errors.push(Array.new([2810, "Resource does not exist: Archive"]))
+								status = 404
+							else
+								# Check if the archive belongs to the user
+								if archive.user != user
+									errors.push(Array.new([1102, "Action not allowed"]))
+                        	status = 403
+								else
+									if file
+										# Return the file itself
+										filename = "dav-export-#{archive.id}.zip"
+										@result = download_archive(filename)[1]
+									else
+										# Return the archive object
+										@result = archive.attributes
+									end
+
+									ok = true
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+
+		if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+		
+		if file
+			send_data(@result, status: status, filename: filename)
+		else
+			render json: @result, status: status if status
+		end
+	end
+
+	def delete_archive
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		archive_id = params[:id]
+
+		errors = Array.new
+      @result = Hash.new
+		ok = false
+
+		if !archive_id
+         errors.push(Array.new([2119, "Missing field: archive_id"]))
+         status = 400
+      end
+		
+		if !jwt || jwt.length < 1
+         errors.push(Array.new([2102, "Missing field: jwt"]))
+         status = 401
+		end
+
+		if errors.length == 0
+			jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([1301, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([1302, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([1303, "JWT: unknown error"]))
+            status = 401
+			end
+
+			if jwt_valid
+				user_id = decoded_jwt[0]["user_id"]
+				dev_id = decoded_jwt[0]["dev_id"]
+				
+				user = User.find_by_id(user_id)
+	
+				if !user
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
+               status = 400
+				else
+					dev = Dev.find_by_id(dev_id)
+               
+               if !dev
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                  status = 400
+					else
+						if dev != Dev.first
+                     errors.push(Array.new([1102, "Action not allowed"]))
+                     status = 403
+						else
+							archive = Archive.find_by_id(archive_id)
+
+							if !archive
+								errors.push(Array.new([2810, "Resource does not exist: Archive"]))
+								status = 404
+							else
+								# Check if the archive belongs to the user
+								if archive.user != user
+									errors.push(Array.new([1102, "Action not allowed"]))
+									status = 403
+								else
+									# Delete the archive
+									archive.destroy!
+									@result = {}
+									ok = true
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+
+		if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
 	end
    
    private

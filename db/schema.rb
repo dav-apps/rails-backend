@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180213213214) do
+ActiveRecord::Schema.define(version: 20180419140024) do
 
   create_table "access_tokens", force: :cascade do |t|
     t.string   "token",      limit: 255
@@ -29,6 +29,12 @@ ActiveRecord::Schema.define(version: 20180213213214) do
     t.string   "link_web",     limit: 255
     t.string   "link_play",    limit: 255
     t.string   "link_windows", limit: 255
+  end
+
+  create_table "archives", force: :cascade do |t|
+    t.integer  "user_id",    limit: 4
+    t.datetime "created_at"
+    t.datetime "updated_at"
   end
 
   create_table "devs", force: :cascade do |t|

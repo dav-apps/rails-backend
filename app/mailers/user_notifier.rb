@@ -43,4 +43,11 @@ class UserNotifier < ApplicationMailer
       
       mail(:to => @user.email, :subject => 'Confirm your new dav password')
    end
+
+   def send_export_data_email(user)
+      @user = user
+      @link = ENV["BASE_URL"] + "user#archives"
+
+      mail(:to => @user.email, :subject => 'The archive of your dav account is ready')
+   end
 end

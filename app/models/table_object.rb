@@ -17,7 +17,7 @@ class TableObject < ActiveRecord::Base
       begin
          client.delete_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{self.table.app.id}/#{self.id}")
       rescue Exception => e
-         
+         puts e
       end
    end
 end

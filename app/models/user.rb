@@ -14,6 +14,7 @@ class User < ActiveRecord::Base
 	has_many :table_objects, dependent: :destroy
 	has_many :users_apps, dependent: :destroy
 	has_many :apps, through: :users_apps
+	has_many :archives, dependent: :destroy
 
 	private
 	def delete_avatar
