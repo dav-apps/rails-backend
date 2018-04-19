@@ -1074,5 +1074,138 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_equal(matt.email, original_email)
    end
-   # End reset_new_email tests
+	# End reset_new_email tests
+	
+	# create_archive tests
+	test "Missing fields in create_archive" do
+		post "/v1/auth/archive"
+		resp = JSON.parse response.body
+
+		assert_response 401
+		assert_same(2102, resp["errors"][0][0])
+	end
+
+	test "Can't create an archive from outside the website" do
+		save_users_and_devs
+
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		post "/v1/auth/archive?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+	# End create_archive tests
+
+	# get_archive tests
+	test "Missing fields in get_archive" do
+		get "/v1/auth/archive/1"
+		resp = JSON.parse response.body
+
+		assert_response 401
+		assert_same(2102, resp["errors"][0][0])
+	end
+
+	test "Can't get the archive of another user" do
+		save_users_and_devs
+
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/auth/archive/#{archives(:SherlocksFirstArchive).id}?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can't get the archive from outside the website" do
+		save_users_and_devs
+
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		get "/v1/auth/archive/#{archives(:MattsFirstArchive).id}?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+		
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can get the archive" do
+		save_users_and_devs
+
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/auth/archive/#{archives(:MattsFirstArchive).id}?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+		
+		assert_response 200
+	end
+
+	test "Can't get an archive that does not exist" do
+		save_users_and_devs
+
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/auth/archive/22?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+		
+		assert_response 404
+		assert_same(2810, resp["errors"][0][0])
+	end
+	# End get_archive tests
+
+	# delete_archive tests
+	test "Missing fields in delete_archive" do
+		delete "/v1/auth/archive/1"
+		resp = JSON.parse response.body
+
+		assert_response 401
+		assert_same(2102, resp["errors"][0][0])
+	end
+
+	test "Can't delete the archive of another user" do
+		save_users_and_devs
+
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		delete "/v1/auth/archive/#{archives(:SherlocksFirstArchive).id}?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can't delete an archive from outside the website" do
+		save_users_and_devs
+
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		delete "/v1/auth/archive/#{archives(:MattsFirstArchive).id}?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can't delete an archive that does not exist" do
+		save_users_and_devs
+
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		delete "/v1/auth/archive/22?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_same(2810, resp["errors"][0][0])
+	end
+	# End delete_archive tests
 end

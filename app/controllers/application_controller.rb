@@ -67,7 +67,7 @@ class ApplicationController < ActionController::API
          blob, content = client.get_blob(ENV['AZURE_FILES_CONTAINER_NAME'], filename)
          File.open(full_path,"wb") {|f| f.write(content)}
       rescue Exception => e
-         puts e
+         
       end
    end
 
@@ -79,7 +79,7 @@ class ApplicationController < ActionController::API
       begin
          client.delete_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{app_id}/#{object_id}")
       rescue Exception => e
-         puts e
+         
       end
    end
 
@@ -97,8 +97,7 @@ class ApplicationController < ActionController::API
       begin
          blob = client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, contents)
       rescue Exception => e
-         puts "There was an error with uploading an archive"
-         puts e
+         
       end
    end
 
@@ -111,7 +110,7 @@ class ApplicationController < ActionController::API
          blob = client.get_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive_name)
          return blob
       rescue Exception => e
-         puts e
+         
       end
    end
 
@@ -123,7 +122,7 @@ class ApplicationController < ActionController::API
       begin
          client.delete_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive_name)
       rescue Exception => e
-         puts e
+         
       end
    end
 
@@ -156,8 +155,7 @@ class ApplicationController < ActionController::API
       begin
          client.delete_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
       rescue Exception => e
-         puts "There was an error with deleting an avatar"
-         puts e
+         
       end
    end
 
