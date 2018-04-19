@@ -366,7 +366,8 @@ class UsersController < ApplicationController
                            app_hash["used_storage"] = get_used_storage_by_app(app.id, requested_user.id)
                            users_apps.push(app_hash)
                         end
-                        @result["apps"] = users_apps
+								@result["apps"] = users_apps
+								@result["archives"] = user.archives
 
                         ok = true
                      end
@@ -445,7 +446,8 @@ class UsersController < ApplicationController
                      app_hash["used_storage"] = get_used_storage_by_app(app.id, user.id)
                      users_apps.push(app_hash)
                   end
-                  @result["apps"] = users_apps
+						@result["apps"] = users_apps
+						@result["archives"] = user.archives
 
                   ok = true
                end
@@ -637,7 +639,8 @@ class UsersController < ApplicationController
 
                               users_apps = Array.new
                               user.users_apps.each {|app| users_apps.push(app.app)}
-                              @result["apps"] = users_apps
+										@result["apps"] = users_apps
+										@result["archives"] = user.archives
 
                               ok = true
                               
