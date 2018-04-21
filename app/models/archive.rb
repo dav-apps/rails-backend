@@ -10,7 +10,7 @@ class Archive < ActiveRecord::Base
 
       client = Azure::Blob::BlobService.new
       begin
-         client.delete_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], "dav-export-#{self.id}.zip")
+         client.delete_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], self.name)
       rescue Exception => e
          puts e
       end

@@ -3,7 +3,8 @@ class UsersController < ApplicationController
    min_username_length = 2
    max_username_length = 25
    min_password_length = 7
-   max_password_length = 25
+	max_password_length = 25
+	max_archive_count = 10
    
    define_method :signup do
       email = params[:email]
@@ -1237,7 +1238,7 @@ class UsersController < ApplicationController
       render json: @result, status: status if status
 	end
 	
-	def create_archive
+	define_method :create_archive do
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		errors = Array.new
@@ -1288,16 +1289,22 @@ class UsersController < ApplicationController
                      errors.push(Array.new([1102, "Action not allowed"]))
                      status = 403
 						else
-							archive = Archive.new(user: user)
-							archive.save
-
-							archive.name = "dav-export-#{archive.id}.zip"
-							archive.save
-
-							ExportDataWorker.perform_async(user.id, archive.id)
-							#export_data(user.id, archive.id)
-							@result = archive.attributes
-							ok = true
+							# Check if the user can create more archives
+							if user.archives.count >= max_archive_count
+								errors.push(Array.new([1112, "You can't create more than #{max_archive_count} archives"]))
+                     	status = 422
+							else
+								archive = Archive.new(user: user)
+								archive.save
+	
+								archive.name = "dav-export-#{archive.id}.zip"
+								archive.save
+	
+								ExportDataWorker.perform_async(user.id, archive.id)
+								#export_data(user.id, archive.id)
+								@result = archive.attributes
+								ok = true
+							end
 						end
 					end
 				end
