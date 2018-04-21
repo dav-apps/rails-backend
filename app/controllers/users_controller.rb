@@ -1291,7 +1291,11 @@ class UsersController < ApplicationController
 							archive = Archive.new(user: user)
 							archive.save
 
+							archive.name = "dav-export-#{archive.id}.zip"
+							archive.save
+
 							ExportDataWorker.perform_async(user.id, archive.id)
+							#export_data(user.id, archive.id)
 							@result = archive.attributes
 							ok = true
 						end
@@ -1301,7 +1305,7 @@ class UsersController < ApplicationController
 		end
 
 		if ok && errors.length == 0
-         status = 200
+         status = 201
       else
          @result.clear
          @result["errors"] = errors
@@ -1309,7 +1313,7 @@ class UsersController < ApplicationController
       
       render json: @result, status: status if status
 	end
-
+	
 	def get_archive
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		archive_id = params[:id]

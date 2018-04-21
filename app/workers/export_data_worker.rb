@@ -1,10 +1,11 @@
 class ExportDataWorker
-  	include Sidekiq::Worker
+	include Sidekiq::Worker
 
   	def perform(user_id, archive_id)
 		user = User.find_by_id(user_id)
+		archive = Archive.find_by_id(archive_id)
 
-		if user
+		if user && archive
 			root_hash = Hash.new
 
 			# Get the user data
@@ -83,8 +84,8 @@ class ExportDataWorker
 			archiveTempFolder = "/tmp/archives/"
 			Dir.mkdir(archiveTempFolder) unless File.exists?(archiveTempFolder)
 
-			exportZipFilePath = archiveTempFolder + "dav-export-#{archive_id}.zip"
-			exportFolderPath = archiveTempFolder + "dav-export-#{archive_id}/"
+			exportZipFilePath = archiveTempFolder + archive.name
+			exportFolderPath = archiveTempFolder + "#{archive.name.split(".")[0]}/"
 			filesExportFolderPath = exportFolderPath + "files/"
 			dataExportFolderPath = exportFolderPath + "data/"
 			sourceExportFolderPath = exportFolderPath + "source/"
@@ -133,6 +134,46 @@ class ExportDataWorker
 
 			# Send the email
 			UserNotifier.send_export_data_email(user).deliver_later
+
+			archive.completed = true
+			archive.save
 		end
-  	end
+	end
+
+	define_method(:get_users_avatar) do |user_id|
+		Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+		Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+		avatar = Hash.new
+
+		client = Azure::Blob::BlobService.new
+		begin
+			blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
+			avatar['url'] = ENV['AZURE_AVATAR_CONTAINER_URL'] + user_id.to_s + ".png"
+			etag = blob[0].properties[:etag]
+			avatar['etag'] = etag[1...etag.size-1]
+		rescue Exception => e
+			# Get the blob of the default avatar
+			default_blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], "default.png")
+			avatar['url'] = ENV['AZURE_AVATAR_CONTAINER_URL'] + "default.png"
+			etag = default_blob[0].properties[:etag]
+			avatar['etag'] = etag[1...etag.size-1]
+		end
+		return avatar
+	end
+
+	define_method(:upload_archive) do |archive_path|
+      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+      file = File.open(archive_path, "rb")
+      contents = file.read
+      filename = File.basename(archive_path)
+
+      client = Azure::Blob::BlobService.new
+      begin
+         blob = client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, contents)
+      rescue Exception => e
+         puts e
+      end
+   end
 end
