@@ -133,7 +133,7 @@ class ExportDataWorker
 			File.delete(exportZipFilePath) if File.exists?(exportZipFilePath)
 
 			# Send the email
-			UserNotifier.send_export_data_email(user).deliver_later
+			UserNotifier.send_export_data_email(user).deliver_now
 
 			archive.completed = true
 			archive.save
