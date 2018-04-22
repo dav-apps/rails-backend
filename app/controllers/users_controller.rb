@@ -650,7 +650,8 @@ class UsersController < ApplicationController
                               end
                               
 										if password_changed
-											SendChangePasswordEmailWorker.perform_async(user)
+											#SendChangePasswordEmailWorker.perform_async(user)
+											UserNotifier.send_change_password_email(user).deliver_later
                               end
                            end
                         end
