@@ -10,14 +10,16 @@ class TableObject < ActiveRecord::Base
 
    private
    def delete_blob
-      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-      client = Azure::Blob::BlobService.new
-      begin
-         client.delete_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{self.table.app.id}/#{self.id}")
-      rescue Exception => e
-         puts e
+      if self.file
+         Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+         Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+   
+         client = Azure::Blob::BlobService.new
+         begin
+            client.delete_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{self.table.app.id}/#{self.id}")
+         rescue Exception => e
+            puts e
+         end
       end
    end
 end
