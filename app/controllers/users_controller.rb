@@ -611,19 +611,41 @@ class UsersController < ApplicationController
                            end
                         end
 
-                        plan = object["plan"]
-                        if plan
-                           if plan == "0" || plan == "1" || plan == "2"
-                              if errors.length == 0
-                                 user.plan = plan.to_i
-                              end
-                           else
-                              errors.push(Array.new([1108, "Plan does not exist"]))
-                              status = 400
-                           end
-                        end
-                        
-                        
+								plan = object["plan"]
+								payment_token = object["payment_token"]
+
+								if plan
+									# Check if the new plan is higher than the old plan
+									if plan > user.plan
+										# Require the payment_token
+										if !payment_token
+											# Return error
+											errors.push(Array.new([2120, "Missing field: payment_token"]))
+											status = 400
+										else
+											if plan == "0" || plan == "1" || plan == "2"
+												# Process the payment
+												# TODO
+
+
+
+												user.plan = plan.to_i
+											else
+												errors.push(Array.new([1108, "Plan does not exist"]))
+												status = 400
+											end
+										end
+									else
+										# Cancel the subscription
+										# TODO
+
+
+
+
+										user.plan = plan.to_i
+									end
+								end
+
                         
                         if errors.length == 0
                            # Update user with new properties
