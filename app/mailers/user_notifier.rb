@@ -50,4 +50,11 @@ class UserNotifier < ApplicationMailer
 
       mail(:to => @user.email, :subject => 'The archive of your dav account is ready')
    end
+
+   def send_failed_payment_email(user)
+      @user = user
+      @link = ENV['BASE_URL'] + "user#plans"
+
+      mail(:to => @user.email, :subject => "Please check your payment information")
+   end
 end

@@ -661,9 +661,6 @@ class UsersController < ApplicationController
 															},
 														]
 													)
-
-													# Save the time the subscription ends
-													user.period_end = Time.at(subscription.current_period_end) + 2.days
 												end
 											else
 												if plan == 0
@@ -676,9 +673,6 @@ class UsersController < ApplicationController
 														subscription.items.data[0].plan = plus_plan.id
 														subscription.save
 													end
-
-													# Save the time the subscription ends
-													user.period_end = Time.at(subscription.current_period_end) + 2.days
 												end
 											end
 

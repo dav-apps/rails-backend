@@ -19,7 +19,7 @@ StripeEvent.configure do |events|
 			period_end = event.data.object.period_end
 			product_id = event.data.object.lines.data[0].plan.product
 
-			user.period_end = Time.at(period_end) + 2.days
+			user.period_end = Time.at(period_end)
 
 			if product_id == ENV['STRIPE_DAV_PLUS_PRODUCT_ID']
 				user.plan = 1
@@ -33,7 +33,25 @@ StripeEvent.configure do |events|
 		200
 	end
 
-	events.all do |event|
+	events.subscribe 'invoice.payment_failed' do |event|
+		# With the second unsuccessful attempt to charge the customer, set the plan to 0 and send the email
+		paid = event.data.object.paid
+		attempt_count = event.data.object.attempt_count
+
+		if !paid && attempt_count > 1
+			# Change plan to free
+			customer_id = event.data.object.customer
+			user = User.find_by(stripe_customer_id: customer_id)
+	
+			if user
+				user.plan = 0
+				user.save
+			end
+
+			# Send the email
+			send_failed_payment_email(user).deliver_later
+		end
+		
 		200
 	end
 end
