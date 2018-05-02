@@ -615,34 +615,76 @@ class UsersController < ApplicationController
 								payment_token = object["payment_token"]
 
 								if plan
-									# Check if the new plan is higher than the old plan
-									if plan > user.plan
-										# Require the payment_token
-										if !payment_token
-											# Return error
-											errors.push(Array.new([2120, "Missing field: payment_token"]))
-											status = 400
-										else
-											if plan == "0" || plan == "1" || plan == "2"
-												# Process the payment
-												# TODO
-
-
-
-												user.plan = plan.to_i
-											else
-												errors.push(Array.new([1108, "Plan does not exist"]))
-												status = 400
+									if !payment_token && plan != 0
+										errors.push(Array.new([2120, "Missing field: payment_token"]))
+										status = 400
+									else
+										#Check if the user is saved on stripe
+										if user.stripe_customer_id
+											# Get the customer object
+											begin
+												customer = Stripe::Customer.retrieve(user.stripe_customer_id)
+											rescue => e
+												puts e
 											end
 										end
-									else
-										# Cancel the subscription
-										# TODO
+										
+										if !customer
+											# Create a new customer object with the token information
+											customer = Stripe::Customer.create(
+												:email => user.email,
+												:source  => payment_token
+											)
 
+											user.stripe_customer_id = customer.id
+										end
 
+										if plan != 0 && plan != 1
+											errors.push(Array.new([1108, "Plan does not exist"]))
+											status = 400
+										else
+											# Process the payment
+											plus_plan_product = Stripe::Product.retrieve(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'])
+											plus_plan = Stripe::Plan.retrieve(ENV['STRIPE_DAV_PLUS_EUR_PLAN_ID'])
 
+											# Update the current subscription or create a new one
+											subscription = Stripe::Subscription.list(customer: user.stripe_customer_id).data.first
 
-										user.plan = plan.to_i
+											if !subscription
+												if plan == 1
+													# Create new subscription
+													subscription = Stripe::Subscription.create(
+														:customer => user.stripe_customer_id,
+														:items => [
+															{
+																:plan => plus_plan.id,
+															},
+														]
+													)
+
+													# Save the time the subscription ends
+													user.period_end = Time.at(subscription.current_period_end) + 2.days
+												end
+											else
+												if plan == 0
+													# Delete the subscription
+													subscription.delete(at_period_end: true)
+												elsif plan == 1
+													# Check if the subscription has the right plan
+													if subscription.items.data[0].plan.product != plus_plan_product
+														# Change the subscription to the plus plan
+														subscription.items.data[0].plan = plus_plan.id
+														subscription.save
+													end
+
+													# Save the time the subscription ends
+													user.period_end = Time.at(subscription.current_period_end) + 2.days
+												end
+											end
+
+											# Update the user's plan
+											user.plan = plan
+										end
 									end
 								end
 

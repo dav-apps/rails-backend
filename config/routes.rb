@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  
+
   # User routes
   match '/v1/auth/login', to: 'users#login', via: 'get'
   match '/v1/auth/login_by_jwt', to: 'users#login_by_jwt', via: 'get'
@@ -58,4 +58,6 @@ Rails.application.routes.draw do
   match '/v1/analytics/event', to: 'analytics#get_event_by_name', via: 'get'
   match '/v1/analytics/event/:id', to: 'analytics#update_event', via: 'put'
   match '/v1/analytics/event/:id', to: 'analytics#delete_event', via: 'delete'
+
+  mount StripeEvent::Engine, at: '/v1/payments/stripe'
 end
