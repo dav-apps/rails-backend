@@ -15,4 +15,12 @@ StripeEvent.configure do |events|
 	events.subscribe 'invoice.payment_failed' do |event|
 		StripeWebhooksService.InvoicePaymentFailedEvent(event)
 	end
+
+	events.subscribe 'customer.subscription.updated' do |event|
+		StripeWebhooksService.CustomerSubscriptionUpdatedEvent(event)
+	end
+
+	events.subscribe 'customer.subscription.deleted' do |event|
+		StripeWebhooksService.CustomerSubscriptionDeletedEvent(event)
+	end
 end

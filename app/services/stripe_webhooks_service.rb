@@ -46,4 +46,47 @@ class StripeWebhooksService
 
       200
    end
+
+   def self.CustomerSubscriptionUpdatedEvent(event)
+      # If the subscription was cancelled, change the status of the subscription to ending
+      cancelled = event.data.object.cancel_at_period_end
+      period_end = event.data.object.current_period_end
+      customer_id = event.data.object.customer
+      if customer_id
+         user = User.find_by(stripe_customer_id: customer_id)
+      end
+
+      if user
+         if cancelled
+            user.subscription_status = 1     # Change the subscription_status to ending
+         else
+            user.subscription_status = 0     # Change the subscription_status to active
+         end
+         
+         if period_end
+            user.period_end = Time.at(period_end)
+         end
+
+         user.save
+      end
+
+      200
+   end
+
+   def self.CustomerSubscriptionDeletedEvent(event)
+      customer_id = event.data.object.customer
+      if customer_id
+         user = User.find_by(stripe_customer_id: customer_id)
+      end
+
+      if user
+         # Downgrade the plan to free, clear the period_end field and change the subscription_status to active
+         user.plan = 0
+         user.subscription_status = 0
+         user.period_end = nil
+         user.save
+      end
+
+      200
+   end
 end
