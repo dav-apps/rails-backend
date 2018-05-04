@@ -1263,7 +1263,10 @@ class UsersController < ApplicationController
                   user.email = user.new_email
                   user.new_email = nil
                   
-                  user.email_confirmation_token = nil
+						user.email_confirmation_token = nil
+						
+						# Save the new email on stripe
+						save_email_to_stripe_customer(user)
                   
                   if !user.save
                      errors.push(Array.new([1103, "Unknown validation error"]))
@@ -1313,7 +1316,10 @@ class UsersController < ApplicationController
             else
                # set new_email to email and email to old_email
                user.email = user.old_email
-               user.old_email = nil
+					user.old_email = nil
+					
+					# Save the new email on stripe
+					save_email_to_stripe_customer(user)
                
                if !user.save
                   errors.push(Array.new([1103, "Unknown validation error"]))

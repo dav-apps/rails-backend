@@ -454,7 +454,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\":\"test14@example.com\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", '{"email":"test14@example.com"}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -894,7 +894,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_email = "newtest@email.com"
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", '{"email": "' + new_email + '"}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -912,6 +912,39 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(matt.email, new_email)
       assert_nil(matt.new_email)
       assert_equal(matt.old_email, old_email)
+   end
+
+   test "Updating the email in update_user will also update the email in stripe" do
+      torera = users(:torera)
+      jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
+      new_email = "torera2@dav-apps.tech"
+      old_email = torera.email
+      torera.new_email = new_email
+      torera.email_confirmation_token = "toreraconfirmationtoken"
+      torera.save
+
+      post "/v1/auth/user/#{torera.id}/save_new_email/#{torera.email_confirmation_token}"
+      resp = JSON.parse response.body
+
+      assert_response 200
+
+      # Get the new torera object
+      torera = User.find_by_id(torera.id)
+
+      # Check if the email of the stripe customer was updated
+      customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
+      assert_equal(torera.email, customer.email)
+
+      # Revert the change
+      post "/v1/auth/user/#{torera.id}/reset_new_email"
+
+      assert_response 200
+
+      torera = User.find_by_id(torera.id)
+
+      customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
+      assert_equal(torera.email, old_email)
+      assert_equal(torera.email, customer.email)
    end
    
    test "Can't save new email with invalid email confirmation token" do

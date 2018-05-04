@@ -222,4 +222,18 @@ class ApplicationController < ActionController::API
          end
       end
    end
+
+   def save_email_to_stripe_customer(user)
+      if user.stripe_customer_id
+         begin
+            customer = Stripe::Customer.retrieve(user.stripe_customer_id)
+            if customer
+               customer.email = user.email
+               customer.save
+            end
+         rescue => e
+            
+         end
+      end
+   end
 end
