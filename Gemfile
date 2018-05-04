@@ -53,6 +53,7 @@ gem 'rubyzip'
 # Stripe for payments
 gem 'stripe'
 gem 'stripe_event'
+gem 'stripe-ruby-mock', '~> 2.5.3', :require => 'stripe_mock'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console

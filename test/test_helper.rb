@@ -31,6 +31,10 @@ class ActiveSupport::TestCase
       tester2 = users(:tester2)
       tester2.password = "testpassword"
       tester2.save
+
+      torera = users(:torera)
+      torera.password = "Geld"
+      torera.save
       
       devs(:dav).save
       devs(:matt).save

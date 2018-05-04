@@ -1,6 +1,10 @@
 require 'test_helper'
 
 class AppsMethodsTest < ActionDispatch::IntegrationTest
+
+   setup do
+      save_users_and_devs
+   end
    
    # Tests for create_app
    test "Missing fields in create_app" do
@@ -12,8 +16,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Dev does not exist in create_app" do
-      save_users_and_devs
-      
       matt = users(:matt)
       
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
@@ -29,8 +31,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't create an app from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -42,8 +42,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't create an app with too short name and description" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -57,8 +55,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't create an app with too long name and description" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -72,8 +68,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can create and delete app from website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -95,8 +89,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can create app with links" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -122,8 +114,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't create app with invalid link" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -145,8 +135,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # Tests for get_app
    test "Missing fields in get_app" do
-      save_users_and_devs
-      
       get "/v1/apps/app/#{apps(:Cards).id}"
       resp = JSON.parse response.body
       
@@ -155,7 +143,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "App does not exist in get_app" do
-      save_users_and_devs
       cards_id = apps(:Cards).id
       apps(:Cards).destroy!
       
@@ -169,8 +156,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "get_app can't be called from outside the website" do
-      save_users_and_devs
-      
       matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:dav)).body)["jwt"]
       
       get "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}"
@@ -181,8 +166,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "get_app can be called from the appropriate dev" do
-      save_users_and_devs
-      
       matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
       
       get "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}"
@@ -192,8 +175,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get the tables of the app" do
-      save_users_and_devs
-      
       matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
       
       get "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}"
@@ -204,8 +185,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get an app of the first dev as another dev" do
-      save_users_and_devs
-      
       matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
       
       get "/v1/apps/app/#{apps(:Cards).id}?jwt=#{matts_jwt}"
@@ -218,8 +197,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    # Tests for get_all_apps
    test "Missing fields in get_all_apps" do
-      save_users_and_devs
-      
       get "/v1/apps/apps/all"
       resp = JSON.parse response.body
       
@@ -228,8 +205,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can get all apps from the website" do
-      save_users_and_devs
-      
       auth = generate_auth_token(devs(:sherlock))
       
       get "/v1/apps/apps/all?auth=#{auth}"
@@ -239,8 +214,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't get all apps from outside the website" do
-      save_users_and_devs
-      
       auth = generate_auth_token(devs(:matt))
       
       get "/v1/apps/apps/all?auth=#{auth}"
@@ -253,8 +226,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # update_app tests
    test "Missing fields in update_app" do
-      save_users_and_devs
-      
       put "/v1/apps/app/#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
@@ -263,8 +234,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't use another content type but json in update_app" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -276,7 +245,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "User does not exist in update_app" do
-      save_users_and_devs
       matt_id = users(:matt).id
       test_app_id = apps(:TestApp).id
       
@@ -291,8 +259,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "update_app can't be called from outside the website" do
-      save_users_and_devs
-      
       matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
       
       put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", "{\"name\":\"TestApp121314\"}", {'Content-Type' => 'application/json'}
@@ -303,8 +269,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't update an app with too long name and description" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -318,8 +282,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't update an app with too short name and description" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -333,8 +295,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update the app of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -346,8 +306,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update the app of the first dev as another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -359,8 +317,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can update name and description of app at once" do
-      save_users_and_devs
-      
       new_name = "Neuer Name"
       new_desc = "Neue Beschreibung"
       
@@ -376,8 +332,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can update links of an app" do
-      save_users_and_devs
-
       link_play = "https://dav-apps.tech"
       link_windows = "http://microsoft.com/blabla"
 
@@ -393,8 +347,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can update app with blank links" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -406,8 +358,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't update app with invalid links" do
-      save_users_and_devs
-
       link_play = "bla  blam´a dadasd"
       link_windows = "hellowor-ld124"
 
@@ -426,8 +376,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # delete_app tests
    test "Missing fields in delete_app" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -439,8 +387,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "delete_app can't be called from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -452,8 +398,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't delete the app of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -468,8 +412,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # create_object tests
    test "Missing fields in create_object" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -481,8 +423,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't save json when using another Content-Type than application/json in create_object" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -494,8 +434,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Table does not exist and gets created when the user is the dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -506,8 +444,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create a new table in create_object with too short table_name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -519,8 +455,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create a new table in create_object with too long table_name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -532,8 +466,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create a new table in create_object with an invalid table_name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -545,8 +477,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create an object for the app of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -558,8 +488,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create an empty object" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -571,8 +499,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create an object with too short name and value" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -585,8 +511,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create an object with too long name and value" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -599,8 +523,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create object with visibility > 2" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -612,8 +534,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create object with visibility < 0" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -625,8 +545,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create object with visibility that is not an integer" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -638,8 +556,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can create object with another visibility" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -651,8 +567,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't create object and upload file without ext parameter" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -664,8 +578,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can create object and upload text file" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -682,8 +594,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can create object and upload empty file" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -699,8 +609,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't create object and upload file with empty Content-Type header" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -712,8 +620,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can create object with uuid" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -724,8 +630,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't create object with uuid that is already in use" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -737,8 +641,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can create object with binary file" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -757,8 +659,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # get_object tests
    test "TableObject does not exist" do
-      save_users_and_devs
-      
       object_id = table_objects(:first).id
       table_objects(:first).destroy!
       
@@ -773,8 +673,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get the objects of the tables of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -786,8 +684,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get own object and all properties" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -801,8 +697,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't access an object when the user does not own the object" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -814,8 +708,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get object without access token and JWT" do
-      save_users_and_devs
-      
       get "/v1/apps/object/#{table_objects(:second).id}"
       resp = JSON.parse response.body
       
@@ -825,8 +717,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get object with access token without logging in" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       object_id = table_objects(:third).id
@@ -845,8 +735,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get protected object as another user" do
-      save_users_and_devs
-      
       sherlock = users(:sherlock)
       sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       
@@ -857,8 +745,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't get protected object with uploaded file as another user" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -883,8 +769,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get public object as logged in user" do
-      save_users_and_devs
-      
       sherlock = users(:sherlock)
       sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       
@@ -895,8 +779,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get public object without being logged in" do
-      save_users_and_devs
-      
       get "/v1/apps/object/#{table_objects(:eight).id}"
       resp = JSON.parse response.body
       
@@ -904,8 +786,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can get object with uploaded file" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -928,8 +808,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can get object with uuid" do
-      save_users_and_devs
-
       get "/v1/apps/object/#{table_objects(:eight).uuid}"
       resp = JSON.parse response.body
       
@@ -938,8 +816,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can get object with uploaded file with uuid" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -965,8 +841,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # update_object tests
    test "Can't update an object when the user does not own the object" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:dav)).body)["jwt"]
       
@@ -978,8 +852,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update an object with too short name and value" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -992,8 +864,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update an object with too long name and value" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1006,8 +876,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get all properties of an object after updating one" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1020,8 +888,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can update object with new visibility" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1033,8 +899,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update an object with invalid visibility" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1046,8 +910,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can update visibility and ext of object with file" do
-      save_users_and_devs
-
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -1078,8 +940,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can update object with uuid" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1090,8 +950,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can update object and replace uploaded file" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       file1Path = "test/files/test.png"
@@ -1121,8 +979,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # delete_object tests
    test "Can't delete an object when the dev does not own the table" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1134,8 +990,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't delete an object of another user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1147,8 +1001,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can delete an object that the user owns" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1159,8 +1011,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can delete object with uuid" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1173,8 +1023,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # create_table tests
    test "Missing fields in create_table" do
-      save_users_and_devs
-      
       post "/v1/apps/table"
       resp = JSON.parse response.body
       
@@ -1185,8 +1033,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create a table for the app of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1198,8 +1044,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can create a table for an app that the dev owns" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1213,8 +1057,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can create a table from the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1226,8 +1068,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create a table for an app of the first dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1239,8 +1079,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create a table with too long table_name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1252,8 +1090,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't a table with too short table_name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1265,8 +1101,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create a table with invalid table_name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1290,8 +1124,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get the table of the app of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1303,8 +1135,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get the table of the app of another dev from the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1316,8 +1146,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get the table and only the entries of the current user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1332,8 +1160,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get the table of the app of the own dev from the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1354,8 +1180,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't use another content type but json in update_table" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1367,8 +1191,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "update_table can't be called from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1380,8 +1202,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update the table of the app of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1393,8 +1213,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update a table with too long table name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1406,8 +1224,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update a table with too short table name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1419,8 +1235,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update a table with invalid table name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1432,8 +1246,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get the table properties after updating" do
-      save_users_and_devs
-      
       new_name = "TestName"
       
       matt = users(:matt)
@@ -1448,8 +1260,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update a table of the first dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1463,8 +1273,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # delete_table tests
    test "delete_table can't be called from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -1476,8 +1284,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't delete the table of an app of another user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1489,8 +1295,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Table gets deleted" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       table_id = tables(:note).id
@@ -1503,8 +1307,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't delete tables of the first dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -1526,8 +1328,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create access tokens for objects of another user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       object = table_objects(:fourth)
@@ -1540,8 +1340,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create access tokens for objects of the apps of another dev" do
-      save_users_and_devs
-      
       sherlock = users(:sherlock)
       sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       object = table_objects(:seventh)
@@ -1564,8 +1362,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can get access token" do
-      save_users_and_devs
-
       sherlock = users(:sherlock)
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       obj = table_objects(:sixth)
@@ -1578,8 +1374,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't get access token of object of another user" do
-      save_users_and_devs
-
       sherlock = users(:sherlock)
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       obj = table_objects(:third)
@@ -1592,8 +1386,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't get access token of object of the app of another dev" do
-      save_users_and_devs
-
       sherlock = users(:sherlock)
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       obj = table_objects(:seventh)
@@ -1616,8 +1408,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can add access token to object" do
-      save_users_and_devs
-
       sherlock = users(:sherlock)
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       access_token = access_tokens(:first_test_token)
@@ -1631,8 +1421,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't add access token to object of another user" do
-      save_users_and_devs
-
       sherlock = users(:sherlock)
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       access_token = access_tokens(:first_test_token)
@@ -1646,8 +1434,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't add access token to object of the table of another dev" do
-      save_users_and_devs
-
       sherlock = users(:sherlock)
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       access_token = access_tokens(:first_test_token)
@@ -1671,8 +1457,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Access token will be destroyed in remove_access_token_from_object" do
-      save_users_and_devs
-
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       object = table_objects(:third)
@@ -1701,8 +1485,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't remove access token from object of another user" do
-      save_users_and_devs
-
       matt = users(:matt)
       matt_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       object = table_objects(:third)
@@ -1736,8 +1518,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't remove access token from object of the table of another dev" do
-      save_users_and_devs
-
       matt = users(:matt)
       mattXmatt_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       mattXsherlock_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
@@ -1772,8 +1552,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # users_apps tests
    test "UsersApp object gets created and deleted when user creates object and deletes it" do
-      save_users_and_devs
-      
       tester2 = users(:tester2)
       jwt = (JSON.parse login_user(tester2, "testpassword", devs(:sherlock)).body)["jwt"]
       

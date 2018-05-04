@@ -1,6 +1,10 @@
 require 'test_helper'
 
 class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
+
+   setup do
+      save_users_and_devs
+   end
    
    # create_event_log tests
    test "Missing fields in create_event_log" do
@@ -14,8 +18,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create event with too short eventname" do
-      save_users_and_devs
-      
       auth = generate_auth_token(devs(:matt))
       post "/v1/analytics/event?auth=#{auth}&name=n&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
@@ -25,8 +27,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create event with too long eventname" do
-      save_users_and_devs
-      
       auth = generate_auth_token(devs(:matt))
       post "/v1/analytics/event?auth=#{auth}&name=#{"n"*30}&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
@@ -36,8 +36,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Create new event when event does not yet exist" do
-      save_users_and_devs
-      
       auth = generate_auth_token(devs(:matt))
       post "/v1/analytics/event?auth=#{auth}&name=NewEvent&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
@@ -49,8 +47,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    
    # get_event tests
    test "Can get all logs of an event" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -64,8 +60,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get all logs of an event by name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -79,8 +73,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "get_event can't be called from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -92,8 +84,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "get_event_by_name can't be called from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -105,8 +95,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get the event of the app of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -118,8 +106,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get the event by name of the app of another dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -131,8 +117,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Missing fields in get_event_by_name" do
-      save_users_and_devs
-      
       get "/v1/analytics/event"
       resp = JSON.parse response.body
       
@@ -153,8 +137,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't use another content type but json in update_event" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -166,8 +148,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "update_event can't be called from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -179,8 +159,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't update events that don't belong to the dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -192,8 +170,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't update events that belong to the first dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -205,8 +181,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get the properties of the event after updating" do
-      save_users_and_devs
-      
       new_name = "newname"
       
       matt = users(:matt)
@@ -221,8 +195,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update an event with too long name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -234,8 +206,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update an event with too short name" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -247,8 +217,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update an event with name that's already taken" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -262,8 +230,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    
    # delete_event tests
    test "Can't delete events of the apps of other devs" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -275,8 +241,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't delete events from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -288,8 +252,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't delete events of apps of the first dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -301,8 +263,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can delete the events of own apps" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       event_id = events(:Login).id

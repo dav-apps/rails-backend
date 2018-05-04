@@ -1,51 +1,43 @@
 require 'test_helper'
 
 class AuthMethodsTest < ActionDispatch::IntegrationTest
+
+   setup do
+      save_users_and_devs
+   end
    
    # Login tests
    test "can login" do
-      save_users_and_devs
-      
       get "/v1/auth/login?email=sherlock@web.de&password=sherlocked&auth=" + generate_auth_token(devs(:sherlock))
       
       assert_response :success
    end
    
    test "can't login without email" do
-      save_users_and_devs
-      
       get "/v1/auth/login?password=sherlocked&auth=" + generate_auth_token(devs(:sherlock))
       
       assert_response 400
    end
    
    test "can't login without password" do
-      save_users_and_devs
-      
       get "/v1/auth/login?email=sherlock@web.de&auth=" + generate_auth_token(devs(:sherlock))
       
       assert_response 400
    end
    
    test "can't login without auth" do
-      save_users_and_devs
-      
       get "/v1/auth/login?email=sherlock@web.de&password=sherlocked"
       
       assert_response 401
    end
    
    test "can login without being the dev" do
-      save_users_and_devs
-      
       get "/v1/auth/login?email=sherlock@web.de&password=sherlocked&auth=" + generate_auth_token(devs(:matt))
       
       assert_response 200
    end
    
    test "can't login without being confirmed" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matt.confirmed = false
       matt.save
@@ -58,8 +50,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't login with an incorrect password" do
-      save_users_and_devs
-      
       get "/v1/auth/login?email=matt@test.de&password=falschesPassword&auth=" + generate_auth_token(devs(:matt))
       resp = JSON.parse response.body
       
@@ -68,8 +58,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "can't login with an invalid auth token" do
-      save_users_and_devs
-      
       dev = devs(:matt)
       auth = dev.api_key + "," + Base64.strict_encode64(Base64.strict_encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid)))
       
@@ -81,7 +69,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Dev does not exist in login" do
-      save_users_and_devs
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
       matt = users(:matt)
@@ -109,8 +96,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't login by jwt from outside the website" do
-      save_users_and_devs
-
       matt_dev = devs(:matt)
       cato = users(:cato)
       cato_jwt = (JSON.parse login_user(cato, "123456", matt_dev).body)["jwt"]
@@ -123,8 +108,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can login by jwt" do
-      save_users_and_devs
-
       matt_dev = devs(:matt)
       cato = users(:cato)
       website_jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
@@ -163,8 +146,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Email already taken in signup" do
-      save_users_and_devs
-      
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
       post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=dav@gmail.com&password=testtest&username=test"
@@ -175,8 +156,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Username already taken in signup" do
-      save_users_and_devs
-      
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
       post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=cato"
@@ -187,8 +166,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't signup with too short username and password" do
-      save_users_and_devs
-      
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
       post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=te&username=t"
@@ -200,8 +177,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't signup with too long username and password" do
-      save_users_and_devs
-      
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
       post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=#{"n"*50}&username=#{"n"*30}"
@@ -213,8 +188,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't signup with invalid email" do
-      save_users_and_devs
-      
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
       post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=testexample&password=testtest&username=testuser"
@@ -225,8 +198,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't signup from outside the website" do
-      save_users_and_devs
-      
       matts_auth_token = generate_auth_token(devs(:matt))
       
       post "/v1/auth/signup?auth=#{matts_auth_token}&email=testexample&password=testtest&username=testuser"
@@ -237,8 +208,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can successfully sign up" do
-      save_users_and_devs
-      
       matts_auth_token = generate_auth_token(devs(:sherlock))
       
       post "/v1/auth/signup?auth=#{matts_auth_token}&email=test@example.com&password=testtest&username=testuser"
@@ -250,8 +219,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # get_user tests
    test "Can't get user when the requested user is not the current user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -263,8 +230,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get user when the requested user is the current user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -276,8 +241,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "User does not exist in get_user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matt_id = matt.id
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
@@ -291,8 +254,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can see apps, avatar url and avatar_etag of the user in get_user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -319,8 +280,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't get the user when the JWT is invalid" do
-      save_users_and_devs
-      
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -332,8 +291,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can get the user and can see avatar url, avatar_etag" do
-      save_users_and_devs
-      
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -348,8 +305,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can get user and used storage of apps" do
-      save_users_and_devs
-      
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       file1Path = "test/files/test.png"
@@ -372,8 +327,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # update_user tests
    test "Can't use another content type but json in update_user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -385,8 +338,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update user from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -398,8 +349,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
       
    test "Can't update user with invalid email" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -411,8 +360,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update user with too short username" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -424,8 +371,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update user with too long username" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -437,8 +382,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update user with username that's already taken" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -450,8 +393,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update user with too short password" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -463,8 +404,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't update user with too long password" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -476,12 +415,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't update user with not existing plan" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"plan\":\"4\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", '{"plan": 4}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -489,12 +426,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't update user with invalid plan" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"plan\":\"heloasdasd\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", '{"plan": "sadasd"}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -502,8 +437,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can update the password in update_user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_password = "testpassword"
@@ -518,8 +451,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can update the email in update_user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -533,8 +464,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can update username in update_user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -548,8 +477,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can update email and password of user at once" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -563,8 +490,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can see apps of the user in update_user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -578,21 +503,67 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(apps(:Cards).id, resp2["apps"][0]["id"])
    end
 
-   test "Can update plan in update_user" do
-      save_users_and_devs
-      
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"plan\":\"1\"}", {'Content-Type' => 'application/json'}
+   test "Can update plan with payment in update_user" do
+      torera = users(:torera)
+      jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
+      payment_token = "tok_visa"
+
+      # Upgrade to plus
+      put "/v1/auth/user?jwt=#{jwt}", '{"plan": 1, "payment_token": "' + payment_token + '"}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
+      assert_same(resp["plan"], 1)
+
+      # Downgrade to free
+      put "/v1/auth/user?jwt=#{jwt}", '{"plan": 0}', {'Content-Type' => 'application/json'}
+      resp2 = JSON.parse response.body
+
+      assert_response 200
+      assert_same(resp2["plan"], 0)
+   end
+
+   test "Can't update plan without payment information in update_user" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      put "/v1/auth/user?jwt=#{jwt}", '{"plan": 1}', {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(1113, resp["errors"][0][0])
+   end
+
+   test "Can't update invalid payment_token in update_user" do
+      torera = users(:torera)
+      jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
+
+      put "/v1/auth/user?jwt=#{jwt}", '{"plan": 1, "payment_token": "blablabla"}', {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 400
+      assert_same(2405, resp["errors"][0][0])
+   end
+
+   test "Can update payment token in update_user" do
+      torera = users(:torera)
+      jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
+
+      payment_token = "tok_visa_debit"
+      customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
+      source_id = customer.sources.data[0].id
+
+      put "/v1/auth/user?jwt=#{jwt}", '{"payment_token": "' + payment_token + '"}', {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 200
+
+      # Check if the stripe customer was updated
+      customer2 = Stripe::Customer.retrieve(torera.stripe_customer_id)
+      assert_not_equal(customer2.sources.data[0].id, source_id)
    end
 
    test "Can upload an avatar and the etag updates in update_user" do
-      save_users_and_devs
-
       avatarPath = "test/files/test.png"
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
@@ -617,8 +588,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # delete_user tests
    test "Missing fields in delete_user" do
-      save_users_and_devs
-
       tester = users(:tester2)
 
       delete "/v1/auth/user/#{tester.id}"
@@ -630,8 +599,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't delete user with incorrect confirmation tokens" do
-      save_users_and_devs
-
       email_confirmation_token = "emailconfirmationtoken"
       password_confirmation_token = "passwordconfirmationtoken"
       
@@ -649,9 +616,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1204, resp["errors"][0][0])
    end
    
-   test "User gets deleted" do
-      save_users_and_devs
-
+   test "User will be deleted" do
       email_confirmation_token = "emailconfirmationtoken"
       password_confirmation_token = "passwordconfirmationtoken"
       
@@ -681,8 +646,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't remove app from outside the website" do
-      save_users_and_devs
-
       tester = users(:tester2)
       app = apps(:TestApp)
       tester_jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
@@ -695,8 +658,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "remove_app removes all objects and the association" do
-      save_users_and_devs
-
       tester = users(:tester2)
       app = apps(:TestApp)
       table = tables(:note)
@@ -721,8 +682,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # confirm_user tests
    test "Can confirm new user" do
-      save_users_and_devs
-      
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
       post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=testuser"
@@ -740,8 +699,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't confirm user without email_confirmation_token" do
-      save_users_and_devs
-      
       tester = users(:tester)
       
       post "/v1/auth/user/#{tester.id}/confirm"
@@ -752,8 +709,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't confirm new user with incorrect email_confirmation_token" do
-      save_users_and_devs
-      
       tester = users(:tester)
       
       post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg"
@@ -764,8 +719,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "User is already confirmed" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_confirmation_token = "testconfirmationtoken"
       
@@ -787,8 +740,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end 
    
    test "Can't send verification email with already confirmed user" do
-      save_users_and_devs
-      
       matt = users(:matt)
       
       post "/v1/auth/send_verification_email?email=#{matt.email}"
@@ -799,8 +750,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can send verification email" do
-      save_users_and_devs
-      
       tester = users(:tester)
       
       post "/v1/auth/send_verification_email?email=#{tester.email}"
@@ -828,8 +777,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can send delete account email" do
-      save_users_and_devs
-      
       tester = users(:tester)
       
       post "/v1/auth/send_delete_account_email?email=#{tester.email}"
@@ -849,8 +796,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can send password reset email" do
-      save_users_and_devs
-      
       matt = users(:matt)
       
       post "/v1/auth/send_reset_password_email?email=#{matt.email}"
@@ -862,8 +807,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # set_password tests
    test "Missing fields in set_password" do
-      save_users_and_devs
-
       post "/v1/auth/set_password/blabla"
       resp = JSON.parse response.body
 
@@ -872,8 +815,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't set password with incorrect password confirmation token" do
-      save_users_and_devs
-
       matt = users(:matt)
       matt.password_confirmation_token = "confirmationtoken333"
       matt.save
@@ -888,8 +829,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can set password and login with new password" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matt.password_confirmation_token = "confirmationtoken222"
       matt.save
@@ -909,8 +848,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
    # save_new_password tests
    test "Can't save new password with incorrect password confirmation token" do
-      save_users_and_devs
-      
       matt = users(:matt)
       
       post "/v1/auth/user/#{matt.id}/save_new_password/asdonasdnonadoasnd"
@@ -921,8 +858,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't save new password with empty new_password" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matt.password_confirmation_token = "confirmationtoken"
       matt.save
@@ -935,8 +870,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can save new password" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -957,8 +890,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # save_new_email tests
    test "Changes do apply in save_new_email" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_email = "newtest@email.com"
@@ -984,8 +915,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't save new email with invalid email confirmation token" do
-      save_users_and_devs
-      
       matt = users(:matt)
       
       post "/v1/auth/user/#{matt.id}/save_new_email/oiSsdfh0sdjf0"
@@ -996,8 +925,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't save new email with empty new_email" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matt.email_confirmation_token = "confirmationtoken"
       matt.save
@@ -1010,8 +937,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can send reset new email email" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       old_email = matt.email
@@ -1035,8 +960,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # reset_new_email tests
    test "Can't reset new email with empty old_email" do
-      save_users_and_devs
-      
       matt = users(:matt)
       
       post "/v1/auth/user/#{matt.id}/reset_new_email"
@@ -1047,8 +970,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Changes do apply in reset_new_email" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_email = "new-test@email.com"
@@ -1086,8 +1007,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can't create an archive from outside the website" do
-		save_users_and_devs
-
 		matt = users(:matt)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -1109,8 +1028,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can't get the archive of another user" do
-		save_users_and_devs
-
 		matt = users(:matt)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -1122,8 +1039,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can't get the archive from outside the website" do
-		save_users_and_devs
-
 		matt = users(:matt)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -1135,8 +1050,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can get the archive" do
-		save_users_and_devs
-
 		matt = users(:matt)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -1147,8 +1060,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can't get an archive that does not exist" do
-		save_users_and_devs
-
 		matt = users(:matt)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -1170,8 +1081,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can't delete the archive of another user" do
-		save_users_and_devs
-
 		matt = users(:matt)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -1183,8 +1092,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can't delete an archive from outside the website" do
-		save_users_and_devs
-
 		matt = users(:matt)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
@@ -1196,8 +1103,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can't delete an archive that does not exist" do
-		save_users_and_devs
-
 		matt = users(:matt)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 

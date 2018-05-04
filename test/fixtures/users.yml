@@ -27,3 +27,9 @@ tester2:
   username: tester2
   confirmed: true
   email: tester2@example.com
+
+torera:
+  username: torera
+  confirmed: true
+  email: torera@dav-apps.tech
+  stripe_customer_id: cus_CnOh6xEWVHn8cT

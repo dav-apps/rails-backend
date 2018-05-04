@@ -354,7 +354,11 @@ class UsersController < ApplicationController
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
                      else
-                        @result = requested_user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
+								@result = requested_user.attributes.except("email_confirmation_token", 
+																						"password_confirmation_token", 
+																						"new_password", 
+																						"password_digest",
+																						"stripe_customer_id")
                         avatar = get_users_avatar(user.id)
                         @result["avatar"] = avatar["url"]
                         @result["avatar_etag"] = avatar["etag"]
@@ -434,7 +438,11 @@ class UsersController < ApplicationController
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
+						@result = user.attributes.except("email_confirmation_token", 
+																	"password_confirmation_token", 
+																	"new_password", 
+																	"password_digest",
+																	"stripe_customer_id")
                   avatar = get_users_avatar(user.id)
                   @result["avatar"] = avatar["url"]
                   @result["avatar_etag"] = avatar["etag"]
@@ -609,27 +617,26 @@ class UsersController < ApplicationController
                                  status = 400
                               end
                            end
-                        end
-
-								plan = object["plan"]
+								end
+								
 								payment_token = object["payment_token"]
 
-								if plan
-									if !payment_token && plan != 0
-										errors.push(Array.new([2120, "Missing field: payment_token"]))
-										status = 400
-									else
-										#Check if the user is saved on stripe
-										if user.stripe_customer_id
-											# Get the customer object
-											begin
-												customer = Stripe::Customer.retrieve(user.stripe_customer_id)
-											rescue => e
-												puts e
-											end
+								if payment_token
+									# Check if the user is saved on stripe
+									if user.stripe_customer_id
+										# Get the customer object
+										begin
+											customer = Stripe::Customer.retrieve(user.stripe_customer_id)
+											customer.source = payment_token
+											customer.save
+										rescue Stripe::InvalidRequestError => e
+											errors.push(Array.new([2405, "Field not valid: payment_token"]))
+											status = 400
 										end
-										
-										if !customer
+									end
+									
+									if !customer && errors.length == 0
+										begin
 											# Create a new customer object with the token information
 											customer = Stripe::Customer.create(
 												:email => user.email,
@@ -637,12 +644,35 @@ class UsersController < ApplicationController
 											)
 
 											user.stripe_customer_id = customer.id
+										rescue Stripe::InvalidRequestError => e
+											errors.push(Array.new([2405, "Field not valid: payment_token"]))
+											status = 400
 										end
+									end
+								end
 
-										if plan != 0 && plan != 1
-											errors.push(Array.new([1108, "Plan does not exist"]))
+								plan = object["plan"]
+
+								if plan
+									# Update the user's plan
+									user.plan = plan
+
+									if plan != 0 && plan != 1
+										errors.push(Array.new([1108, "Plan does not exist"]))
+										status = 400
+									else
+										# Check if the user is saved on stripe
+										if !user.stripe_customer_id
+											errors.push(Array.new([1113, "Please add your payment information"]))
 											status = 400
 										else
+											# Get the customer object
+											begin
+												customer = Stripe::Customer.retrieve(user.stripe_customer_id)
+											rescue => e
+												puts e
+											end
+
 											# Process the payment
 											plus_plan_product = Stripe::Product.retrieve(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'])
 											plus_plan = Stripe::Plan.retrieve(ENV['STRIPE_DAV_PLUS_EUR_PLAN_ID'])
@@ -675,9 +705,6 @@ class UsersController < ApplicationController
 													end
 												end
 											end
-
-											# Update the user's plan
-											user.plan = plan
 										end
 									end
 								end
@@ -689,7 +716,11 @@ class UsersController < ApplicationController
                               errors.push(Array.new([1103, "Unknown validation error"]))
                               status = 500
                            else
-                              @result = user.attributes.except("email_confirmation_token", "password_confirmation_token", "new_password", "password_digest")
+										@result = user.attributes.except("email_confirmation_token", 
+																					"password_confirmation_token", 
+																					"new_password", 
+																					"password_digest",
+																					"stripe_customer_id")
                               avatar = get_users_avatar(user.id)
                               @result["avatar"] = avatar["url"]
                               @result["avatar_etag"] = avatar["etag"]
@@ -769,7 +800,15 @@ class UsersController < ApplicationController
                   status = 400
                else
                   # Delete the avatar of the user
-                  delete_avatar(user.id)
+						delete_avatar(user.id)
+						
+						# Delete the stripe customer
+						if user.stripe_customer_id
+							customer = Stripe::Customer.retrieve(user.stripe_customer_id)
+							if customer
+								customer.delete
+							end
+						end
 
                   # Delete the user
                   user.destroy!

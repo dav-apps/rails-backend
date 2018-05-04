@@ -1,6 +1,10 @@
 require 'test_helper'
 
 class DevsMethodsTest < ActionDispatch::IntegrationTest
+
+   setup do
+      save_users_and_devs
+   end
    
    # Create_dev tests
    test "Missing fields in create_dev" do
@@ -12,8 +16,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create dev for user that already is a dev" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -25,8 +27,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can create dev for user from the website" do
-      save_users_and_devs
-      
       cato = users(:cato)
       jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
       
@@ -37,8 +37,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create dev from outside the website" do
-      save_users_and_devs
-      
       cato = users(:cato)
       jwt = (JSON.parse login_user(cato, "123456", devs(:matt)).body)["jwt"]
       
@@ -52,8 +50,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    
    # get_dev tests
    test "Can get dev from the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -66,8 +62,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get dev from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -81,8 +75,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    
    # get_dev_by_api_key tests
    test "Can't get dev by api_key without auth token" do
-      save_users_and_devs
-      
       get "/v1/devs/dev/#{devs(:matt).api_key}"
       resp = JSON.parse response.body
       
@@ -91,8 +83,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get dev by api_key from outside the website" do
-      save_users_and_devs
-      
       auth = generate_auth_token(devs(:matt))
       get "/v1/devs/dev/#{devs(:matt).api_key}?auth=#{auth}"
       resp = JSON.parse response.body
@@ -102,8 +92,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can get dev by api_key from the website" do
-      save_users_and_devs
-      
       auth = generate_auth_token(devs(:sherlock))
       get "/v1/devs/dev/#{devs(:matt).api_key}?auth=#{auth}"
       resp = JSON.parse response.body
@@ -116,8 +104,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    
    # delete_dev tests
    test "Can delete dev from the website" do
-      save_users_and_devs
-      
       tester2 = users(:tester2)
       jwt = (JSON.parse login_user(tester2, "testpassword", devs(:sherlock)).body)["jwt"]
       
@@ -128,8 +114,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't delete dev if it has apps" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -141,8 +125,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't delete dev from outside the website" do
-      save_users_and_devs
-      
       tester2 = users(:tester2)
       jwt = (JSON.parse login_user(tester2, "testpassword", devs(:matt)).body)["jwt"]
       
@@ -156,8 +138,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    
    # generate_new_keys tests
    test "Can generate new keys from the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -168,8 +148,6 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't generate new keys from outside the website" do
-      save_users_and_devs
-      
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
