@@ -34,7 +34,7 @@ class StripeWebhooksService
          # Change plan to free
          customer_id = event.data.object.customer
          user = User.find_by(stripe_customer_id: customer_id)
-
+         
          if user
             user.plan = 0
             user.save
