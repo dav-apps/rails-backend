@@ -654,9 +654,6 @@ class UsersController < ApplicationController
 								plan = object["plan"]
 
 								if plan
-									# Update the user's plan
-									user.plan = plan
-
 									if plan != 0 && plan != 1
 										errors.push(Array.new([1108, "Plan does not exist"]))
 										status = 400
@@ -691,17 +688,22 @@ class UsersController < ApplicationController
 															},
 														]
 													)
+													user.plan = 1
+													user.subscription_status = 0
 												end
 											else
 												if plan == 0
 													# Delete the subscription
 													subscription.delete(at_period_end: true)
+													user.subscription_status = 1
 												elsif plan == 1
-													# Check if the subscription has the right plan
+													# If the user is on plan 2
 													if subscription.items.data[0].plan.product != plus_plan_product
 														# Change the subscription to the plus plan
 														subscription.items.data[0].plan = plus_plan.id
 														subscription.save
+														user.plan = 1
+														user.subscription_status = 0
 													end
 												end
 											end

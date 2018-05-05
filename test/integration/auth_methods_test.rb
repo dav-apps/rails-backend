@@ -519,8 +519,13 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       put "/v1/auth/user?jwt=#{jwt}", '{"plan": 0}', {'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
 
+		# User should still be on plus, but with subscription status of 1
       assert_response 200
-      assert_same(resp2["plan"], 0)
+		assert_same(resp2["plan"], 1)
+		assert_same(resp2["subscription_status"], 1)
+
+		subscription = Stripe::Subscription.list(customer: torera.stripe_customer_id).data.first
+		assert(subscription.cancel_at_period_end)
    end
 
    test "Can't update plan without payment information in update_user" do
