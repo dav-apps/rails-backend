@@ -1,13 +1,10 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
-  </head>
-  <body>
-    <h3>Thanks for signing up, <%= @user.username %>!</h3>
-    <p>You can activate your account by clicking the following link: 
-      <a href="<%= @link %>">dav-apps.tech</a></p>
-    
-    <p>If you didn’t ask to verify this address, you can ignore this email.</p>
-  </body>
-</html>
+<div class="container py-3 bg-light">
+	<div class="card bg-white">
+		<div class="card-body">
+			<a href="https://dav-apps.tech" class="card-title text-dark" style="margin-left: 10px; font-size: 23px; text-decoration: none;">dav</a>
+			<h4 class="text-center mt-3 mb-2">Welcome to dav, <%= @user.username %></h4>
+			<p class="card-text text-center">Click the button below to verify your email address</p>
+			<%= link_to "Verify Email Address", @link, class: "btn btn-primary mx-auto mt-4 mb-2" %>
+		</div>
+	</div>
+</div>

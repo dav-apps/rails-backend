@@ -55,6 +55,10 @@ gem 'stripe'
 gem 'stripe_event'
 gem 'stripe-ruby-mock', '~> 2.5.3', :require => 'stripe_mock'
 
+# Bootstrap emails
+gem 'bootstrap-email', github: 'stuyam/bootstrap-email'
+#gem 'bootstrap-email'
+
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug'

@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-<html>
-  	<head>
-    	<meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
-  	</head>
-  	<body>
-	  	<h3>The archive of your dav account is now ready to download.</h3>
-    	<p>You can download your archive in the settings of your account.</p>
-    	<a href="<%= @link %>">dav-apps.tech</a></p>
-
-   	<p>The archive will be automatically deleted after one month.</p>
-  	</body>
-</html>
+<div class="container py-3 bg-light">
+	<div class="card bg-white">
+		<div class="card-body">
+			<a href="https://dav-apps.tech" class="card-title text-dark" style="margin-left: 10px; font-size: 23px; text-decoration: none;">dav</a>
+			<h4 class="text-center mt-3 mb-2">Archive was created</h4>
+			<p class="card-text text-center">You can now download your Archive in the settings of your account.</p>
+			<p class="text-muted text-center mt-2">The archive will be automatically deleted after one month.</p>
+			<%= link_to "Show Archives", @link, class: "btn btn-primary mx-auto mt-4 mb-2" %>
+		</div>
+	</div>
+</div>

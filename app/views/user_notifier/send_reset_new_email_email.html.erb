@@ -1,14 +1,17 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
-  </head>
-  <body>
-    <h3>Hi, <%= @user.username %>,</h3>
-    <p>the email of your dav account was changed to <%= @user.email %>. 
-      If this wasn't you, you can undo the change by clicking the following link: 
-      <a href="<%= @link %>">dav-apps.tech</a></p>
-    
-    <p>If you changed your email in the settings of your account, you can ignore this email.</p>
-  </body>
-</html>
+<div class="container py-3 bg-light">
+	<div class="card bg-white">
+		<div class="card-body">
+			<a href="https://dav-apps.tech" class="card-title text-dark" style="margin-left: 10px; font-size: 23px; text-decoration: none;">dav</a>
+			<h4 class="text-center mt-3 mb-2">Your email was changed</h4>
+			<p class="card-text text-center">
+				Your new email address is <span style="font-weight: bold"><%= @user.email %></span>.
+			</p>
+			<br>
+			<p class="card-text text-center">
+				If you didn't change your email address, you can undo the change by clicking the button below.
+			</p>
+			<p class="text-muted text-center mt-3">Please ignore this email if you are the owner of <%= @user.email %>.</p>
+			<%= link_to "Reset Email", @link, class: "btn btn-primary mx-auto mt-4 mb-2" %>
+		</div>
+	</div>
+</div>

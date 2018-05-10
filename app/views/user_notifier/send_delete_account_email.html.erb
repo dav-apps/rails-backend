@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-<html>
-  	<head>
-    	<meta content='text/html; charset=UTF-8' http-equiv='Content-Type' />
-  	</head>
-  	<body>
-		<h3>Hi <%= @user.username %>,</h3>
-		<p>to delete your account, please click the following link: 
-			<a href="<%= @link %>">dav-apps.tech</a></p>
-		<p>All your app data will be deleted permanently.</p>
-		<p>If you do not want to delete your account, you can ignore this email.</p>
-  	</body>
-</html>
+<div class="container py-3 bg-light">
+	<div class="card bg-white">
+		<div class="card-body">
+			<a href="https://dav-apps.tech" class="card-title text-dark" style="margin-left: 10px; font-size: 23px; text-decoration: none;">dav</a>
+			<h4 class="text-center mt-3 mb-2">Delete your account</h4>
+			<p class="card-text text-center">Click the button below to delete your account.</p>
+			<p class="text-muted text-center mt-2">Please be aware that your data cannot be recovered once deleted.</p>
+			<%= link_to "Delete Account", @link, class: "btn btn-danger mx-auto mt-4 mb-2" %>
+		</div>
+	</div>
+</div>
