@@ -436,18 +436,21 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1108, resp["errors"][0][0])
    end
    
-   test "Can update the password in update_user" do
+   test "Can update new_password in update_user" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      old_new_password = matt.new_password
       new_password = "testpassword"
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\":\"#{new_password}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", '{"password":"' + new_password + '"}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       matt = User.find_by_id(matt.id)
       
       assert_response 200
-      assert_equal(new_password, matt.new_password)
+      assert_not_nil(matt.new_password)
+      assert_not_equal(old_new_password, matt.new_password)
+      assert_not_equal(new_password, matt.new_password)
    end
    
    test "Can update the email in update_user" do
@@ -874,11 +877,12 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2603, resp["errors"][0][0])
    end
    
-   test "Can save new password" do
+   test "Can save new password and login" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      new_password = "testpassword"
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\": \"testpassword\"}", {'Content-Type' => 'application/json'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", '{"password": "' + new_password + '"}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -890,6 +894,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_nil(User.find_by_id(matt.id).new_password)
+
+      get "/v1/auth/login?email=#{matt.email}&password=#{new_password}&auth=" + generate_auth_token(devs(:sherlock))
    end
    # End save_new_password tests
    

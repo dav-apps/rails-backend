@@ -583,8 +583,8 @@ class UsersController < ApplicationController
                            end
                            
                            if errors.length == 0
-                              # Set password_confirmation_token and send email
-                              user.new_password = password
+										# Set password_confirmation_token and send email
+                              user.new_password = BCrypt::Password.create(password)
                               user.password_confirmation_token = generate_token
                               password_changed = true
                            end
@@ -1201,7 +1201,7 @@ class UsersController < ApplicationController
                   status = 400
                else
                   # Save new password
-                  user.password = user.new_password
+                  user.password_digest = user.new_password
                   user.new_password = nil
                   
                   user.password_confirmation_token = nil
