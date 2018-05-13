@@ -18,14 +18,6 @@ class User < ActiveRecord::Base
 
 	private
 	def delete_avatar
-		Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-      client = Azure::Blob::BlobService.new
-      begin
-         client.delete_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], "#{self.id}.png")
-      rescue Exception => e
-         
-      end
+		BlobOperationsService.delete_avatar(self.id)
 	end
 end

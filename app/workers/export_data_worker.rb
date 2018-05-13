@@ -101,7 +101,7 @@ class ExportDataWorker
 			Dir.mkdir(sourceExportFolderPath) unless File.exists?(sourceExportFolderPath)
 
 			# Download the avatar
-			avatar = get_users_avatar(user_id)
+			avatar = BlobOperationsService.get_users_avatar(user_id)
 
 			open(filesExportFolderPath + "avatar.png", 'wb') do |file|
 				file << open(avatar["url"]).read
@@ -109,7 +109,7 @@ class ExportDataWorker
 
 			# Download all files
 			files_array.each do |file|
-				download_blob(file["app_id"], file["id"], file["ext"], filesExportFolderPath)
+				BlobOperationsService.download_blob(file["app_id"], file["id"], file["ext"], filesExportFolderPath)
 			end
 
 			# Create the json file
@@ -126,7 +126,7 @@ class ExportDataWorker
 			zf.write
 
 			# Upload the zip file to the blob storage
-			upload_archive(exportZipFilePath)
+			BlobOperationsService.upload_archive(exportZipFilePath)
 
 			# Delete the zip file and the folder
 			FileUtils.rm_rf(Dir.glob(exportFolderPath))
@@ -139,57 +139,4 @@ class ExportDataWorker
 			archive.save
 		end
 	end
-
-	define_method(:get_users_avatar) do |user_id|
-		Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-		Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-		avatar = Hash.new
-
-		client = Azure::Blob::BlobService.new
-		begin
-			blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
-			avatar['url'] = ENV['AZURE_AVATAR_CONTAINER_URL'] + user_id.to_s + ".png"
-			etag = blob[0].properties[:etag]
-			avatar['etag'] = etag[1...etag.size-1]
-		rescue Exception => e
-			# Get the blob of the default avatar
-			default_blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], "default.png")
-			avatar['url'] = ENV['AZURE_AVATAR_CONTAINER_URL'] + "default.png"
-			etag = default_blob[0].properties[:etag]
-			avatar['etag'] = etag[1...etag.size-1]
-		end
-		return avatar
-	end
-
-	define_method(:upload_archive) do |archive_path|
-      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-      file = File.open(archive_path, "rb")
-      contents = file.read
-      filename = File.basename(archive_path)
-
-      client = Azure::Blob::BlobService.new
-      begin
-         blob = client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, contents)
-      rescue Exception => e
-         puts e
-      end
-	end
-	
-	define_method(:download_blob) do |app_id, object_id, object_ext, path|
-      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-      begin
-         full_path = path + object_id.to_s + "." + object_ext
-         filename = "#{app_id}/#{object_id}"
-         
-         client = Azure::Blob::BlobService.new
-         blob, content = client.get_blob(ENV['AZURE_FILES_CONTAINER_NAME'], filename)
-         File.open(full_path,"wb") {|f| f.write(content)}
-      rescue Exception => e
-         puts e
-      end
-   end
 end

@@ -799,7 +799,7 @@ class AppsController < ApplicationController
 												status = 500
 											else
 												begin
-													blob = upload_blob(app.id, obj.id, request.body)
+													blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
 													etag = blob.properties[:etag]
 													# Remove the first and the last character of etag, because they are "" for whatever reason
 													etag = etag[1...etag.size-1]
@@ -856,7 +856,7 @@ class AppsController < ApplicationController
 		else
 			# Delete the uploaded blob and the object
 			begin
-				delete_blob(app.id, obj.id)
+				BlobOperationsService.delete_blob(app.id, obj.id)
 				TableObject.find_by_id(obj.id).destroy!
 			rescue Exception => e
 				
@@ -1178,7 +1178,7 @@ class AppsController < ApplicationController
 													
 													begin
 														# Upload new file
-														blob = upload_blob(app.id, obj.id, request.body)
+														blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
 														etag = blob.properties[:etag]
 														etag = etag[1...etag.size-1]
 													rescue Exception => e
@@ -1385,7 +1385,7 @@ class AppsController < ApplicationController
                                  status = 403
 										else
 											# Delete the file if it exists
-											delete_blob(app.id, obj.id)
+											BlobOperationsService.delete_blob(app.id, obj.id)
 
                                  obj.destroy!
                                  @result = {}

@@ -359,7 +359,7 @@ class UsersController < ApplicationController
 																						"new_password", 
 																						"password_digest",
 																						"stripe_customer_id")
-                        avatar = get_users_avatar(user.id)
+                        avatar = BlobOperationsService.get_users_avatar(user.id)
                         @result["avatar"] = avatar["url"]
                         @result["avatar_etag"] = avatar["etag"]
                         @result["total_storage"] = get_total_storage_of_user(user.id)
@@ -443,7 +443,7 @@ class UsersController < ApplicationController
 																	"new_password", 
 																	"password_digest",
 																	"stripe_customer_id")
-                  avatar = get_users_avatar(user.id)
+                  avatar = BlobOperationsService.get_users_avatar(user.id)
                   @result["avatar"] = avatar["url"]
                   @result["avatar_etag"] = avatar["etag"]
                   @result["total_storage"] = get_total_storage_of_user(user.id)
@@ -723,7 +723,7 @@ class UsersController < ApplicationController
 																					"new_password", 
 																					"password_digest",
 																					"stripe_customer_id")
-                              avatar = get_users_avatar(user.id)
+                              avatar = BlobOperationsService.get_users_avatar(user.id)
                               @result["avatar"] = avatar["url"]
                               @result["avatar_etag"] = avatar["etag"]
                               @result["total_storage"] = get_total_storage_of_user(user.id)
@@ -802,7 +802,7 @@ class UsersController < ApplicationController
                   status = 400
                else
                   # Delete the avatar of the user
-						delete_avatar(user.id)
+						BlobOperationsService.delete_avatar(user.id)
 						
 						# Delete the stripe customer
 						if user.stripe_customer_id
@@ -1401,12 +1401,12 @@ class UsersController < ApplicationController
 							else
 								archive = Archive.new(user: user)
 								archive.save
-	
+
 								archive.name = "dav-export-#{archive.id}.zip"
 								archive.save
 	
 								ExportDataWorker.perform_async(user.id, archive.id)
-								#export_data(user.id, archive.id)
+
 								@result = archive.attributes
 								ok = true
 							end
@@ -1496,8 +1496,7 @@ class UsersController < ApplicationController
 								else
 									if file
 										# Return the file itself
-										filename = "dav-export-#{archive.id}.zip"
-										@result = download_archive(filename)[1]
+										@result = BlobOperationsService.download_archive(archive.id)[1]
 									else
 										# Return the archive object
 										@result = archive.attributes
