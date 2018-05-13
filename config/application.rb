@@ -29,8 +29,7 @@ module Workspace
 
 		Rails.application.config.middleware.insert_before 0, Rack::Cors do
 			allow do
-				origins 	ENV['BASE_URL'], 
-							'dav-apps-staging.herokuapp.com',
+				origins 	ENV['BASE_URL'],
 							'cards-dav.azurewebsites.net'
 
 				resource '*',
