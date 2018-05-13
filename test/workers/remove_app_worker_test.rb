@@ -1,6 +1,30 @@
 require 'test_helper'
-class RemoveAppWorkerTest < MiniTest::Unit::TestCase
-  def test_example
-    skip "add some examples to (or delete) #{__FILE__}"
-  end
+require 'sidekiq/testing'
+
+class RemoveAppWorkerTest < ActiveSupport::TestCase
+
+	setup do
+      save_users_and_devs
+   end
+	
+	test "RemoveAppWorker will be invoked" do
+		Sidekiq::Testing.fake!
+		matt = users(:matt)
+		cards = apps(:Cards)
+		jobs_count = RemoveAppWorker.jobs.count
+
+		RemoveAppWorker.perform_async(matt.id, cards.id)
+		assert_same(RemoveAppWorker.jobs.count, jobs_count+1)
+	end
+	
+	test "RemoveAppWorker removes table objects of app and user" do
+		Sidekiq::Testing.inline!
+		matt = users(:matt)
+		cards = apps(:Cards)
+		card_table = tables(:card)
+
+		RemoveAppWorker.perform_async(matt.id, cards.id)
+
+		assert_same(matt.table_objects.where(table_id: card_table.id).count, 0)
+	end
 end
