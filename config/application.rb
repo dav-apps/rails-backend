@@ -29,19 +29,14 @@ module Workspace
 
 		Rails.application.config.middleware.insert_before 0, Rack::Cors do
 			allow do
-				origins ENV['BASE_URL'], 'dav-apps-staging.herokuapp.com'
+				origins 	ENV['BASE_URL'], 
+							'dav-apps-staging.herokuapp.com',
+							'cards-dav.azurewebsites.net'
 
 				resource '*',
 				headers: :any,
           	methods: %i(get post put patch delete options head)
 			end
-
-      	allow do
-				origins '*'
-
-				# Allow only get on auth routes
-				resource '/v1/auth/**/*', methods: [:get], headers: :any
-      	end
     	end
   	end
 end
