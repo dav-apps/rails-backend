@@ -1519,7 +1519,7 @@ class UsersController < ApplicationController
       end
 		
 		if file
-			send_data(@result, status: status, filename: filename)
+			send_data(@result, status: status, filename: archive.name)
 		else
 			render json: @result, status: status if status
 		end
