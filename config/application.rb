@@ -39,9 +39,7 @@ module Workspace
       	allow do
 				origins '*'
 
-				resource '*', headers: :any, methods: :any
-
-				# Only allow get on auth routes
+				# Allow only get on auth routes
 				resource '/v1/auth/**/*', methods: [:get], headers: :any
       	end
     	end
