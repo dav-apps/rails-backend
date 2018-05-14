@@ -51,52 +51,58 @@ class AnalyticsController < ApplicationController
                if !app
                   errors.push(Array.new([2803, "Resource does not exist: App"]))
                   status = 400
-               else
-                  # Check if the event with the name already exists
-                  event = Event.find_by(name: name, app_id: app_id)
-                  
-                  if !event
-                     # Validate properties
-                     if name.length > max_event_name_length
-                        errors.push(Array.new([2303, "Field too long: name"]))
-                        status = 400
-                     end
-                     
-                     if name.length < min_event_name_length
-                        errors.push(Array.new([2203, "Field too short: name"]))
-                        status = 400
-                     end
-                     
-                     if errors.length == 0
-                        # Create event with that name
-                        event = Event.new(name: name, app_id: app_id)
-                        
-                        if !event.save
-                           errors.push(Array.new([1103, "Unknown validation error"]))
-                           status = 500
-                        end
-                     end
-						end
-						
-						if data
-							if data.length > max_event_data_length
-								errors.push(Array.new([2308, "Field too long: data"]))
-                        status = 400
+					else
+						# Check if the app belongs to the dev
+						if app.dev != dev
+							errors.push(Array.new([1102, "Action not allowed"]))
+							status = 403
+						else
+							# Check if the event with the name already exists
+							event = Event.find_by(name: name, app_id: app_id)
+							
+							if !event
+								# Validate properties
+								if name.length > max_event_name_length
+									errors.push(Array.new([2303, "Field too long: name"]))
+									status = 400
+								end
+								
+								if name.length < min_event_name_length
+									errors.push(Array.new([2203, "Field too short: name"]))
+									status = 400
+								end
+								
+								if errors.length == 0
+									# Create event with that name
+									event = Event.new(name: name, app_id: app_id)
+									
+									if !event.save
+										errors.push(Array.new([1103, "Unknown validation error"]))
+										status = 500
+									end
+								end
+							end
+
+							if data
+								if data.length > max_event_data_length
+									errors.push(Array.new([2308, "Field too long: data"]))
+									status = 400
+								end
+							end
+
+							if errors.length == 0
+								# Create event_log
+								event_log = EventLog.new(event_id: event.id, data: data)
+								
+								if !event_log.save
+									errors.push(Array.new([1103, "Unknown validation error"]))
+									status = 500
+								else
+									@result = event_log.attributes
+									ok = true
+								end
 							end
 						end
-                  
-                  if errors.length == 0
-                     # Create event_log
-                     event_log = EventLog.new(event_id: event.id, data: data)
-                     
-                     if !event_log.save
-                        errors.push(Array.new([1103, "Unknown validation error"]))
-                        status = 500
-                     else
-                        @result = event_log.attributes
-                        ok = true
-                     end
-                  end
                end
             end
          end

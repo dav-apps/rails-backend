@@ -26,7 +26,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2203, resp["errors"][0][0])
    end
    
-   test "Can't create event with too long eventname" do
+   test "Can't create event with too long event name" do
       auth = generate_auth_token(devs(:matt))
       post "/v1/analytics/event?auth=#{auth}&name=#{"n"*30}&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
@@ -42,6 +42,31 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 201
       assert_same(Event.find_by(name: "NewEvent").id, resp["event_id"])
+   end
+
+   test "Can't create event log with too long data" do
+      auth = generate_auth_token(devs(:matt))
+      post "/v1/analytics/event?auth=#{auth}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}&data=#{'n'*251}"
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2308, resp["errors"][0][0])
+   end
+
+   test "Can't create event log for the event of another dev" do
+      auth = generate_auth_token(devs(:sherlock))
+      post "/v1/analytics/event?auth=#{auth}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can create event log" do
+      auth = generate_auth_token(devs(:matt))
+      post "/v1/analytics/event?auth=#{auth}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}&data=testdata"
+
+      assert_response 201
    end
    # End create_event tests
    
