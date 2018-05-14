@@ -1,11 +1,13 @@
 class AnalyticsController < ApplicationController
    
    min_event_name_length = 2
-   max_event_name_length = 15
+	max_event_name_length = 15
+	max_event_data_length = 250
    
    define_method :create_event_log do
       name = params["name"]
-      app_id = params["app_id"]
+		app_id = params["app_id"]
+		data = params["data"]
       
       errors = Array.new
       @result = Hash.new
@@ -74,11 +76,18 @@ class AnalyticsController < ApplicationController
                            status = 500
                         end
                      end
-                  end
+						end
+						
+						if data
+							if data.length > max_event_data_length
+								errors.push(Array.new([2308, "Field too long: data"]))
+                        status = 400
+							end
+						end
                   
                   if errors.length == 0
                      # Create event_log
-                     event_log = EventLog.new(event_id: event.id)
+                     event_log = EventLog.new(event_id: event.id, data: data)
                      
                      if !event_log.save
                         errors.push(Array.new([1103, "Unknown validation error"]))
