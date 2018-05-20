@@ -1539,8 +1539,7 @@ class AppsController < ApplicationController
    
    def get_table
       app_id = params["app_id"]
-      table_name = params["table_name"]
-      
+      table_name = params["table_name"]      
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
@@ -1649,7 +1648,115 @@ class AppsController < ApplicationController
       end
       
       render json: @result, status: status if status
-   end
+	end
+	
+	def get_table_by_id
+      table_id = params["id"]      
+      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      
+      errors = Array.new
+      @result = Hash.new
+		ok = false
+      
+      if !table_id
+         errors.push(Array.new([2103, "Missing field: id"]))
+         status = 400
+      end
+      
+      if !jwt || jwt.length < 1
+         errors.push(Array.new([2102, "Missing field: jwt"]))
+         status = 401
+      end
+		
+		if errors.length == 0
+			jwt_valid = false
+         begin
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
+         rescue JWT::ExpiredSignature
+            # JWT expired
+            errors.push(Array.new([1301, "JWT: expired"]))
+            status = 401
+         rescue JWT::DecodeError
+            errors.push(Array.new([1302, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
+         rescue Exception
+            errors.push(Array.new([1303, "JWT: unknown error"]))
+            status = 401
+			end
+			
+			if jwt_valid
+				user_id = decoded_jwt[0]["user_id"]
+            dev_id = decoded_jwt[0]["dev_id"]
+            
+            user = User.find_by_id(user_id)
+            
+            if !user
+               errors.push(Array.new([2801, "Resource does not exist: User"]))
+               status = 400
+				else
+					dev = Dev.find_by_id(dev_id)
+               
+               if !dev     # Check if the dev exists
+                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+                  status = 400
+					else
+						table = Table.find_by_id(table_id)
+
+						if !table
+							errors.push(Array.new([2804, "Resource does not exist: Table"]))
+							status = 404
+						else
+							# Get the app of the table
+							app = App.find_by_id(table.app.id)
+							
+							if !app
+								errors.push(Array.new([2803, "Resource does not exist: App"]))
+								status = 400
+							else
+								# Jeder kann zugreifen, solange die App dem Dev gehört oder man auf eigene Tabellen von der Webseite zugreift
+								if !(((dev == Dev.first) && (app.dev == user.dev)) || app.dev == dev)
+									errors.push(Array.new([1102, "Action not allowed"]))
+									status = 403
+								else
+									@result = table.attributes
+									
+									array = Array.new
+									
+									table.table_objects.each do |table_object|
+										if table_object.user_id == user.id
+											object = Hash.new
+											object["id"] = table_object.id
+											object["uuid"] = table_object.uuid
+											object["user_id"] = table_object.user_id
+											
+											table_object.properties.each do |property|
+												object[property.name] = property.value
+											end
+											array.push(object)
+										end
+									end
+									
+									@result["entries"] = array
+									ok = true
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+
+		if ok && errors.length == 0
+         status = 200
+      else
+         @result.clear
+         @result["errors"] = errors
+      end
+      
+      render json: @result, status: status if status
+	end
    
    define_method :update_table do
       table_id = params["id"]

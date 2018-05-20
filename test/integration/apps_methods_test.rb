@@ -1169,6 +1169,62 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
    end
    # End get_table tests
+
+   # get_table_by_id tests
+   test "Missing fields in get_table_by_id" do
+      get "/v1/apps/table/#{tables(:card).id}"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't get the table of the app of another dev by id" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can't get the table of the app of another dev by id from the website" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can get the table by id and only the entries of the current user" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/table/#{tables(:card).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_same(apps(:Cards).id, resp["app_id"])
+      resp["entries"].each do |e|
+         assert_same(users(:matt).id, e["user_id"])
+      end
+   end
+
+   test "Can get the table of the app of the own dev by id from the website" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+   end
+   # End get_table_by_id
    
    # update_table tests
    test "Missing fields in update_table" do
