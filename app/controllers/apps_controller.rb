@@ -887,10 +887,10 @@ class AppsController < ApplicationController
       end
       
 		if errors.length == 0 
-			obj = TableObject.find_by_id(object_id)
-
+			obj = TableObject.find_by(uuid: object_id)
+			
 			if !obj
-				obj = TableObject.find_by(uuid: object_id)
+				obj = TableObject.find_by_id(object_id)
 			end
          
          if !obj
@@ -1110,10 +1110,10 @@ class AppsController < ApplicationController
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
 					else
-						obj = TableObject.find_by_id(object_id)
+						obj = TableObject.find_by(uuid: object_id)
 
 						if !obj
-							obj = TableObject.find_by(uuid: object_id)
+							obj = TableObject.find_by_id(object_id)
 						end
 						
                   if !obj
@@ -1353,10 +1353,10 @@ class AppsController < ApplicationController
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
                else
-                  obj = TableObject.find_by_id(object_id)
+						obj = TableObject.find_by(uuid: object_id)
 
 						if !obj
-							obj = TableObject.find_by(uuid: object_id)
+							obj = TableObject.find_by_id(object_id)
 						end
                
                   if !obj
