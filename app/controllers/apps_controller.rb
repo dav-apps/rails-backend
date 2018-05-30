@@ -578,7 +578,8 @@ class AppsController < ApplicationController
    
    # TableObject methods
    define_method :create_object do
-      table_name = params["table_name"]
+		table_name = params["table_name"]
+		table_id = params["table_id"]
       app_id = params["app_id"]
 		visibility = params["visibility"]
 		ext = params["ext"]
@@ -589,8 +590,9 @@ class AppsController < ApplicationController
       errors = Array.new
       @result = Hash.new
 		ok = false
-      
-      if !table_name || table_name.length < 1
+		
+		# Prefer table_name, if table_name and table_id is missing, return that table_name is missing
+      if (!table_name || table_name.length < 1) && !table_id
          errors.push(Array.new([2113, "Missing field: table_name"]))
          status = 400
       end
@@ -649,35 +651,40 @@ class AppsController < ApplicationController
 								errors.push(Array.new([1102, "Action not allowed"]))
 								status = 403
 							else
-								table = Table.find_by(name: table_name, app_id: app_id)
-								
-								if !table
-									# Only create the table when the dev is logged in
-									if dev.user_id != user.id
-										errors.push(Array.new([2804, "Resource does not exist: Table"]))
-										status = 400
-									else
-										# Check if table_name is too long or too short
-										if table_name.length > max_table_name_length
-											errors.push(Array.new([2305, "Field too long: table_name"]))
+								# Try to get the table by the table_id
+								if table_id
+									table = Table.find_by(id: table_id, app_id: app_id)
+								else
+									table = Table.find_by(name: table_name, app_id: app_id)
+
+									if !table
+										# Only create the table when the dev is logged in
+										if dev.user_id != user.id
+											errors.push(Array.new([2804, "Resource does not exist: Table"]))
 											status = 400
-										end
-										
-										if table_name.length < min_table_name_length
-											errors.push(Array.new([2205, "Field too short: table_name"]))
-											status = 400
-										end
-										
-										if table_name.include? " "
-											errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
-											status = 400
-										end
-										
-										# Create a new table
-										table = Table.new(app_id: app.id, name: (table_name[0].upcase + table_name[1..-1]))
-										if !table.save
-											errors.push(Array.new([1103, "Unknown validation error"]))
-											status = 500
+										else
+											# Check if table_name is too long or too short
+											if table_name.length > max_table_name_length
+												errors.push(Array.new([2305, "Field too long: table_name"]))
+												status = 400
+											end
+											
+											if table_name.length < min_table_name_length
+												errors.push(Array.new([2205, "Field too short: table_name"]))
+												status = 400
+											end
+											
+											if table_name.include? " "
+												errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
+												status = 400
+											end
+											
+											# Create a new table
+											table = Table.new(app_id: app.id, name: (table_name[0].upcase + table_name[1..-1]))
+											if !table.save
+												errors.push(Array.new([1103, "Unknown validation error"]))
+												status = 500
+											end
 										end
 									end
 								end
@@ -1539,7 +1546,7 @@ class AppsController < ApplicationController
    
    def get_table
       app_id = params["app_id"]
-      table_name = params["table_name"]      
+      table_name = params["table_name"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new

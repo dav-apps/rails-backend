@@ -622,11 +622,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can create object with uuid" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      uuid = SecureRandom.uuid
 
-      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&id=#{SecureRandom.uuid}", '{"test": "test"}', {'Content-Type' => 'application/json'}
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&uuid=#{uuid}", '{"test": "test"}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
+      assert_equal(resp["uuid"], uuid)
    end
 
    test "Can't create object with uuid that is already in use" do
@@ -653,6 +655,57 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
       # Delete the object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      assert_response 200
+   end
+
+   test "Can create object with table_id" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", '{"test": "test"}', {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+   end
+
+   test "Can create object with uuid and table_id" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      uuid = SecureRandom.uuid
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}&uuid=#{uuid}", '{"test": "test"}', {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      assert_equal(resp["uuid"], uuid)
+   end
+
+   test "Can't create an object for the app of another dev with table_id" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", '{"test":"test"}', {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can create object with table_id and another visibility and upload text file" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      visibility = 1
+
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:note).id}&visibility=#{visibility}&app_id=#{apps(:TestApp).id}&ext=txt", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      assert_not_nil(resp["id"])
+      assert_same(resp["visibility"], visibility)
+
+      # Delete object
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      
       assert_response 200
    end
    # End create_object tests
