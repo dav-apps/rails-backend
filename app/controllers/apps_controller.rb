@@ -783,6 +783,7 @@ class AppsController < ApplicationController
 														
 														@result = obj.attributes
 														@result["properties"] = properties
+														@result["etag"] = generate_table_object_etag(obj)
 														
 														ok = true
 													end
@@ -840,6 +841,8 @@ class AppsController < ApplicationController
 															end
 
 															@result["properties"] = properties
+															@result["etag"] = generate_table_object_etag(obj)
+
 															ok = true
 														end
 													end
@@ -1035,6 +1038,7 @@ class AppsController < ApplicationController
 						properties[prop.name] = prop.value
 					end
 					@result["properties"] = properties
+					@result["etag"] = generate_table_object_etag(obj)
 
 					ok = true
 					file = false
@@ -1224,6 +1228,8 @@ class AppsController < ApplicationController
 															end
 		
 															@result["properties"] = properties
+															@result["etag"] = generate_table_object_etag(obj)
+
 															ok = true
 														end
 													end
@@ -1283,6 +1289,7 @@ class AppsController < ApplicationController
 													
 													@result = obj.attributes
 													@result["properties"] = properties
+													@result["etag"] = generate_table_object_etag(obj)
 													
 													ok = true
 												end
@@ -1628,16 +1635,13 @@ class AppsController < ApplicationController
                                  object = Hash.new
 											object["id"] = table_object.id
 											object["uuid"] = table_object.uuid
-											object["user_id"] = table_object.user_id
-                                 
-                                 table_object.properties.each do |property|
-                                    object[property.name] = property.value
-                                 end
+											object["etag"] = generate_table_object_etag(table_object)
+											
                                  array.push(object)
                               end
                            end
                            
-                           @result["entries"] = array
+                           @result["table_objects"] = array
                            ok = true
                         end
                      end
@@ -1736,16 +1740,13 @@ class AppsController < ApplicationController
 											object = Hash.new
 											object["id"] = table_object.id
 											object["uuid"] = table_object.uuid
-											object["user_id"] = table_object.user_id
+											object["etag"] = generate_table_object_etag(table_object)
 											
-											table_object.properties.each do |property|
-												object[property.name] = property.value
-											end
 											array.push(object)
 										end
 									end
 									
-									@result["entries"] = array
+									@result["table_objects"] = array
 									ok = true
 								end
 							end

@@ -113,5 +113,16 @@ class ApplicationController < ActionController::API
             
          end
       end
-   end
+	end
+	
+	def generate_table_object_etag(object)
+		# id,table_id,user_id,visibility,uuid,file,property1Name:property1Value,property2Name:property2Value,...
+		etag_string = "#{object.id},#{object.table_id},#{object.user_id},#{object.visibility},#{object.uuid},#{object.file}"
+
+		object.properties.each do |prop|
+			etag_string += ",#{prop.name}:#{prop.value}"
+		end
+
+		return Digest::MD5.hexdigest(etag_string)
+	end
 end
