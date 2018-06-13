@@ -619,7 +619,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1104, resp["errors"][0][0])
    end
 
-   test "Can create object with uuid" do
+   test "Can create object with uuid and get correct etag" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       uuid = SecureRandom.uuid
@@ -628,7 +628,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 201
-      assert_equal(resp["uuid"], uuid)
+		object = TableObject.find_by(uuid: uuid)
+		assert_not_nil(object)
+		assert_equal(uuid, resp["uuid"])
+		assert_equal(generate_table_object_etag(object), resp["etag"])
    end
 
    test "Can't create object with uuid that is already in use" do
@@ -642,16 +645,21 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2704, resp["errors"][0][0])
    end
 
-   test "Can create object with binary file" do
+   test "Can create object with binary file and get correct etag" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
       post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", body: fixture_file_upload('test/files/test.png', 'image/png', true)
       resp = JSON.parse response.body
       
-      assert_response 201
+		assert_response 201
+
+		object = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object)
+
       assert_equal(tables(:card).id, resp["table_id"])
-      assert_not_nil(resp["properties"]["etag"])
+		assert_not_nil(resp["properties"]["etag"])
+		assert_equal(generate_table_object_etag(object), resp["etag"])
 
       # Delete the object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
@@ -743,8 +751,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       get "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
-      assert_response 200
-      assert_same(table_objects(:first).id, resp["id"])
+		assert_response 200
+		object = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object)
+		assert_same(table_objects(:first).id, resp["id"])
+		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["page1"])
       assert_not_nil(resp["properties"]["page2"])
    end
@@ -845,7 +856,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
       resp = JSON.parse response.body
 
-      assert_response 201
+		assert_response 201
+		object = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object)
+		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["etag"])
 
       get "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&file=true"
@@ -877,7 +891,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt&uuid=#{uuid}", "Hallo Welt! Dies wird eine Textdatei.", {'Content-Type' => 'text/plain'}
       resp = JSON.parse response.body
 
-      assert_response 201
+		assert_response 201
+		
+		object = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object)
+		assert_equal(generate_table_object_etag(object), resp["etag"])
 
       get "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}&file=true"
       resp2 = response.body
@@ -936,7 +954,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(table_objects(:first).id, resp["id"])
+		assert_same(table_objects(:first).id, resp["id"])
+		assert_equal(generate_table_object_etag(table_objects(:first)), resp["etag"])
       assert_not_nil(resp["properties"]["test"])
    end
    
@@ -947,7 +966,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}&visibility=2", "{\"#{"test"}\":\"#{"test"}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      assert_response 200
+		assert_response 200
+		object = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object)
+		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_same(2, resp["visibility"])
    end
    
@@ -1011,19 +1033,28 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", File.open(file1Path, "rb").read, {'Content-Type' => 'image/png'}
       resp = JSON.parse response.body
       
-      assert_response 201
+		assert_response 201
+		object1 = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object1)
+		object_etag = resp["etag"]
       etag = resp["properties"]["etag"]
       assert_equal(File.size(file1Path), resp["properties"]["size"].to_i)
-      assert_not_nil(etag)
+		assert_not_nil(etag)
+		assert_equal(generate_table_object_etag(object1), object_etag)
 
       put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&ext=mp3", File.open(file2Path, "rb").read, {'Content-Type' => 'audio/mpeg'}
       resp2 = JSON.parse response.body
       
-      assert_response 200
+		assert_response 200
+		object2 = TableObject.find_by_id(resp2["id"])
+		assert_not_nil(object2)
+		object_etag2 = resp2["etag"]
       etag2 = resp2["properties"]["etag"]
       assert_equal(File.size(file2Path), resp2["properties"]["size"].to_i)
       assert_not_nil(etag2)
-      assert(etag != etag2)
+		assert_not_equal(etag, etag2)
+		assert_not_equal(object_etag, object_etag2)
+		assert_equal(generate_table_object_etag(object2), object_etag2)
 
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
       assert_response 200
@@ -1207,8 +1238,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_same(apps(:Cards).id, resp["app_id"])
-      resp["entries"].each do |e|
-         assert_same(users(:matt).id, e["user_id"])
+      resp["table_objects"].each do |e|
+			obj = TableObject.find_by_id(e["id"])
+			assert_not_nil(obj)
+			assert_equal(generate_table_object_etag(obj), e["etag"])
+			assert_same(users(:matt).id, obj.user.id)
       end
    end
    
@@ -1263,8 +1297,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
       assert_same(apps(:Cards).id, resp["app_id"])
-      resp["entries"].each do |e|
-         assert_same(users(:matt).id, e["user_id"])
+      resp["table_objects"].each do |e|
+         obj = TableObject.find_by_id(e["id"])
+			assert_not_nil(obj)
+			assert_equal(generate_table_object_etag(obj), e["etag"])
+			assert_same(users(:matt).id, obj.user.id)
       end
    end
 
