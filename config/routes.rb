@@ -59,6 +59,8 @@ Rails.application.routes.draw do
   match '/v1/analytics/event', to: 'analytics#get_event_by_name', via: 'get'
   match '/v1/analytics/event/:id', to: 'analytics#update_event', via: 'put'
   match '/v1/analytics/event/:id', to: 'analytics#delete_event', via: 'delete'
+  match '/v1/analytics/app/:id', to: 'analytics#get_app', via: 'get'
+  match '/v1/analytics/users', to: 'analytics#get_users', via: 'get'
 
   mount StripeEvent::Engine, at: '/v1/payments/stripe'
 end

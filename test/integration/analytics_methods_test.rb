@@ -299,4 +299,101 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_nil(Event.find_by_id(event_id))
    end
    # End delete_event tests
+
+   # get_app tests
+   test "Missing fields in get_app" do
+      app = apps(:Cards)
+      get "/v1/analytics/app/#{app.id}"
+      resp = JSON.parse response.body
+
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't get app from outside the website" do
+      app = apps(:TestApp)
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      get "/v1/analytics/app/#{app.id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can't get app of another dev" do
+      app = apps(:Cards)
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      get "/v1/analytics/app/#{app.id}?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can't get app that does not exist" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      get "/v1/analytics/app/2?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 404
+      assert_same(2803, resp["errors"][0][0])
+   end
+
+   test "Can get app" do
+      app = apps(:Cards)
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+
+      get "/v1/analytics/app/#{app.id}?jwt=#{jwt}"
+
+      assert_response 200
+   end
+   # End get_app tests
+
+   # get_users tests
+   test "Missing fields in get_users" do
+      get "/v1/analytics/users"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't get users from outside the website" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      get "/v1/analytics/users?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can't get users as another user but the first one" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      get "/v1/analytics/users?jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "Can get users" do
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+
+      get "/v1/analytics/users?jwt=#{jwt}"
+
+      assert_response 200
+   end
+   # End get_users tests
 end
