@@ -55,6 +55,10 @@ class ApplicationController < ActionController::API
    def get_file_size_of_table_object(obj_id)
       obj = TableObject.find_by_id(obj_id)
 
+		if !obj
+			return
+		end
+		
       obj.properties.each do |prop| # Get the size property of the table_object
          if prop.name == "size"
             return prop.value.to_i
