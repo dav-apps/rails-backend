@@ -915,7 +915,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:dav)).body)["jwt"]
       
-      put "/v1/apps/object/#{table_objects(:second).id}?jwt=#{matts_jwt}"
+      put "/v1/apps/object/#{table_objects(:second).id}?jwt=#{matts_jwt}", nil, {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -984,6 +984,17 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(0, resp["visibility"])
    end
 
+	test "Can't update object without content type header" do
+		matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{matts_jwt}", '{"page1": "test", "page2": "test2"}'
+      resp = JSON.parse response.body
+
+      assert_response 415
+		assert_same(1104, resp["errors"][0][0])
+	end
+
    test "Can update visibility and ext of object with file" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
@@ -1017,11 +1028,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can update object with uuid" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		new_page1 = "Hallo Welt"
+		new_page2 = "Hello World"
       
-      put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{matts_jwt}"
+      put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{matts_jwt}", '{"page1": "' + new_page1 + '", "page2": "' + new_page2 + '"}', {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 200
+		assert_equal(new_page1, resp["properties"]["page1"])
+		assert_equal(new_page2, resp["properties"]["page2"])
    end
 
    test "Can update object and replace uploaded file" do

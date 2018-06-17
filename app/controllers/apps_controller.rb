@@ -1142,160 +1142,172 @@ class AppsController < ApplicationController
                         if !app
                            errors.push(Array.new([2803, "Resource does not exist: App"]))
                            status = 400
-                        else
-                           if app.dev_id != dev.id    # Check if the app belongs to the dev
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              # Check if the user is allowed to access the data
-                              if obj.user_id != user.id
-                                 errors.push(Array.new([1102, "Action not allowed"]))
-                                 status = 403
+								else
+									if request.headers["Content-Type"] == "application/x-www-form-urlencoded" || request.headers["Content-Type"] == nil
+										errors.push(Array.new([1104, "Content-type not supported"]))
+										status = 415
+									else
+										if app.dev_id != dev.id    # Check if the app belongs to the dev
+											errors.push(Array.new([1102, "Action not allowed"]))
+											status = 403
 										else
-
-											# If there is a new visibility, save it
-											begin
-												if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
-													obj.visibility = visibility.to_i
-													
-													if !obj.save
-														errors.push(Array.new([1103, "Unknown validation error"]))
-														status = 500
+											# Check if the user is allowed to access the data
+											if obj.user_id != user.id
+												errors.push(Array.new([1102, "Action not allowed"]))
+												status = 403
+											else
+												# If there is a new visibility, save it
+												begin
+													if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
+														obj.visibility = visibility.to_i
+														
+														if !obj.save
+															errors.push(Array.new([1103, "Unknown validation error"]))
+															status = 500
+														end
 													end
 												end
-											end
-
-											if obj.file
-												if errors.length == 0
-													if ext && ext.length > 0
-														# Update ext property
-														ext_prop = Property.find_by(name: "ext", table_object_id: obj.id)
-														ext_prop.value = ext
-
-														if !ext_prop.save
-															errors.push(Array.new([1103, "Unknown validation error"]))
-															status = 500
-														end
-													end
-
-													# Check if the user has enough free storage
-													file_size = get_file_size(request.body)
-													free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
-
-													if free_storage < file_size
-														errors.push(Array.new([1110, "Not enough storage space"]))
-														status = 400
-													end
-													
-													begin
-														# Upload new file
-														blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
-														etag = blob.properties[:etag]
-														etag = etag[1...etag.size-1]
-													rescue Exception => e
-														errors.push(Array.new([1103, "Unknown validation error"]))
-														status = 500
-													end
-
+	
+												if obj.file
 													if errors.length == 0
-														# Update the size and etag properties
-														size_prop = Property.find_by(table_object_id: obj.id, name: "size")
-
-														if !size_prop
-															size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
-														else
-															size_prop.value = file_size
+														if ext && ext.length > 0
+															# Update ext property
+															ext_prop = Property.find_by(name: "ext", table_object_id: obj.id)
+															ext_prop.value = ext
+	
+															if !ext_prop.save
+																errors.push(Array.new([1103, "Unknown validation error"]))
+																status = 500
+															end
 														end
-
-														etag_prop = Property.find_by(table_object_id: obj.id, name: "etag")
-
-														if !etag_prop
-															etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
-														else
-															etag_prop.value = etag
+	
+														# Check if the user has enough free storage
+														file_size = get_file_size(request.body)
+														free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
+	
+														if free_storage < file_size
+															errors.push(Array.new([1110, "Not enough storage space"]))
+															status = 400
 														end
-
-
-														if !size_prop.save || !etag_prop.save
-															errors.push(Array.new([1103, "Unknown validation error"]))
-															status = 500
-														else
-															@result = obj.attributes
-
-															properties = Hash.new
-															obj.properties.each do |prop|
-																properties[prop.name] = prop.value
+														
+														if errors.length == 0
+															begin
+																# Upload new file
+																blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
+																etag = blob.properties[:etag]
+																etag = etag[1...etag.size-1]
+															rescue Exception => e
+																errors.push(Array.new([1103, "Unknown validation error"]))
+																status = 500
 															end
 		
+															if errors.length == 0
+																# Update the size and etag properties
+																size_prop = Property.find_by(table_object_id: obj.id, name: "size")
+		
+																if !size_prop
+																	size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+																else
+																	size_prop.value = file_size
+																end
+		
+																etag_prop = Property.find_by(table_object_id: obj.id, name: "etag")
+		
+																if !etag_prop
+																	etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+																else
+																	etag_prop.value = etag
+																end
+		
+		
+																if !size_prop.save || !etag_prop.save
+																	errors.push(Array.new([1103, "Unknown validation error"]))
+																	status = 500
+																else
+																	@result = obj.attributes
+		
+																	properties = Hash.new
+																	obj.properties.each do |prop|
+																		properties[prop.name] = prop.value
+																	end
+				
+																	@result["properties"] = properties
+																	@result["etag"] = generate_table_object_etag(obj)
+		
+																	ok = true
+																end
+															end
+														end
+													end
+												else # If the object is not a file
+													# Check the content type
+													if !request.headers["Content-Type"].include? "application/json"
+														errors.push(Array.new([1104, "Content-type not supported"]))
+														status = 415
+													else
+														# Update the properties of the object
+														object = request.request_parameters
+														
+														object.each do |key, value|
+															# Validate the length of the properties
+															if key.length > max_property_name_length
+																errors.push(Array.new([2306, "Field too long: Property.name"]))
+																status = 400
+															end
+															
+															if key.length < min_property_name_length
+																errors.push(Array.new([2206, "Field too short: Property.name"]))
+																status = 400
+															end
+															
+															if value.length > max_property_value_length
+																errors.push(Array.new([2307, "Field too long: Property.value"]))
+																status = 400
+															end
+															
+															if value.length < min_property_value_length
+																errors.push(Array.new([2207, "Field too short: Property.value"]))
+																status = 400
+															end
+														end
+
+														if errors.length == 0
+															properties = Hash.new
+															object.each do |key, value|
+																prop = Property.find_by(name: key, table_object_id: obj.id)
+																
+																# If the property does not exist, create it
+																if !prop
+																	new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+																	
+																	if !new_prop.save
+																		errors.push(Array.new([1103, "Unknown validation error"]))
+																		status = 500
+																	else
+																		properties[key] = value
+																	end
+																else
+																	prop.update(name: key, value: value)
+																	if !prop.save
+																		errors.push(Array.new([1103, "Unknown validation error"]))
+																		status = 500
+																	else
+																		properties[key] = value
+																	end
+																end
+															end
+															
+															@result = obj.attributes
 															@result["properties"] = properties
 															@result["etag"] = generate_table_object_etag(obj)
-
+															
 															ok = true
 														end
 													end
 												end
-											else # If the object is not a file
-												# Update the properties of the object
-												object = request.request_parameters
-												
-												object.each do |key, value|
-													# Validate the length of the properties
-													if key.length > max_property_name_length
-														errors.push(Array.new([2306, "Field too long: Property.name"]))
-														status = 400
-													end
-													
-													if key.length < min_property_name_length
-														errors.push(Array.new([2206, "Field too short: Property.name"]))
-														status = 400
-													end
-													
-													if value.length > max_property_value_length
-														errors.push(Array.new([2307, "Field too long: Property.value"]))
-														status = 400
-													end
-													
-													if value.length < min_property_value_length
-														errors.push(Array.new([2207, "Field too short: Property.value"]))
-														status = 400
-													end
-												end
-
-												if errors.length == 0
-													properties = Hash.new
-													object.each do |key, value|
-														prop = Property.find_by(name: key, table_object_id: obj.id)
-														
-														# If the property does not exist, create it
-														if !prop
-															new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
-															
-															if !new_prop.save
-																errors.push(Array.new([1103, "Unknown validation error"]))
-																status = 500
-															else
-																properties[key] = value
-															end
-														else
-															prop.update(name: key, value: value)
-															if !prop.save
-																errors.push(Array.new([1103, "Unknown validation error"]))
-																status = 500
-															else
-																properties[key] = value
-															end
-														end
-													end
-													
-													@result = obj.attributes
-													@result["properties"] = properties
-													@result["etag"] = generate_table_object_etag(obj)
-													
-													ok = true
-												end
 											end
-                              end
-                           end
+										end
+									end
                         end
                      end
                   end
