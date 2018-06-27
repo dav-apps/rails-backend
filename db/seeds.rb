@@ -33,7 +33,7 @@ tables = Table.create([
 
 table_objects = TableObject.create([
 	{table: tables[2], user: users[4], uuid: "642e6407-f357-4e03-b9c2-82f754931161", file: false},
-	{table: tables[2], user: users[4], uuid: "8d29f002-9511-407b-8289-5ebdcb5a5559", file: false},
+	{table: tables[2], user: users[4], uuid: "8d29f002-9511-407b-8289-5ebdcb5a5559", file: false}
 ])
 
 properties = Property.create([
