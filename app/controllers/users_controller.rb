@@ -595,9 +595,9 @@ class UsersController < ApplicationController
                            if errors.length == 0
                               begin
                                  filename = user.id.to_s + ".png"
-                                 bytes = Base64.decode64(avatar)
-                                 img   = Magick::Image.from_blob(bytes).first
-                                 format   = img.format
+											bytes = Base64.decode64(avatar)
+											img = MiniMagick::Image.read(bytes)
+											format = img.type
 
                                  if format == "png" || format == "PNG" || format == "jpg" || format == "JPG" || format == "jpeg" || format == "JPEG"
                                     # file extension okay
@@ -612,7 +612,8 @@ class UsersController < ApplicationController
                                     errors.push(Array.new([1109, "File extension not supported"]))
                                     status = 400
                                  end
-                              rescue Exception => e
+										rescue Exception => e
+											puts e
                                  errors.push(Array.new([1103, "Unknown validation error"]))
                                  status = 400
                               end

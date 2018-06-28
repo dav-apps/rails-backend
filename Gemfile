@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '2.3.3'
+ruby '2.4.1'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '4.2.10'
 # Use SCSS for stylesheets
@@ -35,8 +35,8 @@ gem 'rack-cors', :require => 'rack/cors'
 # Azure File Storage
 gem 'azure'
 
-# RMagick for image processing
-gem 'rmagick'
+# MiniMagick for image processing
+gem "mini_magick"
 
 # Use Puma as the app server
 gem 'puma'
