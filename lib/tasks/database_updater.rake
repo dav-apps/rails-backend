@@ -1,6 +1,6 @@
 namespace :database_updater do
-  	desc "Update the used_storage field of user"
-  	task update_used_storage: :environment do
+  	desc "Update the used_storage field of users"
+  	task update_used_storage_of_users: :environment do
 		User.all.each do |user|
 			used_storage = 0
 
@@ -13,7 +13,24 @@ namespace :database_updater do
 		end
 	end
 
-	desc "Update the used_storage field of user"
+	desc "Update the used_storage field of users_apps"
+  	task update_used_storage_of_users_apps: :environment do
+		UsersApp.all.each do |users_app|
+			# Get the table objects of tables of the app and of the user
+			used_storage = 0
+
+			users_app.app.tables.each do |table|
+				table.table_objects.where(user_id: users_app.user_id, file: true).each do |obj|
+					used_storage += get_file_size_of_table_object(obj.id)
+				end
+			end
+
+			users_app.used_storage = used_storage
+			users_app.save
+		end
+	end
+
+	desc "Remove unnecessary users_apps objects"
   	task update_users_apps: :environment do
 		User.all.each do |user|
 			user.apps.each do |app|

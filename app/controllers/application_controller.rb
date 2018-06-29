@@ -36,21 +36,6 @@ class ApplicationController < ActionController::API
 
       return size
    end
-
-   def get_used_storage_by_app(app_id, user_id)
-      size = 0
-      app = App.find_by_id(app_id)
-
-      if app
-         app.tables.each do |table|
-            table.table_objects.where(user_id: user_id, file: true).each do |obj|
-               size += get_file_size_of_table_object(obj.id)
-            end
-         end
-      end
-      
-      return size
-	end
 	
 	def get_file_size_of_table_object(obj_id)
       obj = TableObject.find_by_id(obj_id)
@@ -79,16 +64,6 @@ class ApplicationController < ActionController::API
       end
 
       return 0
-   end
-
-   def get_used_storage_of_user(user_id)
-      size = 0
-		
-      User.find_by_id(user_id).table_objects.where(file: true).each do |obj|
-			size += get_file_size_of_table_object(obj.id)
-		end
-
-      return size
    end
 
    def get_total_storage(plan)
@@ -127,12 +102,26 @@ class ApplicationController < ActionController::API
 		return Digest::MD5.hexdigest(etag_string)
 	end
 
-	def update_used_storage(user_id, storage_change)
+	def update_used_storage(user_id, app_id, storage_change)
+		update_used_storage_of_user(user_id, storage_change)
+		update_used_storage_of_app(user_id, app_id, storage_change)
+	end
+
+	def update_used_storage_of_user(user_id, storage_change)
 		user = User.find_by_id(user_id)
 
 		if user
 			user.used_storage = user.used_storage += storage_change
 			user.save
+		end
+	end
+
+	def update_used_storage_of_app(user_id, app_id, storage_change)
+		users_app = UsersApp.find_by(user_id: user_id, app_id: app_id)
+
+		if users_app
+			users_app.used_storage = users_app.used_storage += storage_change
+			users_app.save
 		end
 	end
 end

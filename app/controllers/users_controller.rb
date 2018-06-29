@@ -367,9 +367,9 @@ class UsersController < ApplicationController
                         @result["used_storage"] = user.used_storage
 
 								users_apps = Array.new
-								requested_user.apps.each do |app|
-									app_hash = app.attributes
-									app_hash["used_storage"] = get_used_storage_by_app(app.id, requested_user.id)
+								UsersApp.where(user_id: requested_user.id).each do |users_app|
+									app_hash = users_app.app.attributes
+									app_hash["used_storage"] = users_app.used_storage
 									users_apps.push(app_hash)
 								end
 								@result["apps"] = users_apps
@@ -451,9 +451,9 @@ class UsersController < ApplicationController
                   @result["used_storage"] = user.used_storage
 
 						users_apps = Array.new
-						user.apps.each do |app|
-							app_hash = app.attributes
-							app_hash["used_storage"] = get_used_storage_by_app(app.id, user.id)
+						UsersApp.where(user_id: user.id).each do |users_app|
+							app_hash = users_app.app.attributes
+							app_hash["used_storage"] = users_app.used_storage
 							users_apps.push(app_hash)
 						end
 						@result["apps"] = users_apps
@@ -729,11 +729,8 @@ class UsersController < ApplicationController
                               @result["avatar"] = avatar_info[0]
                               @result["avatar_etag"] = avatar_info[1]
                               @result["total_storage"] = get_total_storage(user.id)
-                              @result["used_storage"] = get_used_storage_of_user(user.id)
-
-                              users_apps = Array.new
-                              user.users_apps.each {|app| users_apps.push(app.app)}
-										@result["apps"] = users_apps
+                              @result["used_storage"] = user.used_storage
+										@result["apps"] = user.apps
 										@result["archives"] = user.archives
 
                               ok = true

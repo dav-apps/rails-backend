@@ -817,7 +817,7 @@ class AppsController < ApplicationController
 													# Save etag as property
 													etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
 													# Save the new used_storage
-													update_used_storage(user.id, file_size)
+													update_used_storage(user.id, app.id, file_size)
 
 													if !ext_prop.save || !etag_prop.save
 														errors.push(Array.new([1103, "Unknown validation error"]))
@@ -1227,7 +1227,7 @@ class AppsController < ApplicationController
 																end
 
 																# Save the new used_storage value
-																update_used_storage(user.id, file_size_difference)
+																update_used_storage(user.id, app.id, file_size_difference)
 		
 																if !size_prop.save || !etag_prop.save
 																	errors.push(Array.new([1103, "Unknown validation error"]))
@@ -1426,7 +1426,7 @@ class AppsController < ApplicationController
 
 												if size_prop
 													# Save the new used_storage value
-													update_used_storage(user.id, -size_prop.value.to_i)
+													update_used_storage(user.id, app.id, -size_prop.value.to_i)
 												end
 											end
 
