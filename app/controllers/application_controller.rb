@@ -50,9 +50,9 @@ class ApplicationController < ActionController::API
       end
       
       return size
-   end
-
-   def get_file_size_of_table_object(obj_id)
+	end
+	
+	def get_file_size_of_table_object(obj_id)
       obj = TableObject.find_by_id(obj_id)
 
 		if !obj
@@ -83,26 +83,23 @@ class ApplicationController < ActionController::API
 
    def get_used_storage_of_user(user_id)
       size = 0
-
+		
       User.find_by_id(user_id).table_objects.where(file: true).each do |obj|
-         size += get_file_size_of_table_object(obj.id)
-      end
+			size += get_file_size_of_table_object(obj.id)
+		end
 
       return size
    end
 
-   def get_total_storage_of_user(user_id)
+   def get_total_storage(plan)
       storage_on_free_plan = 5000000000 # 5 GB
 		storage_on_plus_plan = 50000000000 # 50 GB
 
-      user = User.find_by_id(user_id)
-      if user
-         if user.plan == 1 # User is on Plus plan
-            return storage_on_plus_plan
-         else
-            return storage_on_free_plan
-         end
-      end
+      if plan == 1 # User is on Plus plan
+			return storage_on_plus_plan
+		else
+			return storage_on_free_plan
+		end
    end
 
    def save_email_to_stripe_customer(user)
@@ -128,5 +125,14 @@ class ApplicationController < ActionController::API
 		end
 
 		return Digest::MD5.hexdigest(etag_string)
+	end
+
+	def update_used_storage(user_id, storage_change)
+		user = User.find_by_id(user_id)
+
+		if user
+			user.used_storage = user.used_storage += storage_change
+			user.save
+		end
 	end
 end

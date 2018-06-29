@@ -353,24 +353,25 @@ class UsersController < ApplicationController
                      if requested_user.id != user.id
                         errors.push(Array.new([1102, "Action not allowed"]))
                         status = 403
-                     else
+							else
 								@result = requested_user.attributes.except("email_confirmation_token", 
 																						"password_confirmation_token", 
 																						"new_password", 
 																						"password_digest",
 																						"stripe_customer_id")
-                        avatar = BlobOperationsService.get_users_avatar(user.id)
-                        @result["avatar"] = avatar["url"]
-                        @result["avatar_etag"] = avatar["etag"]
-                        @result["total_storage"] = get_total_storage_of_user(user.id)
-                        @result["used_storage"] = get_used_storage_of_user(user.id)
+								
+								avatar_info = BlobOperationsService.get_avatar_information(user.id)
+                        @result["avatar"] = avatar_info[0]
+                        @result["avatar_etag"] = avatar_info[1]
+                        @result["total_storage"] = get_total_storage(user.id)
+                        @result["used_storage"] = user.used_storage
 
-                        users_apps = Array.new
-                        requested_user.apps.each do |app|
-                           app_hash = app.attributes
-                           app_hash["used_storage"] = get_used_storage_by_app(app.id, requested_user.id)
-                           users_apps.push(app_hash)
-                        end
+								users_apps = Array.new
+								requested_user.apps.each do |app|
+									app_hash = app.attributes
+									app_hash["used_storage"] = get_used_storage_by_app(app.id, requested_user.id)
+									users_apps.push(app_hash)
+								end
 								@result["apps"] = users_apps
 								@result["archives"] = user.archives
 
@@ -443,18 +444,18 @@ class UsersController < ApplicationController
 																	"new_password", 
 																	"password_digest",
 																	"stripe_customer_id")
-                  avatar = BlobOperationsService.get_users_avatar(user.id)
-                  @result["avatar"] = avatar["url"]
-                  @result["avatar_etag"] = avatar["etag"]
-                  @result["total_storage"] = get_total_storage_of_user(user.id)
-                  @result["used_storage"] = get_used_storage_of_user(user.id)
+                  avatar_info = BlobOperationsService.get_avatar_information(user.id)
+                  @result["avatar"] = avatar_info[0]
+                  @result["avatar_etag"] = avatar_info[1]
+                  @result["total_storage"] = get_total_storage(user.id)
+                  @result["used_storage"] = user.used_storage
 
-                  users_apps = Array.new
-                  user.apps.each do |app|
-                     app_hash = app.attributes
-                     app_hash["used_storage"] = get_used_storage_by_app(app.id, user.id)
-                     users_apps.push(app_hash)
-                  end
+						users_apps = Array.new
+						user.apps.each do |app|
+							app_hash = app.attributes
+							app_hash["used_storage"] = get_used_storage_by_app(app.id, user.id)
+							users_apps.push(app_hash)
+						end
 						@result["apps"] = users_apps
 						@result["archives"] = user.archives
 
@@ -724,10 +725,10 @@ class UsersController < ApplicationController
 																					"new_password", 
 																					"password_digest",
 																					"stripe_customer_id")
-                              avatar = BlobOperationsService.get_users_avatar(user.id)
-                              @result["avatar"] = avatar["url"]
-                              @result["avatar_etag"] = avatar["etag"]
-                              @result["total_storage"] = get_total_storage_of_user(user.id)
+										avatar_info = BlobOperationsService.get_avatar_information(user.id)
+                              @result["avatar"] = avatar_info[0]
+                              @result["avatar_etag"] = avatar_info[1]
+                              @result["total_storage"] = get_total_storage(user.id)
                               @result["used_storage"] = get_used_storage_of_user(user.id)
 
                               users_apps = Array.new

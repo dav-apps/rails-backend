@@ -1712,7 +1712,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    # End remove_access_token_from_object tests
    
    # users_apps tests
-   test "UsersApp object gets created and deleted when user creates object and deletes it" do
+   test "UsersApp object will be created when the user creates a table object" do
       tester2 = users(:tester2)
       jwt = (JSON.parse login_user(tester2, "testpassword", devs(:sherlock)).body)["jwt"]
       
@@ -1723,12 +1723,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       object_id = resp["id"]
       assert_response 201
       assert_not_nil(UsersApp.find_by(user_id: tester2.id))
-      
-      delete "/v1/apps/object/#{object_id}?jwt=#{jwt}"
-      resp2 = JSON.parse response.body
-      
-      assert_response 200
-      assert_nil(UsersApp.find_by(user_id: tester2.id))
    end
    # End users_apps tests
 end

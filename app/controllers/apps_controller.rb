@@ -720,7 +720,7 @@ class AppsController < ApplicationController
 								end
 
 								if errors.length == 0
-									# If ext there is an ext property, save object as a file
+									# If there is an ext property, save object as a file
 									if !ext || ext.length < 1
 										# If there is no ext, Content-Type must be application/json
 										if !request.headers["Content-Type"].include? "application/json"
@@ -793,7 +793,7 @@ class AppsController < ApplicationController
 									else
 										# Check if the user has enough free storage
 										file_size = get_file_size(request.body)
-										free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
+										free_storage = get_total_storage(user.plan) - user.used_storage
 										obj.file = true
 
 										if free_storage < file_size
@@ -809,13 +809,15 @@ class AppsController < ApplicationController
 												begin
 													blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
 													etag = blob.properties[:etag]
-													# Remove the first and the last character of etag, because they are "" for whatever reason
+													# Remove the first and the last character of etag, because they are "" for whatever 
 													etag = etag[1...etag.size-1]
 
 													# Save extension as property
 													ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
 													# Save etag as property
 													etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+													# Save the new used_storage
+													update_used_storage(user.id, file_size)
 
 													if !ext_prop.save || !etag_prop.save
 														errors.push(Array.new([1103, "Unknown validation error"]))
@@ -1182,10 +1184,17 @@ class AppsController < ApplicationController
 														end
 	
 														# Check if the user has enough free storage
+														size_prop = Property.find_by(table_object_id: obj.id, name: "size")
+														old_file_size = 0
+														if size_prop
+															old_file_size = size_prop.value.to_i
+														end
+
 														file_size = get_file_size(request.body)
-														free_storage = get_total_storage_of_user(user.id) - get_used_storage_of_user(user.id)
+														free_storage = get_total_storage(user.plan) - user.used_storage
+														file_size_difference = file_size - old_file_size
 	
-														if free_storage < file_size
+														if free_storage < file_size_difference
 															errors.push(Array.new([1110, "Not enough storage space"]))
 															status = 400
 														end
@@ -1203,8 +1212,6 @@ class AppsController < ApplicationController
 		
 															if errors.length == 0
 																# Update the size and etag properties
-																size_prop = Property.find_by(table_object_id: obj.id, name: "size")
-		
 																if !size_prop
 																	size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
 																else
@@ -1218,7 +1225,9 @@ class AppsController < ApplicationController
 																else
 																	etag_prop.value = etag
 																end
-		
+
+																# Save the new used_storage value
+																update_used_storage(user.id, file_size_difference)
 		
 																if !size_prop.save || !etag_prop.save
 																	errors.push(Array.new([1103, "Unknown validation error"]))
@@ -1348,19 +1357,19 @@ class AppsController < ApplicationController
       if errors.length == 0
          jwt_valid = false
          begin
-             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-             jwt_valid = true
+            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+            jwt_valid = true
          rescue JWT::ExpiredSignature
-             # JWT expired
-             errors.push(Array.new([1301, "JWT: expired"]))
-             status = 401
+            # JWT expired
+            errors.push(Array.new([1301, "JWT: expired"]))
+            status = 401
          rescue JWT::DecodeError
-             errors.push(Array.new([1302, "JWT: not valid"]))
-             status = 401
-             # rescue other errors
+            errors.push(Array.new([1302, "JWT: not valid"]))
+            status = 401
+            # rescue other errors
          rescue Exception
-             errors.push(Array.new([1303, "JWT: unknown error"]))
-             status = 401
+            errors.push(Array.new([1303, "JWT: unknown error"]))
+            status = 401
          end
          
          if jwt_valid
@@ -1411,17 +1420,19 @@ class AppsController < ApplicationController
                                  status = 403
 										else
 											# Delete the file if it exists
-											BlobOperationsService.delete_blob(app.id, obj.id)
+											if obj.file
+												BlobOperationsService.delete_blob(app.id, obj.id)
+												size_prop = obj.properties.find_by(name: "size")
+
+												if size_prop
+													# Save the new used_storage value
+													update_used_storage(user.id, -size_prop.value.to_i)
+												end
+											end
 
                                  obj.destroy!
                                  @result = {}
                                  ok = true
-                                 
-                                 # Save that user does not use the app if this was the last object
-                                 if TableObject.find_by(user_id: user.id).nil?
-                                    users_app = UsersApp.find_by(user_id: user.id, app_id: app.id)
-                                    users_app.destroy!
-                                 end
                               end
                            end
                         end

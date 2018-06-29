@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180629141712) do
+ActiveRecord::Schema.define(version: 20180629163214) do
 
   create_table "access_tokens", force: :cascade do |t|
     t.string   "token",      limit: 255
@@ -105,6 +105,7 @@ ActiveRecord::Schema.define(version: 20180629141712) do
     t.string   "stripe_customer_id",          limit: 255
     t.datetime "period_end"
     t.integer  "subscription_status",         limit: 4,   default: 0
+    t.integer  "used_storage",                limit: 8,   default: 0
   end
 
   create_table "users_apps", force: :cascade do |t|

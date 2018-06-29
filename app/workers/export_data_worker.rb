@@ -101,10 +101,10 @@ class ExportDataWorker
 			Dir.mkdir(sourceExportFolderPath) unless File.exists?(sourceExportFolderPath)
 
 			# Download the avatar
-			avatar = BlobOperationsService.get_users_avatar(user_id)
+			avatar = BlobOperationsService.get_avatar_information(user_id)
 
 			open(filesExportFolderPath + "avatar.png", 'wb') do |file|
-				file << open(avatar["url"]).read
+				file << open(avatar[0]).read
 			end
 
 			# Download all files

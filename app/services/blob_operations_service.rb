@@ -87,27 +87,29 @@ class BlobOperationsService
          
       end
 	end
-	
-	def self.get_users_avatar(user_id)
-      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-      avatar = Hash.new
 
-      client = Azure::Blob::BlobService.new
-      begin
-         blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], user_id.to_s + ".png")
-         avatar['url'] = ENV['AZURE_AVATAR_CONTAINER_URL'] + user_id.to_s + ".png"
-         etag = blob[0].properties[:etag]
-         avatar['etag'] = etag[1...etag.size-1]
-      rescue Exception => e
-         # Get the blob of the default avatar
-         default_blob = client.get_blob(ENV['AZURE_AVATAR_CONTAINER_NAME'], "default.png")
-         avatar['url'] = ENV['AZURE_AVATAR_CONTAINER_URL'] + "default.png"
-         etag = default_blob[0].properties[:etag]
-         avatar['etag'] = etag[1...etag.size-1]
-      end
-      return avatar
-   end
+	def self.get_avatar_information(user_id)
+		Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+		Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+		
+		client = Azure::Blob::BlobService.new
+		blobs = client.list_blobs(ENV['AZURE_AVATAR_CONTAINER_NAME'])
+
+		blob = nil
+		default_blob = nil
+
+		blobs.each do |b|
+			name = b.name.split('.').first
+			if name == user_id.to_s
+				blob = b
+			elsif name == "default"
+				default_blob = b
+			end
+		end
+
+		# return [name, etag]
+		return blob ? [ENV['AZURE_AVATAR_CONTAINER_URL'] + blob.name, blob.properties[:etag]] : [ENV['AZURE_AVATAR_CONTAINER_URL'] + default_blob.name, default_blob.properties[:etag]]
+	end
 
    def self.delete_avatar(user_id)
       Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
