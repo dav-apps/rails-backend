@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180613180038) do
+ActiveRecord::Schema.define(version: 20180629141712) do
 
   create_table "access_tokens", force: :cascade do |t|
     t.string   "token",      limit: 255
@@ -64,7 +64,7 @@ ActiveRecord::Schema.define(version: 20180613180038) do
   create_table "properties", force: :cascade do |t|
     t.integer "table_object_id", limit: 4
     t.string  "name",            limit: 255
-    t.string  "value",           limit: 255
+    t.text    "value",           limit: 65535
   end
 
   create_table "table_objects", force: :cascade do |t|

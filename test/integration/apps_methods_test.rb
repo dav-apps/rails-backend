@@ -458,7 +458,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{"n"*20}&app_id=#{apps(:TestApp).id}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{"n"*220}&app_id=#{apps(:TestApp).id}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -514,7 +514,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", "{\"#{"n"*30}\":\"#{"n"*1202}\"}", {'Content-Type' => 'application/json'}
+      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", "{\"#{"n"*220}\":\"#{"n"*65500}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -938,7 +938,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", "{\"#{"n"*30}\":\"#{"n"*1202}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", "{\"#{"n"*220}\":\"#{"n"*65500}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1181,7 +1181,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=#{"n"*26}&app_id=#{apps(:TestApp).id}"
+      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=#{"n"*220}&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1377,7 +1377,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", "{\"name\":\"#{"n"*30}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", "{\"name\":\"#{"n"*220}\"}", {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
