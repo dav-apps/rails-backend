@@ -30,8 +30,10 @@ module Workspace
 		Rails.application.config.middleware.insert_before 0, Rack::Cors do
 			allow do
 				origins 	ENV['BASE_URL'],
+							'localhost:3001',
 							'cards-dav.azurewebsites.net',
-							'localhost:3001'
+							'calendo-dav.azurewebsites.net'
+							
 
 				resource '*',
 				headers: :any,
