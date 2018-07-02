@@ -32,7 +32,8 @@ module Workspace
 				origins 	ENV['BASE_URL'],
 							'localhost:3001',
 							'cards-dav.azurewebsites.net',
-							'calendo-dav.azurewebsites.net'
+							'calendo-dav.azurewebsites.net',
+							'calendo.dav-apps.tech'
 							
 
 				resource '*',
