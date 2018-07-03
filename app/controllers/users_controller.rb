@@ -363,7 +363,7 @@ class UsersController < ApplicationController
 								avatar_info = BlobOperationsService.get_avatar_information(user.id)
                         @result["avatar"] = avatar_info[0]
                         @result["avatar_etag"] = avatar_info[1]
-                        @result["total_storage"] = get_total_storage(user.id)
+                        @result["total_storage"] = get_total_storage(user.plan)
                         @result["used_storage"] = user.used_storage
 
 								users_apps = Array.new
@@ -447,7 +447,7 @@ class UsersController < ApplicationController
                   avatar_info = BlobOperationsService.get_avatar_information(user.id)
                   @result["avatar"] = avatar_info[0]
                   @result["avatar_etag"] = avatar_info[1]
-                  @result["total_storage"] = get_total_storage(user.id)
+                  @result["total_storage"] = get_total_storage(user.plan)
                   @result["used_storage"] = user.used_storage
 
 						users_apps = Array.new
@@ -728,7 +728,7 @@ class UsersController < ApplicationController
 										avatar_info = BlobOperationsService.get_avatar_information(user.id)
                               @result["avatar"] = avatar_info[0]
                               @result["avatar_etag"] = avatar_info[1]
-                              @result["total_storage"] = get_total_storage(user.id)
+                              @result["total_storage"] = get_total_storage(user.plan)
                               @result["used_storage"] = user.used_storage
 										@result["apps"] = user.apps
 										@result["archives"] = user.archives
