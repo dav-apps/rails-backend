@@ -33,7 +33,8 @@ module Workspace
 							'localhost:3001',
 							'cards-dav.azurewebsites.net',
 							'calendo-dav.azurewebsites.net',
-							'calendo.dav-apps.tech'
+							'calendo.dav-apps.tech',
+							'blog.dav-apps.tech'
 							
 
 				resource '*',

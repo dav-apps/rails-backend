@@ -2,120 +2,116 @@ class AnalyticsController < ApplicationController
    
    min_event_name_length = 2
 	max_event_name_length = 15
-	max_event_data_length = 250
+	max_event_data_length = 65000
    
-   define_method :create_event_log do
-      name = params["name"]
+	define_method :create_event_log do
+		api_key = params["api_key"]
+		name = params["name"]
 		app_id = params["app_id"]
-		data = params["data"]
-      
-      errors = Array.new
+
+		errors = Array.new
       @result = Hash.new
-      ok = false
-      
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
-      
-      if !name || name.length < 1
+		ok = false
+
+		if !api_key || api_key.length < 1
+			errors.push(Array.new([2118, "Missing field: name"]))
+         status = 400
+		end
+		
+		if !name || name.length < 1
          errors.push(Array.new([2111, "Missing field: name"]))
          status = 400
-      end
-      
-      if !app_id
+		end
+		
+		if !app_id
          errors.push(Array.new([2110, "Missing field: app_id"]))
          status = 400
-      end
-      
-      if !auth || auth.length < 1
-         errors.push(Array.new([2101, "Missing field: auth"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         dev = Dev.find_by(api_key: api_key)
-         
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([2802, "Resource does not exist: Dev"]))
+		end
+		
+		if errors.length == 0
+			dev = Dev.find_by(api_key: api_key)
+
+			if !dev
+				errors.push(Array.new([2802, "Resource does not exist: Dev"]))
             status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([1101, "Authentication failed"]))
-               status = 401
-            else
-               # Check if the app exists
-               app = App.find_by_id(app_id)
-               
-               if !app
-                  errors.push(Array.new([2803, "Resource does not exist: App"]))
-                  status = 400
+			else
+				app = App.find_by_id(app_id)
+
+				if !app
+					errors.push(Array.new([2803, "Resource does not exist: App"]))
+					status = 400
+				else
+					# Check if the app belongs to the dev
+					if app.dev != dev
+						errors.push(Array.new([1102, "Action not allowed"]))
+						status = 403
 					else
-						# Check if the app belongs to the dev
-						if app.dev != dev
-							errors.push(Array.new([1102, "Action not allowed"]))
-							status = 403
-						else
-							# Check if the event with the name already exists
-							event = Event.find_by(name: name, app_id: app_id)
+						# Check if the event with the name already exists
+						event = Event.find_by(name: name, app_id: app_id)
+
+						if !event
+							# Validate properties
+							if name.length > max_event_name_length
+								errors.push(Array.new([2303, "Field too long: name"]))
+								status = 400
+							end
 							
-							if !event
-								# Validate properties
-								if name.length > max_event_name_length
-									errors.push(Array.new([2303, "Field too long: name"]))
-									status = 400
-								end
-								
-								if name.length < min_event_name_length
-									errors.push(Array.new([2203, "Field too short: name"]))
-									status = 400
-								end
-								
-								if errors.length == 0
-									# Create event with that name
-									event = Event.new(name: name, app_id: app_id)
-									
-									if !event.save
-										errors.push(Array.new([1103, "Unknown validation error"]))
-										status = 500
-									end
-								end
+							if name.length < min_event_name_length
+								errors.push(Array.new([2203, "Field too short: name"]))
+								status = 400
 							end
-
-							if data
-								if data.length > max_event_data_length
-									errors.push(Array.new([2308, "Field too long: data"]))
-									status = 400
-								end
-							end
-
+							
 							if errors.length == 0
-								# Create event_log
-								event_log = EventLog.new(event_id: event.id, data: data)
+								# Create event with that name
+								event = Event.new(name: name, app_id: app_id)
 								
-								if !event_log.save
+								if !event.save
 									errors.push(Array.new([1103, "Unknown validation error"]))
 									status = 500
-								else
-									@result = event_log.attributes
-									ok = true
 								end
 							end
 						end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
+
+						if request.body.class == StringIO
+							data = request.body.string
+						end
+						
+						if data
+							if data.length > max_event_data_length
+								errors.push(Array.new([2308, "Field too long: data"]))
+								status = 400
+							end
+						end
+
+						if errors.length == 0
+							# Create event_log
+							if data
+								event_log = EventLog.new(event_id: event.id, data: data)
+							else
+								event_log = EventLog.new(event_id: event.id)
+							end
+							
+							if !event_log.save
+								errors.push(Array.new([1103, "Unknown validation error"]))
+								status = 500
+							else
+								@result = event_log.attributes
+								ok = true
+							end
+						end
+					end
+				end
+			end
+		end
+
+		if ok && errors.length == 0
          status = 201
       else
          @result["errors"] = errors
       end
       
       render json: @result, status: status if status
-   end
+	end
    
    def get_event
 		event_id = params["id"]

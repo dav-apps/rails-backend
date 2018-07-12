@@ -12,14 +12,14 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2111, resp["errors"][0][0])
-      assert_same(2110, resp["errors"][1][0])
-      assert_same(2101, resp["errors"][2][0])
+      assert_same(2118, resp["errors"][0][0])
+      assert_same(2111, resp["errors"][1][0])
+      assert_same(2110, resp["errors"][2][0])
    end
    
    test "Can't create event with too short eventname" do
-      auth = generate_auth_token(devs(:matt))
-      post "/v1/analytics/event?auth=#{auth}&name=n&app_id=#{apps(:TestApp).id}"
+		api_key = devs(:matt).api_key
+      post "/v1/analytics/event?api_key=#{api_key}&name=n&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -27,8 +27,8 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create event with too long event name" do
-      auth = generate_auth_token(devs(:matt))
-      post "/v1/analytics/event?auth=#{auth}&name=#{"n"*30}&app_id=#{apps(:TestApp).id}"
+		api_key = devs(:matt).api_key
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{"n"*65100}&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -36,8 +36,8 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Create new event when event does not yet exist" do
-      auth = generate_auth_token(devs(:matt))
-      post "/v1/analytics/event?auth=#{auth}&name=NewEvent&app_id=#{apps(:TestApp).id}"
+		api_key = devs(:matt).api_key
+      post "/v1/analytics/event?api_key=#{api_key}&name=NewEvent&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
       assert_response 201
@@ -45,8 +45,8 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't create event log with too long data" do
-      auth = generate_auth_token(devs(:matt))
-      post "/v1/analytics/event?auth=#{auth}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}&data=#{'n'*251}"
+      api_key = devs(:matt).api_key
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", "{\"test\":#{"t"*65100}"
       resp = JSON.parse response.body
 
       assert_response 400
@@ -54,8 +54,8 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can't create event log for the event of another dev" do
-      auth = generate_auth_token(devs(:sherlock))
-      post "/v1/analytics/event?auth=#{auth}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}"
+      api_key = devs(:sherlock).api_key
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -63,10 +63,16 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can create event log" do
-      auth = generate_auth_token(devs(:matt))
-      post "/v1/analytics/event?auth=#{auth}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}&data=testdata"
+		api_key = devs(:matt).api_key
+		name = events(:LoginMobile).name
+		data = "testdata"
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", data
+		resp = JSON.parse response.body
 
-      assert_response 201
+		assert_response 201
+		log = EventLog.find_by_id(resp["id"])
+		assert_equal(log.event.name, name)
+		assert_equal(log.data, data)
    end
    # End create_event tests
    
