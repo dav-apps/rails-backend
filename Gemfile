@@ -59,6 +59,9 @@ gem 'stripe-ruby-mock', '~> 2.5.3', :require => 'stripe_mock'
 gem 'bootstrap-email', github: 'stuyam/bootstrap-email'
 #gem 'bootstrap-email'
 
+# IP location
+gem 'ipinfo_io', github: "ipinfo/ruby"
+
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
   gem 'byebug'

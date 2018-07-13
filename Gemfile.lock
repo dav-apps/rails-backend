@@ -1,4 +1,11 @@
 GIT
+  remote: git://github.com/ipinfo/ruby.git
+  revision: c2c8d50bf38dc72aeb76e5cc4f3f94c1d2d9916d
+  specs:
+    ipinfo_io (0.1.0)
+      faraday
+
+GIT
   remote: git://github.com/stuyam/bootstrap-email.git
   revision: 2977105bab504ead9f0820fa61f038ed346ccfc6
   specs:
@@ -279,6 +286,7 @@ DEPENDENCIES
   capistrano3-puma
   coffee-rails (~> 4.1.0)
   dotenv-rails
+  ipinfo_io!
   jbuilder (~> 2.0)
   jquery-rails
   jwt
