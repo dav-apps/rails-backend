@@ -169,7 +169,6 @@ class AnalyticsController < ApplicationController
    
    def get_event
 		event_id = params["id"]
-		app_id = params["app_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
       errors = Array.new
@@ -180,11 +179,6 @@ class AnalyticsController < ApplicationController
          errors.push(Array.new([2103, "Missing field: id"]))
          status = 400
 		end
-		
-		if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
-         status = 400
-      end
       
       if !jwt || jwt.length < 1
          errors.push(Array.new([2102, "Missing field: jwt"]))
@@ -225,27 +219,50 @@ class AnalyticsController < ApplicationController
                   errors.push(Array.new([2802, "Resource does not exist: Dev"]))
                   status = 400
 					else
-						app = App.find_by_id(app_id)
-                  
-						if !app
-							errors.push(Array.new([2803, "Resource does not exist: App"]))
+						# Get the event
+						event = Event.find_by(id: event_id)
+
+						if !event
+							errors.push(Array.new([2807, "Resource does not exist: Event"]))
 							status = 400
 						else
-							# Get the app of the event
-							event = Event.find_by(id: event_id, app: app_id)
+							# Get the app
+							app = App.find_by_id(event.app_id)
 
-							if !event
-								errors.push(Array.new([2807, "Resource does not exist: Event"]))
+							if !app
+								errors.push(Array.new([2803, "Resource does not exist: App"]))
 								status = 400
 							else
-								# Make sure this can only be called from the website
-								if !((dev == Dev.first) && (app.dev == user.dev))
+								# Check if the app belongs to the dev
+								if app.dev != dev
 									errors.push(Array.new([1102, "Action not allowed"]))
 									status = 403
 								else
-									@result = event.attributes
-									@result["logs"] = event.event_logs
-									ok = true
+									# Make sure this can only be called from the website
+									if !((dev == Dev.first) && (app.dev == user.dev))
+										errors.push(Array.new([1102, "Action not allowed"]))
+										status = 403
+									else
+										@result = event.attributes
+										
+										logs = Array.new
+										event.event_logs.each do |log|
+											log_hash = Hash.new
+											properties = Hash.new
+
+											log.event_log_properties.each do |property|
+												properties[property.name] = property.value
+											end
+
+											log_hash["id"] = log.id
+											log_hash["created_at"] = log.created_at
+											log_hash["properties"] = properties
+											logs.push(log_hash)
+										end
+
+										@result["logs"] = logs
+										ok = true
+									end
 								end
 							end
 						end
@@ -341,7 +358,24 @@ class AnalyticsController < ApplicationController
 									status = 403
 								else
 									@result = event.attributes
-									@result["logs"] = event.event_logs
+									
+									logs = Array.new
+									event.event_logs.each do |log|
+										log_hash = Hash.new
+										properties = Hash.new
+
+										log.event_log_properties.each do |property|
+											properties[property.name] = property.value
+										end
+
+										log_hash["id"] = log.id
+										log_hash["created_at"] = log.created_at
+										log_hash["properties"] = properties
+										logs.push(log_hash)
+									end
+
+									@result["logs"] = logs
+
 									ok = true
 								end
 							end
