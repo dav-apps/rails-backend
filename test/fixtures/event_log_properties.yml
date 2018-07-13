@@ -1,0 +1,19 @@
+LoginFirstEventLogProperty1:
+  event_log: First
+  name: "var1"
+  value: "bla"
+
+LoginFirstEventLogProperty2:
+  event_log: First
+  name: "var2"
+  value: "blabla"
+
+LoginSecondEventLogProperty1:
+  event_log: Second
+  name: "var1"
+  value: "test"
+
+LoginSecondEventLogProperty2:
+  event_log: Second
+  name: "var2"
+  value: "testtest"

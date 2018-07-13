@@ -142,48 +142,27 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    # End create_event tests
    
    # get_event tests
-   test "Can get all logs of an event" do
+   test "Can get all logs and event_log_properties of an event" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&app_id=#{events(:Login).app_id}"
+      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 200
-      resp["logs"].each do |e|
-         assert_same(events(:Login).id, e["event_id"])
-      end
-   end
-   
-   test "Can get all logs of an event by name" do
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      resp["logs"].each do |e|
-         assert_same(events(:Login).id, e["event_id"])
-      end
+      assert_equal(event_logs(:First).id, resp["logs"][0]["id"])
+      assert_equal(event_logs(:Second).id, resp["logs"][1]["id"])
+      assert_equal(event_log_properties(:LoginFirstEventLogProperty1).value, resp["logs"][0]["properties"][event_log_properties(:LoginFirstEventLogProperty1).name])
+      assert_equal(event_log_properties(:LoginFirstEventLogProperty2).value, resp["logs"][0]["properties"][event_log_properties(:LoginFirstEventLogProperty2).name])
+      assert_equal(event_log_properties(:LoginSecondEventLogProperty1).value, resp["logs"][1]["properties"][event_log_properties(:LoginSecondEventLogProperty1).name])
+      assert_equal(event_log_properties(:LoginSecondEventLogProperty2).value, resp["logs"][1]["properties"][event_log_properties(:LoginSecondEventLogProperty2).name])
    end
    
    test "get_event can't be called from outside the website" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&app_id=#{events(:Login).app_id}"
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_same(1102, resp["errors"][0][0])
-   end
-   
-   test "get_event_by_name can't be called from outside the website" do
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
+      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
@@ -194,13 +173,52 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}&app_id=#{events(:CreateCard).app_id}"
+      get "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
-   
+   # End get_event tests
+
+   # get_event_by_name tests
+   test "Missing fields in get_event_by_name" do
+      get "/v1/analytics/event"
+      resp = JSON.parse response.body
+      
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2111, resp["errors"][0][0])
+      assert_same(2110, resp["errors"][1][0])
+      assert_same(2102, resp["errors"][2][0])
+   end
+
+   test "get_event_by_name can get all logs of an event by name" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(event_logs(:First).id, resp["logs"][0]["id"])
+      assert_equal(event_logs(:Second).id, resp["logs"][1]["id"])
+      assert_equal(event_log_properties(:LoginFirstEventLogProperty1).value, resp["logs"][0]["properties"][event_log_properties(:LoginFirstEventLogProperty1).name])
+      assert_equal(event_log_properties(:LoginFirstEventLogProperty2).value, resp["logs"][0]["properties"][event_log_properties(:LoginFirstEventLogProperty2).name])
+      assert_equal(event_log_properties(:LoginSecondEventLogProperty1).value, resp["logs"][1]["properties"][event_log_properties(:LoginSecondEventLogProperty1).name])
+      assert_equal(event_log_properties(:LoginSecondEventLogProperty2).value, resp["logs"][1]["properties"][event_log_properties(:LoginSecondEventLogProperty2).name])
+   end
+
+   test "get_event_by_name can't be called from outside the website" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
    test "Can't get the event by name of the app of another dev" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
@@ -211,17 +229,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
-   
-   test "Missing fields in get_event_by_name" do
-      get "/v1/analytics/event"
-      resp = JSON.parse response.body
-      
-      assert(response.status == 400 || response.status ==  401)
-      assert_same(2111, resp["errors"][0][0])
-      assert_same(2110, resp["errors"][1][0])
-      assert_same(2102, resp["errors"][2][0])
-   end
-   # End get_event tests
+   # End get_event_by_name tests
    
    # update_event tests
    test "Missing fields in update_event" do

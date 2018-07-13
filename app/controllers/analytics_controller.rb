@@ -141,7 +141,6 @@ class AnalyticsController < ApplicationController
 											country_key = "country"
 
 											country_code = JSON.parse(IpinfoIo::lookup(ip).body)["country"]
-											puts country_code
 	
 											ip_property = EventLogProperty.new(event_log_id: event_log.id, name: country_key, value: country_code)
 											if ip_property.save
@@ -238,36 +237,30 @@ class AnalyticsController < ApplicationController
 								errors.push(Array.new([2803, "Resource does not exist: App"]))
 								status = 400
 							else
-								# Check if the app belongs to the dev
-								if app.dev != dev
+								# Make sure this can only be called from the website
+								if !((dev == Dev.first) && (app.dev == user.dev))
 									errors.push(Array.new([1102, "Action not allowed"]))
 									status = 403
 								else
-									# Make sure this can only be called from the website
-									if !((dev == Dev.first) && (app.dev == user.dev))
-										errors.push(Array.new([1102, "Action not allowed"]))
-										status = 403
-									else
-										@result = event.attributes
-										
-										logs = Array.new
-										event.event_logs.each do |log|
-											log_hash = Hash.new
-											properties = Hash.new
+									@result = event.attributes
+									
+									logs = Array.new
+									event.event_logs.each do |log|
+										log_hash = Hash.new
+										properties = Hash.new
 
-											log.event_log_properties.each do |property|
-												properties[property.name] = property.value
-											end
-
-											log_hash["id"] = log.id
-											log_hash["created_at"] = log.created_at
-											log_hash["properties"] = properties
-											logs.push(log_hash)
+										log.event_log_properties.each do |property|
+											properties[property.name] = property.value
 										end
 
-										@result["logs"] = logs
-										ok = true
+										log_hash["id"] = log.id
+										log_hash["created_at"] = log.created_at
+										log_hash["properties"] = properties
+										logs.push(log_hash)
 									end
+
+									@result["logs"] = logs
+									ok = true
 								end
 							end
 						end
