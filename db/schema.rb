@@ -11,7 +11,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180712201850) do
+ActiveRecord::Schema.define(version: 20180713143210) do
 
   create_table "access_tokens", force: :cascade do |t|
     t.string   "token",      limit: 255
@@ -48,10 +48,15 @@ ActiveRecord::Schema.define(version: 20180712201850) do
     t.string   "uuid",       limit: 255
   end
 
+  create_table "event_log_properties", force: :cascade do |t|
+    t.integer "event_log_id", limit: 4
+    t.string  "name",         limit: 255
+    t.text    "value",        limit: 65535
+  end
+
   create_table "event_logs", force: :cascade do |t|
     t.integer  "event_id",   limit: 4
     t.datetime "created_at"
-    t.text     "data",       limit: 65535
   end
 
   create_table "events", force: :cascade do |t|
