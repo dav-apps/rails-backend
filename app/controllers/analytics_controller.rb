@@ -12,8 +12,7 @@ class AnalyticsController < ApplicationController
 		api_key = params["api_key"]
 		name = params["name"]
 		app_id = params["app_id"]
-		save_country_code = params["save_country_code"]
-		puts save_country_code
+		save_country = params["save_country"]
 
 		errors = Array.new
       @result = Hash.new
@@ -52,7 +51,13 @@ class AnalyticsController < ApplicationController
 						errors.push(Array.new([1102, "Action not allowed"]))
 						status = 403
 					else
-						if !request.headers["Content-Type"].include?("application/json")
+						if request.headers["Content-Type"] == nil
+							content_type = ""
+						else
+							content_type = request.headers["Content-Type"]
+						end
+
+						if !content_type.include?("application/json") && request.body.string.length > 0
 							errors.push(Array.new([1104, "Content-type not supported"]))
 							status = 415
 						else
@@ -128,7 +133,7 @@ class AnalyticsController < ApplicationController
 								end
 
 								if errors.length == 0
-									if save_country_code
+									if save_country
 										# Get the country code and save it as event_log_property
 										ip = request.remote_ip
 	

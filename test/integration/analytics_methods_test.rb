@@ -17,8 +17,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2110, resp["errors"][2][0])
    end
    
-   test "Can't create event with too short eventname" do
-		api_key = devs(:matt).api_key
+   test "Can't create event with too short event name" do
+      api_key = devs(:matt).api_key
+      
       post "/v1/analytics/event?api_key=#{api_key}&name=n&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
@@ -27,7 +28,8 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't create event with too long event name" do
-		api_key = devs(:matt).api_key
+      api_key = devs(:matt).api_key
+      
       post "/v1/analytics/event?api_key=#{api_key}&name=#{"n"*65100}&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
@@ -36,7 +38,8 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Create new event when event does not yet exist" do
-		api_key = devs(:matt).api_key
+      api_key = devs(:matt).api_key
+      
       post "/v1/analytics/event?api_key=#{api_key}&name=NewEvent&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
@@ -44,17 +47,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(Event.find_by(name: "NewEvent").id, resp["event_id"])
    end
 
-   test "Can't create event log with too long data" do
-      api_key = devs(:matt).api_key
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", "{\"test\":#{"t"*65100}"
-      resp = JSON.parse response.body
-
-      assert_response 400
-      assert_same(2308, resp["errors"][0][0])
-   end
-
    test "Can't create event log for the event of another dev" do
       api_key = devs(:sherlock).api_key
+
       post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
@@ -62,17 +57,87 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1102, resp["errors"][0][0])
    end
 
-   test "Can create event log" do
+   test "Can create event log without properties" do
 		api_key = devs(:matt).api_key
 		name = events(:LoginMobile).name
-		data = "testdata"
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", data
+      
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}"
 		resp = JSON.parse response.body
 
 		assert_response 201
 		log = EventLog.find_by_id(resp["id"])
-		assert_equal(log.event.name, name)
-		assert_equal(log.data, data)
+		assert_equal(name, log.event.name)
+   end
+
+   test "Can create event log with properties" do
+      api_key = devs(:matt).api_key
+      name = events(:LoginMobile).name
+      firstPropertyName = "test1"
+      secondPropertyName = "test2"
+      firstPropertyValue = "bla"
+      secondPropertyValue = "blabla"
+      data = '{"' + firstPropertyName + '": "' + firstPropertyValue + '", 
+               "' + secondPropertyName + '": "' + secondPropertyValue + '"}'
+      
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", data, {"Content-Type" => "application/json"}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      log = EventLog.find_by_id(resp["id"])
+      assert_equal(name, log.event.name)
+      assert_equal(firstPropertyName, log.event_log_properties[0].name)
+      assert_equal(firstPropertyValue, log.event_log_properties[0].value)
+      assert_equal(secondPropertyName, log.event_log_properties[1].name)
+      assert_equal(secondPropertyValue, log.event_log_properties[1].value)
+   end
+
+   test "Can't create event log with too long property name" do
+      api_key = devs(:matt).api_key
+
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", "{\"#{"n"*240}\":\"test\"}", {"Content-Type" => "application/json"}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2306, resp["errors"][0][0])
+   end
+   
+   test "Can't create event log with too long property value" do
+      api_key = devs(:matt).api_key
+
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", "{\"test\":\"#{"t"*65100}\"}", {"Content-Type" => "application/json"}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2307, resp["errors"][0][0])
+   end
+
+   test "create_event_log with save_country should create a property with the country code" do
+      api_key = devs(:matt).api_key
+      name = events(:LoginMobile).name
+
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}&save_country=true"
+      resp = JSON.parse response.body
+
+      assert_response 201
+      log = EventLog.find_by_id(resp["id"])
+      assert_equal("country", log.event_log_properties[0].name)
+   end
+
+   test "create_event_log with save_country and properties should create a property with the country code" do
+      api_key = devs(:matt).api_key
+      name = events(:LoginMobile).name
+      propertyName = "test"
+      propertyValue = "blabla"
+      data = '{"' + propertyName + '": "' + propertyValue + '"}'
+
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}&save_country=true", data, {"Content-Type" => "application/json"}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      log = EventLog.find_by_id(resp["id"])
+      assert_equal(propertyName, log.event_log_properties[0].name)
+      assert_equal(propertyValue, log.event_log_properties[0].value)
+      assert_equal("country", log.event_log_properties[1].name)
    end
    # End create_event tests
    
