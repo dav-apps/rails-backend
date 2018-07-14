@@ -12,7 +12,7 @@ class AnalyticsController < ApplicationController
 		api_key = params["api_key"]
 		name = params["name"]
 		app_id = params["app_id"]
-		save_country = params["save_country"]
+		save_country = params["save_country"] == "true"
 
 		errors = Array.new
       @result = Hash.new
