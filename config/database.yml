@@ -20,5 +20,5 @@ production:
   database: <%= ENV['AZURE_PRODUCTION_DATABASE_NAME'] %>
   username: <%= ENV['AZURE_PRODUCTION_DATABASE_USERNAME'] %>
   password: <%= ENV['AZURE_PRODUCTION_DATABASE_PASSWORD'] %>
-  timeout: 5000
+  timeout: 20000
   azure: true
