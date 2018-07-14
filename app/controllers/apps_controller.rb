@@ -741,24 +741,29 @@ class AppsController < ApplicationController
 													else
 														object.each do |key, value|
 															# Validate the length of the properties
-															if key.length > max_property_name_length
-																errors.push(Array.new([2306, "Field too long: Property.name"]))
-																status = 400
-															end
-															
-															if key.length < min_property_name_length
-																errors.push(Array.new([2206, "Field too short: Property.name"]))
-																status = 400
-															end
-															
-															if value.length > max_property_value_length
-																errors.push(Array.new([2307, "Field too long: Property.value"]))
-																status = 400
-															end
-															
-															if value.length < min_property_value_length
+															if !value
 																errors.push(Array.new([2207, "Field too short: Property.value"]))
 																status = 400
+															else
+																if key.length > max_property_name_length
+																	errors.push(Array.new([2306, "Field too long: Property.name"]))
+																	status = 400
+																end
+																
+																if key.length < min_property_name_length
+																	errors.push(Array.new([2206, "Field too short: Property.name"]))
+																	status = 400
+																end
+																
+																if value.length > max_property_value_length
+																	errors.push(Array.new([2307, "Field too long: Property.value"]))
+																	status = 400
+																end
+																
+																if value.length < min_property_value_length
+																	errors.push(Array.new([2207, "Field too short: Property.value"]))
+																	status = 400
+																end
 															end
 														end
 													end
