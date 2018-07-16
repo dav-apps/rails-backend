@@ -1,9 +1,11 @@
 First:
   event: Login
-    
+  created_at: <%= DateTime.parse("2018-06-01T00:00:00.000Z").to_s(:db) %>
+
 Second:
   event: Login
-    
+  created_at: <%= DateTime.parse("2018-07-01T00:00:00.000Z").to_s(:db) %>
+
 Third:
   event: OpenApp
     

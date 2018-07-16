@@ -179,6 +179,20 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
+
+   test "get_event returns the event logs of the specified timeframe" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      start_timestamp = 1529020800  # 15.6.2018
+      end_timestamp = 1531612800    # 15.7.2018
+
+      get "/v1/analytics/event/#{events(:Login).id}?start=#{start_timestamp}&end=#{end_timestamp}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(1, resp["logs"].length)
+      assert_equal(event_logs(:Second).id, resp["logs"][0]["id"])
+   end
    # End get_event tests
 
    # get_event_by_name tests
@@ -228,6 +242,21 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "get_event_by_name returns the event logs of the specified timeframe" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      start_timestamp = 1529020800  # 15.6.2018
+      end_timestamp = 1531612800    # 15.7.2018
+      login_event = events(:Login)
+
+      get "/v1/analytics/event?app_id=#{login_event.app_id}&name=#{login_event.name}&start=#{start_timestamp}&end=#{end_timestamp}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(1, resp["logs"].length)
+      assert_equal(event_logs(:Second).id, resp["logs"][0]["id"])
    end
    # End get_event_by_name tests
    

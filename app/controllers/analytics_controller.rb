@@ -179,7 +179,9 @@ class AnalyticsController < ApplicationController
    def get_event
 		event_id = params["id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
+		start_timestamp = params["start"]
+		end_timestamp = params["end"]
+
       errors = Array.new
       @result = Hash.new
       ok = false
@@ -251,6 +253,21 @@ class AnalyticsController < ApplicationController
 									
 									logs = Array.new
 									event.event_logs.each do |log|
+										# Check if the log was created within the specified timestamp
+										unix_time = DateTime.parse(log.created_at.to_s).strftime("%s")
+
+										if start_timestamp
+											if unix_time < start_timestamp
+												next
+											end
+										end
+
+										if end_timestamp
+											if unix_time > end_timestamp
+												next
+											end
+										end
+
 										log_hash = Hash.new
 										properties = Hash.new
 
@@ -288,7 +305,9 @@ class AnalyticsController < ApplicationController
 		event_name = params["name"]
 		app_id = params["app_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
+		start_timestamp = params["start"]
+		end_timestamp = params["end"]
+
       errors = Array.new
       @result = Hash.new
       ok = false
@@ -364,6 +383,21 @@ class AnalyticsController < ApplicationController
 									
 									logs = Array.new
 									event.event_logs.each do |log|
+										# Check if the log was created within the specified timestamp
+										unix_time = DateTime.parse(log.created_at.to_s).strftime("%s")
+
+										if start_timestamp
+											if unix_time < start_timestamp
+												next
+											end
+										end
+
+										if end_timestamp
+											if unix_time > end_timestamp
+												next
+											end
+										end
+
 										log_hash = Hash.new
 										properties = Hash.new
 
