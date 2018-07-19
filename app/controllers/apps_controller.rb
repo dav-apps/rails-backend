@@ -741,28 +741,27 @@ class AppsController < ApplicationController
 													else
 														object.each do |key, value|
 															# Validate the length of the properties
-															if !value
-																errors.push(Array.new([2207, "Field too short: Property.value"]))
-																status = 400
-															else
-																if key.length > max_property_name_length
-																	errors.push(Array.new([2306, "Field too long: Property.name"]))
-																	status = 400
-																end
-																
-																if key.length < min_property_name_length
-																	errors.push(Array.new([2206, "Field too short: Property.name"]))
-																	status = 400
-																end
-																
-																if value.length > max_property_value_length
-																	errors.push(Array.new([2307, "Field too long: Property.value"]))
-																	status = 400
-																end
-																
-																if value.length < min_property_value_length
-																	errors.push(Array.new([2207, "Field too short: Property.value"]))
-																	status = 400
+															if value
+																if value.length > 0
+																	if key.length > max_property_name_length
+																		errors.push(Array.new([2306, "Field too long: Property.name"]))
+																		status = 400
+																	end
+																	
+																	if key.length < min_property_name_length
+																		errors.push(Array.new([2206, "Field too short: Property.name"]))
+																		status = 400
+																	end
+																	
+																	if value.length > max_property_value_length
+																		errors.push(Array.new([2307, "Field too long: Property.value"]))
+																		status = 400
+																	end
+																	
+																	if value.length < min_property_value_length
+																		errors.push(Array.new([2207, "Field too short: Property.value"]))
+																		status = 400
+																	end
 																end
 															end
 														end
@@ -772,11 +771,15 @@ class AppsController < ApplicationController
 														properties = Hash.new
 														
 														object.each do |key, value|
-															if !Property.create(table_object_id: obj.id, name: key, value: value)
-																errors.push(Array.new([1103, "Unknown validation error"]))
-																status = 500
-															else
-																properties[key] = value
+															if value
+																if value.length > 0
+																	if !Property.create(table_object_id: obj.id, name: key, value: value)
+																		errors.push(Array.new([1103, "Unknown validation error"]))
+																		status = 500
+																	else
+																		properties[key] = value
+																	end
+																end
 															end
 														end
 														
@@ -1263,25 +1266,29 @@ class AppsController < ApplicationController
 														object = request.request_parameters
 														
 														object.each do |key, value|
-															# Validate the length of the properties
-															if key.length > max_property_name_length
-																errors.push(Array.new([2306, "Field too long: Property.name"]))
-																status = 400
-															end
-															
-															if key.length < min_property_name_length
-																errors.push(Array.new([2206, "Field too short: Property.name"]))
-																status = 400
-															end
-															
-															if value.length > max_property_value_length
-																errors.push(Array.new([2307, "Field too long: Property.value"]))
-																status = 400
-															end
-															
-															if value.length < min_property_value_length
-																errors.push(Array.new([2207, "Field too short: Property.value"]))
-																status = 400
+															if value
+																if value.length > 0
+																	# Validate the length of the properties
+																	if key.length > max_property_name_length
+																		errors.push(Array.new([2306, "Field too long: Property.name"]))
+																		status = 400
+																	end
+																	
+																	if key.length < min_property_name_length
+																		errors.push(Array.new([2206, "Field too short: Property.name"]))
+																		status = 400
+																	end
+																	
+																	if value.length > max_property_value_length
+																		errors.push(Array.new([2307, "Field too long: Property.value"]))
+																		status = 400
+																	end
+																	
+																	if value.length < min_property_value_length
+																		errors.push(Array.new([2207, "Field too short: Property.value"]))
+																		status = 400
+																	end
+																end
 															end
 														end
 
@@ -1290,23 +1297,26 @@ class AppsController < ApplicationController
 															object.each do |key, value|
 																prop = Property.find_by(name: key, table_object_id: obj.id)
 																
-																# If the property does not exist, create it
-																if !prop
-																	new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
-																	
-																	if !new_prop.save
-																		errors.push(Array.new([1103, "Unknown validation error"]))
-																		status = 500
-																	else
-																		properties[key] = value
-																	end
-																else
-																	prop.update(name: key, value: value)
-																	if !prop.save
-																		errors.push(Array.new([1103, "Unknown validation error"]))
-																		status = 500
-																	else
-																		properties[key] = value
+																if value
+																	if !prop && value.length > 0		# If the property does not exist and there is a value, create the property
+																		new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+																		
+																		if !new_prop.save
+																			errors.push(Array.new([1103, "Unknown validation error"]))
+																			status = 500
+																		else
+																			properties[key] = value
+																		end
+																	elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
+																		prop.destroy!
+																	elsif value.length > 0
+																		prop.update(name: key, value: value)
+																		if !prop.save
+																			errors.push(Array.new([1103, "Unknown validation error"]))
+																			status = 500
+																		else
+																			properties[key] = value
+																		end
 																	end
 																end
 															end

@@ -139,7 +139,23 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(propertyValue, log.event_log_properties[0].value)
       assert_equal("country", log.event_log_properties[1].name)
    end
-   # End create_event tests
+
+   test "create_event_log should not create a property when the property has no value" do
+      api_key = devs(:matt).api_key
+      name = events(:LoginMobile).name
+      first_property_name = "test"
+      second_property_name = "test2"
+      data = '{"' + first_property_name + '": "", "' + second_property_name + '": "content"}'
+
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", data, {"Content-Type" => "application/json"}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      log = EventLog.find_by_id(resp["id"])
+      assert_equal(1, log.event_log_properties.count)
+      assert_equal(second_property_name, log.event_log_properties.first.name)
+   end
+   # End create_event_log tests
    
    # get_event tests
    test "Can get all logs and event_log_properties of an event" do
