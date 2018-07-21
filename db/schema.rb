@@ -116,8 +116,8 @@ ActiveRecord::Schema.define(version: 20180713143210) do
   create_table "users_apps", force: :cascade do |t|
     t.integer  "user_id",      limit: 4
     t.integer  "app_id",       limit: 4
-    t.datetime "created_at",                         null: false
-    t.datetime "updated_at",                         null: false
+    t.datetime "created_at"
+    t.datetime "updated_at"
     t.integer  "used_storage", limit: 8, default: 0
   end
 
