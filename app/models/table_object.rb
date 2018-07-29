@@ -1,4 +1,4 @@
-class TableObject < ActiveRecord::Base
+class TableObject < ApplicationRecord
    after_destroy :delete_blob
 
    belongs_to :table

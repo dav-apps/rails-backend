@@ -1,4 +1,4 @@
-class UsersApp < ActiveRecord::Base
+class UsersApp < ApplicationRecord
    belongs_to :user
    belongs_to :app
 end

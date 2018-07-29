@@ -1,4 +1,4 @@
-class Archive < ActiveRecord::Base
+class Archive < ApplicationRecord
    after_destroy :delete_blob
 
    belongs_to :user

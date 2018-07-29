@@ -1,4 +1,4 @@
-class User < ActiveRecord::Base
+class User < ApplicationRecord
 	before_save { self.email = email.downcase }
 	after_destroy :delete_avatar
 

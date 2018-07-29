@@ -2,9 +2,9 @@ source 'https://rubygems.org'
 
 ruby '2.5.1'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '4.2.10'
+gem 'rails', '5.0.0'
 # Use SCSS for stylesheets
-gem 'sass-rails', '~> 5.0'
+gem 'sassc-rails'
 # Use Uglifier as compressor for JavaScript assets
 gem 'uglifier', '>= 1.3.0'
 # Use CoffeeScript for .coffee assets and views
@@ -25,7 +25,6 @@ gem 'rack-protection',  '~> 1.5.5'
 gem 'bcrypt'
 gem 'sendgrid-ruby'
 gem 'jwt'
-gem 'rails-api'
 
 gem 'tiny_tds', '~> 1.3'
 gem 'activerecord-sqlserver-adapter'
@@ -56,8 +55,7 @@ gem 'stripe_event'
 gem 'stripe-ruby-mock', '~> 2.5.3', :require => 'stripe_mock'
 
 # Bootstrap emails
-gem 'bootstrap-email', github: 'stuyam/bootstrap-email'
-#gem 'bootstrap-email'
+gem 'bootstrap-email'
 
 # IP location
 gem 'ipinfo_io', github: "ipinfo/ruby"

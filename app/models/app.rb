@@ -1,4 +1,4 @@
-class App < ActiveRecord::Base
+class App < ApplicationRecord
    belongs_to :dev
    has_many :tables, dependent: :destroy
    has_many :events, dependent: :destroy
