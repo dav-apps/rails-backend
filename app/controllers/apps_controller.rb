@@ -390,7 +390,8 @@ class AppsController < ApplicationController
                            errors.push(Array.new([1104, "Content-type not supported"]))
                            status = 415
                         else
-                           object = request.request_parameters
+                           json = request.body.string
+									object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
                            
                            name = object["name"]
                            if name
@@ -733,7 +734,8 @@ class AppsController < ApplicationController
 													status = 500
 												else
 													# Get the body of the request
-													object = request.request_parameters
+													json = request.body.string
+													object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
 													
 													if object.length < 1
 														errors.push(Array.new([2116, "Missing field: object"]))
@@ -1263,7 +1265,8 @@ class AppsController < ApplicationController
 														status = 415
 													else
 														# Update the properties of the object
-														object = request.request_parameters
+														json = request.body.string
+														object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
 														
 														object.each do |key, value|
 															if value
@@ -1878,7 +1881,8 @@ class AppsController < ApplicationController
                               errors.push(Array.new([1104, "Content-type not supported"]))
                               status = 415
                            else
-                              object = request.request_parameters
+                              json = request.body.string
+										object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
                               
                               name = object["name"]
                               if name

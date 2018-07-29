@@ -87,7 +87,8 @@ class AnalyticsController < ApplicationController
 								end
 							end
 
-							object = request.request_parameters
+							json = request.body.string
+							object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
 
 							object.each do |key, value|
 								# Validate the length of the properties
@@ -508,7 +509,8 @@ class AnalyticsController < ApplicationController
                               errors.push(Array.new([1104, "Content-type not supported"]))
                               status = 415
                            else
-                              object = request.request_parameters
+										json = request.body.string
+										object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
                               
                               name = object["name"]
                               if name

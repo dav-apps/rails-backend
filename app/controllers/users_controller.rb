@@ -531,8 +531,10 @@ class UsersController < ApplicationController
                         status = 415
                      else
                         email_changed = false
-                        password_changed = false
-                        object = request.request_parameters
+								password_changed = false
+								
+                        json = request.body.string
+								object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
                         
                         email = object["email"]
                         if email && email.length > 0

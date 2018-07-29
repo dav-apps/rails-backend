@@ -257,7 +257,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
+				params: "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       get "/v1/auth/user/#{matt.id}?jwt=#{jwt}"
@@ -307,9 +309,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "Can get user and used storage of apps" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      file1Path = "test/files/test.png"
+      file1Path = "test/fixtures/files/test.png"
 
-      post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", File.open(file1Path, "rb").read, {'Content-Type' => 'image/png'}
+		post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", 
+				params: File.open(file1Path, "rb").read, 
+				headers: {'Content-Type' => 'image/png'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -330,7 +334,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/xml'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"test\":\"test\"}", 
+				headers: {'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
@@ -341,7 +347,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"test\":\"test\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"test\":\"test\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -352,7 +360,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\":\"testemail\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"email\":\"testemail\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -363,7 +373,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"username\":\"d\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"username\":\"d\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -374,7 +386,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"username\":\"#{"d"*30}\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"username\":\"#{"d"*30}\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -385,7 +399,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"username\":\"cato\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"username\":\"cato\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -396,7 +412,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\":\"c\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"password\":\"c\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -407,7 +425,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"password\":\"#{"n"*40}\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"password\":\"#{"n"*40}\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -418,7 +438,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", '{"plan": 4}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: '{"plan": 4}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -429,7 +451,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", '{"plan": "sadasd"}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: '{"plan": "sadasd"}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -442,7 +466,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       old_new_password = matt.new_password
       new_password = "testpassword"
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", '{"password":"' + new_password + '"}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: '{"password":"' + new_password + '"}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       matt = User.find_by_id(matt.id)
@@ -457,7 +483,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", '{"email":"test14@example.com"}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: '{"email":"test14@example.com"}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -470,7 +498,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"username\":\"newtestuser\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"username\":\"newtestuser\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -483,7 +513,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -496,10 +528,14 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
+				params: "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      put "/v1/auth/user?jwt=#{jwt}", "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{jwt}", 
+				params: "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
       
       assert_response 200
@@ -512,14 +548,18 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       payment_token = "tok_visa"
 
       # Upgrade to plus
-      put "/v1/auth/user?jwt=#{jwt}", '{"plan": 1, "payment_token": "' + payment_token + '"}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{jwt}", 
+				params: '{"plan": 1, "payment_token": "' + payment_token + '"}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
       assert_same(resp["plan"], 1)
 
       # Downgrade to free
-      put "/v1/auth/user?jwt=#{jwt}", '{"plan": 0}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{jwt}", 
+				params: '{"plan": 0}', 
+				headers: {'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
 
 		# User should still be on plus, but with subscription status of 1
@@ -535,7 +575,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-      put "/v1/auth/user?jwt=#{jwt}", '{"plan": 1}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{jwt}", 
+				params: '{"plan": 1}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
@@ -546,7 +588,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       torera = users(:torera)
       jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
 
-      put "/v1/auth/user?jwt=#{jwt}", '{"plan": 1, "payment_token": "blablabla"}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{jwt}", 
+				params: '{"plan": 1, "payment_token": "blablabla"}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -561,7 +605,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
       source_id = customer.sources.data[0].id
 
-      put "/v1/auth/user?jwt=#{jwt}", '{"payment_token": "' + payment_token + '"}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{jwt}", 
+				params: '{"payment_token": "' + payment_token + '"}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -572,7 +618,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can upload an avatar and the etag updates in update_user" do
-      avatarPath = "test/files/test.png"
+      avatarPath = "test/fixtures/files/test.png"
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
@@ -585,7 +631,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       avatar = File.open(avatarPath, "rb")
       avatar_content = Base64.encode64(avatar.read)
 
-      put "/v1/auth/user?jwt=#{matts_jwt}", {avatar: avatar_content}.to_json, {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: {avatar: avatar_content}.to_json, 
+				headers: {'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
       avatar_etag2 = resp2["avatar_etag"]
 
@@ -672,7 +720,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       tester_jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
       tester_jwt2 = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
 
-      post "/v1/apps/object?jwt=#{tester_jwt}&table_name=#{table.name}&app_id=#{app.id}", "{\"test\": \"testobject\"}", {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?jwt=#{tester_jwt}&table_name=#{table.name}&app_id=#{app.id}", 
+				params: "{\"test\": \"testobject\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -882,7 +932,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_password = "testpassword"
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", '{"password": "' + new_password + '"}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: '{"password": "' + new_password + '"}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -905,7 +957,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_email = "newtest@email.com"
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", '{"email": "' + new_email + '"}', {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: '{"email": "' + new_email + '"}', 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -986,7 +1040,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       old_email = matt.email
       new_email = "new-test@email.com"
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"email\": \"#{new_email}\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1019,7 +1075,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       new_email = "new-test@email.com"
       original_email = matt.email
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"email\": \"#{new_email}\"}", {'Content-Type' => 'application/json'}
+		put "/v1/auth/user?jwt=#{matts_jwt}", 
+				params: "{\"email\": \"#{new_email}\"}", 
+				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200

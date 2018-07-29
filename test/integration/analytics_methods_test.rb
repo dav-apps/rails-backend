@@ -79,7 +79,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       data = '{"' + firstPropertyName + '": "' + firstPropertyValue + '", 
                "' + secondPropertyName + '": "' + secondPropertyValue + '"}'
       
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", data, {"Content-Type" => "application/json"}
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", 
+            params: data, 
+            headers: {"Content-Type" => "application/json"}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -94,7 +96,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    test "Can't create event log with too long property name" do
       api_key = devs(:matt).api_key
 
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", "{\"#{"n"*240}\":\"test\"}", {"Content-Type" => "application/json"}
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", 
+            params: "{\"#{"n"*240}\":\"test\"}", 
+            headers: {"Content-Type" => "application/json"}
       resp = JSON.parse response.body
 
       assert_response 400
@@ -104,9 +108,11 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    test "Can't create event log with too long property value" do
       api_key = devs(:matt).api_key
 
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", "{\"test\":\"#{"t"*65100}\"}", {"Content-Type" => "application/json"}
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", 
+            params: "{\"test\":\"#{"t"*65100}\"}", 
+            headers: {"Content-Type" => "application/json"}
       resp = JSON.parse response.body
-
+      
       assert_response 400
       assert_same(2307, resp["errors"][0][0])
    end
@@ -130,9 +136,12 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       propertyValue = "blabla"
       data = '{"' + propertyName + '": "' + propertyValue + '"}'
 
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}&save_country=true", data, {"Content-Type" => "application/json"}
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}&save_country=true", 
+            params: data,
+            headers: {"Content-Type": "application/json"}
+      
       resp = JSON.parse response.body
-
+      
       assert_response 201
       log = EventLog.find_by_id(resp["id"])
       assert_equal(propertyName, log.event_log_properties[0].name)
@@ -147,7 +156,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       second_property_name = "test2"
       data = '{"' + first_property_name + '": "", "' + second_property_name + '": "content"}'
 
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", data, {"Content-Type" => "application/json"}
+      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", 
+            params: data, 
+            headers: {"Content-Type" => "application/json"}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -289,7 +300,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/xml'}
+      put "/v1/auth/user?jwt=#{matts_jwt}", 
+            params: "{\"name\":\"test\"}", 
+            headers: {'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
@@ -300,7 +313,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"test\"}", {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
+            params: "{\"name\":\"test\"}", 
+            headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -311,7 +326,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login2).id}?jwt=#{matts_jwt}", "{\"name\":\"newname\"}", {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login2).id}?jwt=#{matts_jwt}", 
+            params: "{\"name\":\"newname\"}", 
+            headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -322,7 +339,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}", "{\"name\":\"newname\"}", {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}", 
+            params: "{\"name\":\"newname\"}", 
+            headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -335,7 +354,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"#{new_name}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
+            params: "{\"name\":\"#{new_name}\"}", 
+            headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -347,7 +368,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"#{"n"*30}\"}", {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
+            params: "{\"name\":\"#{"n"*30}\"}", 
+            headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -358,7 +381,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"n\"}", {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
+            params: "{\"name\":\"n\"}", 
+            headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -369,7 +394,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", "{\"name\":\"login_mobile\"}", {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
+            params: "{\"name\":\"login_mobile\"}", 
+            headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
