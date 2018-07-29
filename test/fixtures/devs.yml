@@ -1,11 +1,23 @@
 dav:
   user: dav
+  api_key: "v05Bmn5pJT_pZu6plPQQf8qs4ahnK3cv2tkEK5XJ"
+  secret_key: "XO1MUi8YFPJL2FDqsJdElSW4QBGCZBTACMmebmD1ksCCVOFrzEzFcQ"
+  uuid: "c46ffce6-62eb-4560-b27d-af108f66f5f2"
 
 sherlock:
   user: sherlock
+  api_key: "N5QTu9U6uiKJb1d4ZryqW6k86eXtaGzaFcUWfVqG"
+  secret_key: "CoTQf26E48gEeL-n_sDfqyHACPXxZD0qB9F99LJQ8DyQiiJe8n-aWA"
+  uuid: "10032e4b-c1a7-41e2-98b1-0137e14ed3ea"
 
 matt:
   user: matt
+  api_key: "EILNeU-wlUF0r5IKliJOEbg165Tkmh0Gzivcdx5o"
+  secret_key: "hxAwM23CsB9j8w6xXrLgH7t5wfJ83n4CmdjqfuYzMI26arFkcVbm5g"
+  uuid: "2d1ef10b-2b6d-474d-8b54-9b2e3a5f20e0"
 
 tester2:
   user: tester2
+  api_key: "4TrhGJU0FG7VUaBr6Ir8qwLR25xLXwHR9I-HdoSB"
+  secret_key: "bZe0eREXLm7j3fei6hb941RuHJertPq4PlBSFURw7jkzWjLCP1ePeA"
+  uuid: "8c3b9b6e-748f-4c8c-8caf-be72e469ef2c"
