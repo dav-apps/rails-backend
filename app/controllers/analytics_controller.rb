@@ -6,185 +6,122 @@ class AnalyticsController < ApplicationController
 	min_property_name_length = 1
 	max_property_name_length = 100
 	min_property_value_length = 1
-   max_property_value_length = 65000
-   
-	define_method :create_event_log do
+	max_property_value_length = 65000
+	
+	def create_event_log
 		api_key = params["api_key"]
 		name = params["name"]
 		app_id = params["app_id"]
 		save_country = params["save_country"] == "true"
 
-		errors = Array.new
-      @result = Hash.new
-		ok = false
+		begin
+			api_key_validation = ValidationService.validate_api_key(api_key)
+			name_validation = ValidationService.validate_name(name)
+			app_id_validation = ValidationService.validate_app_id(app_id)
+			errors = Array.new
 
-		if !api_key || api_key.length < 1
-			errors.push(Array.new([2118, "Missing field: name"]))
-         status = 400
-		end
-		
-		if !name || name.length < 1
-         errors.push(Array.new([2111, "Missing field: name"]))
-         status = 400
-		end
-		
-		if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
-         status = 400
-		end
-		
-		if errors.length == 0
+			if !api_key_validation[:success]
+				errors.push(api_key_validation)
+			end
+
+			if !name_validation[:success]
+				errors.push(name_validation)
+			end
+
+			if !app_id_validation[:success]
+				errors.push(app_id_validation)
+			end
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
 			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
 
-			if !dev
-				errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-            status = 400
-			else
-				app = App.find_by_id(app_id)
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
-				if !app
-					errors.push(Array.new([2803, "Resource does not exist: App"]))
-					status = 400
-				else
-					# Check if the app belongs to the dev
-					if app.dev != dev
-						errors.push(Array.new([1102, "Action not allowed"]))
-						status = 403
-					else
-						if request.headers["Content-Type"] == nil
-							content_type = ""
-						else
-							content_type = request.headers["Content-Type"]
-						end
+			if request.body.string.length > 0
+				ValidationService.raise_validation_error(ValidationService.validate_content_type(request.headers["Content-Type"]))
+			end
 
-						if !content_type.include?("application/json") && request.body.string.length > 0
-							errors.push(Array.new([1104, "Content-type not supported"]))
-							status = 415
-						else
-							# Check if the event with the name already exists
-							event = Event.find_by(name: name, app_id: app_id)
+			# Check if the event with the name already exists
+			event = Event.find_by(name: name, app_id: app_id)
 
-							if !event
-								# Validate properties
-								if name.length > max_event_name_length
-									errors.push(Array.new([2303, "Field too long: name"]))
-									status = 400
-								end
-								
-								if name.length < min_event_name_length
-									errors.push(Array.new([2203, "Field too short: name"]))
-									status = 400
-								end
-								
-								if errors.length == 0
-									# Create event with that name
-									event = Event.new(name: name, app_id: app_id)
-									
-									if !event.save
-										errors.push(Array.new([1103, "Unknown validation error"]))
-										status = 500
-									end
-								end
-							end
+			if !event
+				# Validate properties of the new event
+				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_long(name))
+				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_short(name))
 
-							begin
-								json = request.body.string
-								object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-							rescue Exception => e
-								errors.push(Array.new([1103, "Unknown validation error"]))
-								status = 500
-							end
-							
-							if errors.length == 0
-								object.each do |key, value|
-									# Validate the length of the properties
-									if value
-										if value.length > 0
-											if key.length > max_property_name_length
-												errors.push(Array.new([2306, "Field too long: Property.name"]))
-												status = 400
-											end
-											
-											if key.length < min_property_name_length
-												errors.push(Array.new([2206, "Field too short: Property.name"]))
-												status = 400
-											end
-			
-											if value.length > max_property_value_length
-												errors.push(Array.new([2307, "Field too long: Property.value"]))
-												status = 400
-											end
-											
-											if value.length < min_property_value_length
-												errors.push(Array.new([2207, "Field too short: Property.value"]))
-												status = 400
-											end
-										end
-									end
-								end
-	
-								if errors.length == 0
-									# Create the event_log
-									event_log = EventLog.new(event_id: event.id)
-	
-									if !event_log.save
-										errors.push(Array.new([1103, "Unknown validation error"]))
-										status = 500
-									else
-										properties = Hash.new
-									
-										object.each do |key, value|
-											if value
-												if value.length > 0
-													if !EventLogProperty.create(event_log_id: event_log.id, name: key, value: value)
-														errors.push(Array.new([1103, "Unknown validation error"]))
-														status = 500
-													else
-														properties[key] = value
-													end
-												end
-											end
-										end
-									end
-	
-									if errors.length == 0
-										if save_country
-											# Get the country code and save it as event_log_property
-											ip = request.remote_ip
-		
-											begin
-												country_key = "country"
-	
-												country_code = JSON.parse(IpinfoIo::lookup(ip).body)["country"]
-		
-												ip_property = EventLogProperty.new(event_log_id: event_log.id, name: country_key, value: country_code)
-												if ip_property.save
-													properties[country_key] = country_code
-												end
-											rescue StandardError => e
-												puts e
-											end
-										end
-		
-										@result = event_log.attributes
-										@result["properties"] = properties
-										ok = true
-									end
-								end
-							end
-						end
+				# Create the new event
+				event = Event.new(name: name, app_id: app_id)
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(event.save))
+			end
+
+			object = ValidationService.parse_json(request.body.string)
+			object.each do |key, value|
+				if value
+					if value.length > 0
+						ValidationService.raise_validation_error(ValidationService.validate_property_name_too_short(key))
+						ValidationService.raise_validation_error(ValidationService.validate_property_value_too_short(value))
+						ValidationService.raise_validation_error(ValidationService.validate_property_name_too_long(key))
+						ValidationService.raise_validation_error(ValidationService.validate_property_value_too_long(value))
 					end
 				end
 			end
-		end
 
-		if ok && errors.length == 0
-         status = 201
-      else
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
+			# Create the event logs
+			event_log = EventLog.new(event_id: event.id)
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(event_log.save))
+
+			properties = Hash.new
+
+			object.each do |key, value|
+				if value
+					if value.length > 0
+						event_log_property = EventLogProperty.new(event_log_id: event_log.id, name: key, value: value)
+						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(event_log_property.save))
+						properties[key] = value
+					end
+				end
+			end
+
+			if save_country
+				# Get the country code and save it as event_log_property
+				ip = request.remote_ip
+
+				begin
+					country_key = "country"
+					country_code = JSON.parse(IpinfoIo::lookup(ip).body)["country"]
+
+					ip_property = EventLogProperty.new(event_log_id: event_log.id, name: country_key, value: country_code)
+					if ip_property.save
+						properties[country_key] = country_code
+					end
+				rescue StandardError => e
+					puts e
+				end
+			end
+
+			result = event_log.attributes
+			result["properties"] = properties
+
+			render json: result, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			# Handle exceptions
+			errors = Array.new
+			validations.each do |validation|
+				errors.push(validation["error"])
+			end
+
+			result = Hash.new
+			result["errors"] = errors
+
+			render json: result, status: validations.last["status"] 
+		end
 	end
    
    def get_event
