@@ -87,82 +87,89 @@ class AnalyticsController < ApplicationController
 								end
 							end
 
-							json = request.body.string
-							object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-
-							object.each do |key, value|
-								# Validate the length of the properties
-								if value
-									if value.length > 0
-										if key.length > max_property_name_length
-											errors.push(Array.new([2306, "Field too long: Property.name"]))
-											status = 400
-										end
-										
-										if key.length < min_property_name_length
-											errors.push(Array.new([2206, "Field too short: Property.name"]))
-											status = 400
-										end
-		
-										if value.length > max_property_value_length
-											errors.push(Array.new([2307, "Field too long: Property.value"]))
-											status = 400
-										end
-										
-										if value.length < min_property_value_length
-											errors.push(Array.new([2207, "Field too short: Property.value"]))
-											status = 400
+							begin
+								json = request.body.string
+								object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
+							rescue Exception => e
+								errors.push(Array.new([1103, "Unknown validation error"]))
+								status = 500
+							end
+							
+							if errors.length == 0
+								object.each do |key, value|
+									# Validate the length of the properties
+									if value
+										if value.length > 0
+											if key.length > max_property_name_length
+												errors.push(Array.new([2306, "Field too long: Property.name"]))
+												status = 400
+											end
+											
+											if key.length < min_property_name_length
+												errors.push(Array.new([2206, "Field too short: Property.name"]))
+												status = 400
+											end
+			
+											if value.length > max_property_value_length
+												errors.push(Array.new([2307, "Field too long: Property.value"]))
+												status = 400
+											end
+											
+											if value.length < min_property_value_length
+												errors.push(Array.new([2207, "Field too short: Property.value"]))
+												status = 400
+											end
 										end
 									end
 								end
-							end
-
-							if errors.length == 0
-								# Create the event_log
-								event_log = EventLog.new(event_id: event.id)
-
-								if !event_log.save
-									errors.push(Array.new([1103, "Unknown validation error"]))
-									status = 500
-								else
-									properties = Hash.new
-								
-									object.each do |key, value|
-										if value
-											if value.length > 0
-												if !EventLogProperty.create(event_log_id: event_log.id, name: key, value: value)
-													errors.push(Array.new([1103, "Unknown validation error"]))
-													status = 500
-												else
-													properties[key] = value
+	
+								if errors.length == 0
+									# Create the event_log
+									event_log = EventLog.new(event_id: event.id)
+	
+									if !event_log.save
+										errors.push(Array.new([1103, "Unknown validation error"]))
+										status = 500
+									else
+										properties = Hash.new
+									
+										object.each do |key, value|
+											if value
+												if value.length > 0
+													if !EventLogProperty.create(event_log_id: event_log.id, name: key, value: value)
+														errors.push(Array.new([1103, "Unknown validation error"]))
+														status = 500
+													else
+														properties[key] = value
+													end
 												end
 											end
 										end
 									end
-								end
-
-								if errors.length == 0
-									if save_country
-										# Get the country code and save it as event_log_property
-										ip = request.remote_ip
 	
-										begin
-											country_key = "country"
-
-											country_code = JSON.parse(IpinfoIo::lookup(ip).body)["country"]
+									if errors.length == 0
+										if save_country
+											# Get the country code and save it as event_log_property
+											ip = request.remote_ip
+		
+											begin
+												country_key = "country"
 	
-											ip_property = EventLogProperty.new(event_log_id: event_log.id, name: country_key, value: country_code)
-											if ip_property.save
-												properties[country_key] = country_code
+												country_code = JSON.parse(IpinfoIo::lookup(ip).body)["country"]
+		
+												ip_property = EventLogProperty.new(event_log_id: event_log.id, name: country_key, value: country_code)
+												if ip_property.save
+													properties[country_key] = country_code
+												end
+											rescue StandardError => e
+												puts e
 											end
-										rescue StandardError => e
-											puts e
 										end
+		
+										@result = event_log.attributes
+										@result["properties"] = properties
+										ok = true
 									end
-	
-									@result = event_log.attributes
-									@result["properties"] = properties
-									ok = true
 								end
 							end
 						end
@@ -508,43 +515,50 @@ class AnalyticsController < ApplicationController
                            if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
                               errors.push(Array.new([1104, "Content-type not supported"]))
                               status = 415
-                           else
-										json = request.body.string
-										object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-                              
-                              name = object["name"]
-                              if name
-                                 # Validate properties
-                                 if name.length > max_event_name_length
-                                    errors.push(Array.new([2303, "Field too long: name"]))
-                                    status = 400
-                                 end
-                                 
-                                 if name.length < min_event_name_length
-                                    errors.push(Array.new([2203, "Field too short: name"]))
-                                    status = 400
-                                 end
-                                 
-                                 if Event.exists?(name: name, app_id: app.id) && event.name != name
-                                    errors.push(Array.new([2703, "Field already taken: name"]))
-                                    status = 400
-                                 end
-                                 
-                                 if errors.length == 0
-                                    event.name = name
-                                 end
-                              end
-                           end
-                           
-                           if errors.length == 0
-                              if !event.save
-                                 errors.push(Array.new([1103, "Unknown validation error"]))
-                                 status = 500
-                              else
-                                 @result = event.attributes
-                                 ok = true
-                              end
-                           end
+									else
+										begin
+											json = request.body.string
+											object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
+										rescue Exception => e
+											errors.push(Array.new([1103, "Unknown validation error"]))
+											status = 500
+										end
+										
+										if errors.length == 0
+											name = object["name"]
+											if name
+												# Validate properties
+												if name.length > max_event_name_length
+													errors.push(Array.new([2303, "Field too long: name"]))
+													status = 400
+												end
+												
+												if name.length < min_event_name_length
+													errors.push(Array.new([2203, "Field too short: name"]))
+													status = 400
+												end
+												
+												if Event.exists?(name: name, app_id: app.id) && event.name != name
+													errors.push(Array.new([2703, "Field already taken: name"]))
+													status = 400
+												end
+												
+												if errors.length == 0
+													event.name = name
+												end
+											end
+										end
+										
+										if errors.length == 0
+											if !event.save
+												errors.push(Array.new([1103, "Unknown validation error"]))
+												status = 500
+											else
+												@result = event.attributes
+												ok = true
+											end
+										end
+									end
                         end
                      end
                   end

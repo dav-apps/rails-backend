@@ -389,80 +389,87 @@ class AppsController < ApplicationController
                         if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
                            errors.push(Array.new([1104, "Content-type not supported"]))
                            status = 415
-                        else
-                           json = request.body.string
-									object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-                           
-                           name = object["name"]
-                           if name
-                              if name.length < min_app_name_length
-                                 errors.push(Array.new([2203, "Field too short: name"]))
-                                 status = 400
-                              end
-                              
-                              if name.length > max_app_name_length
-                                 errors.push(Array.new([2303, "Field too long: name"]))
-                                 status = 400
-                              end
-                              
-                              if errors.length == 0
-                                 app.name = name
-                              end
-                           end
-                           
-                           desc = object["description"]
-                           if desc
-                              if desc.length < min_app_desc_length
-                                 errors.push(Array.new([2204, "Field too short: description"]))
-                                 status = 400
-                              end
-                              
-                              if desc.length > max_app_desc_length
-                                 errors.push(Array.new([2304, "Field too long: description"]))
-                                 status = 400
-                              end
-                              
-                              if errors.length == 0
-                                 app.description = desc
-                              end
+								else
+									begin
+                           	json = request.body.string
+										object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
+									rescue Exception => e
+										errors.push(Array.new([1103, "Unknown validation error"]))
+										status = 500
 									end
 									
-									link_web = object["link_web"]
-									if link_web
-										if link_web == link_blank_string
-											app.link_web = ""
-										elsif !validate_url(link_web)
-											# Invalid link
-											errors.push(Array.new([2402, "Field not valid: link_web"]))
-											status = 400
-										else
-											app.link_web = link_web
+									if errors.length == 0
+										name = object["name"]
+										if name
+											if name.length < min_app_name_length
+												errors.push(Array.new([2203, "Field too short: name"]))
+												status = 400
+											end
+											
+											if name.length > max_app_name_length
+												errors.push(Array.new([2303, "Field too long: name"]))
+												status = 400
+											end
+											
+											if errors.length == 0
+												app.name = name
+											end
 										end
-									end
-
-									link_play = object["link_play"]
-									if link_play
-										if link_play == link_blank_string
-											app.link_play = ""
-										elsif !validate_url(link_play)
-											# Invalid link
-											errors.push(Array.new([2403, "Field not valid: link_play"]))
-											status = 400
-										else
-											app.link_play = link_play
+                           
+										desc = object["description"]
+										if desc
+											if desc.length < min_app_desc_length
+												errors.push(Array.new([2204, "Field too short: description"]))
+												status = 400
+											end
+											
+											if desc.length > max_app_desc_length
+												errors.push(Array.new([2304, "Field too long: description"]))
+												status = 400
+											end
+											
+											if errors.length == 0
+												app.description = desc
+											end
 										end
-									end
+										
+										link_web = object["link_web"]
+										if link_web
+											if link_web == link_blank_string
+												app.link_web = ""
+											elsif !validate_url(link_web)
+												# Invalid link
+												errors.push(Array.new([2402, "Field not valid: link_web"]))
+												status = 400
+											else
+												app.link_web = link_web
+											end
+										end
 
-									link_windows = object["link_windows"]
-									if link_windows
-										if link_windows == link_blank_string
-											app.link_windows = ""
-										elsif !validate_url(link_windows)
-											# Invalid link
-											errors.push(Array.new([2404, "Field not valid: link_windows"]))
-											status = 400
-										else
-											app.link_windows = link_windows
+										link_play = object["link_play"]
+										if link_play
+											if link_play == link_blank_string
+												app.link_play = ""
+											elsif !validate_url(link_play)
+												# Invalid link
+												errors.push(Array.new([2403, "Field not valid: link_play"]))
+												status = 400
+											else
+												app.link_play = link_play
+											end
+										end
+
+										link_windows = object["link_windows"]
+										if link_windows
+											if link_windows == link_blank_string
+												app.link_windows = ""
+											elsif !validate_url(link_windows)
+												# Invalid link
+												errors.push(Array.new([2404, "Field not valid: link_windows"]))
+												status = 400
+											else
+												app.link_windows = link_windows
+											end
 										end
 									end
                         end
@@ -734,68 +741,75 @@ class AppsController < ApplicationController
 													status = 500
 												else
 													# Get the body of the request
-													json = request.body.string
-													object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-													
-													if object.length < 1
-														errors.push(Array.new([2116, "Missing field: object"]))
-														status = 400
-													else
-														object.each do |key, value|
-															# Validate the length of the properties
-															if value
-																if value.length > 0
-																	if key.length > max_property_name_length
-																		errors.push(Array.new([2306, "Field too long: Property.name"]))
-																		status = 400
-																	end
-																	
-																	if key.length < min_property_name_length
-																		errors.push(Array.new([2206, "Field too short: Property.name"]))
-																		status = 400
-																	end
-																	
-																	if value.length > max_property_value_length
-																		errors.push(Array.new([2307, "Field too long: Property.value"]))
-																		status = 400
-																	end
-																	
-																	if value.length < min_property_value_length
-																		errors.push(Array.new([2207, "Field too short: Property.value"]))
-																		status = 400
-																	end
-																end
-															end
-														end
+													begin
+														json = request.body.string
+														object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
+													rescue Exception => e
+														errors.push(Array.new([1103, "Unknown validation error"]))
+														status = 500
 													end
 													
 													if errors.length == 0
-														properties = Hash.new
-														
-														object.each do |key, value|
-															if value
-																if value.length > 0
-																	if !Property.create(table_object_id: obj.id, name: key, value: value)
-																		errors.push(Array.new([1103, "Unknown validation error"]))
-																		status = 500
-																	else
-																		properties[key] = value
+														if object.length < 1
+															errors.push(Array.new([2116, "Missing field: object"]))
+															status = 400
+														else
+															object.each do |key, value|
+																# Validate the length of the properties
+																if value
+																	if value.length > 0
+																		if key.length > max_property_name_length
+																			errors.push(Array.new([2306, "Field too long: Property.name"]))
+																			status = 400
+																		end
+																		
+																		if key.length < min_property_name_length
+																			errors.push(Array.new([2206, "Field too short: Property.name"]))
+																			status = 400
+																		end
+																		
+																		if value.length > max_property_value_length
+																			errors.push(Array.new([2307, "Field too long: Property.value"]))
+																			status = 400
+																		end
+																		
+																		if value.length < min_property_value_length
+																			errors.push(Array.new([2207, "Field too short: Property.value"]))
+																			status = 400
+																		end
 																	end
 																end
 															end
 														end
 														
-														# Save that user uses the app
-														if !user.apps.find_by_id(app.id)
-															users_app = UsersApp.create(app_id: app.id, user_id: user.id)
-															users_app.save
+														if errors.length == 0
+															properties = Hash.new
+															
+															object.each do |key, value|
+																if value
+																	if value.length > 0
+																		if !Property.create(table_object_id: obj.id, name: key, value: value)
+																			errors.push(Array.new([1103, "Unknown validation error"]))
+																			status = 500
+																		else
+																			properties[key] = value
+																		end
+																	end
+																end
+															end
+															
+															# Save that user uses the app
+															if !user.apps.find_by_id(app.id)
+																users_app = UsersApp.create(app_id: app.id, user_id: user.id)
+																users_app.save
+															end
+															
+															@result = obj.attributes
+															@result["properties"] = properties
+															@result["etag"] = generate_table_object_etag(obj)
+															
+															ok = true
 														end
-														
-														@result = obj.attributes
-														@result["properties"] = properties
-														@result["etag"] = generate_table_object_etag(obj)
-														
-														ok = true
 													end
 												end
 											end
@@ -1265,70 +1279,77 @@ class AppsController < ApplicationController
 														status = 415
 													else
 														# Update the properties of the object
-														json = request.body.string
-														object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-														
-														object.each do |key, value|
-															if value
-																if value.length > 0
-																	# Validate the length of the properties
-																	if key.length > max_property_name_length
-																		errors.push(Array.new([2306, "Field too long: Property.name"]))
-																		status = 400
-																	end
-																	
-																	if key.length < min_property_name_length
-																		errors.push(Array.new([2206, "Field too short: Property.name"]))
-																		status = 400
-																	end
-																	
-																	if value.length > max_property_value_length
-																		errors.push(Array.new([2307, "Field too long: Property.value"]))
-																		status = 400
-																	end
-																	
-																	if value.length < min_property_value_length
-																		errors.push(Array.new([2207, "Field too short: Property.value"]))
-																		status = 400
-																	end
-																end
-															end
+														begin
+															json = request.body.string
+															object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
+														rescue Exception => e
+															errors.push(Array.new([1103, "Unknown validation error"]))
+															status = 500
 														end
-
+														
 														if errors.length == 0
-															properties = Hash.new
 															object.each do |key, value|
-																prop = Property.find_by(name: key, table_object_id: obj.id)
-																
 																if value
-																	if !prop && value.length > 0		# If the property does not exist and there is a value, create the property
-																		new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
-																		
-																		if !new_prop.save
-																			errors.push(Array.new([1103, "Unknown validation error"]))
-																			status = 500
-																		else
-																			properties[key] = value
+																	if value.length > 0
+																		# Validate the length of the properties
+																		if key.length > max_property_name_length
+																			errors.push(Array.new([2306, "Field too long: Property.name"]))
+																			status = 400
 																		end
-																	elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
-																		prop.destroy!
-																	elsif value.length > 0
-																		prop.update(name: key, value: value)
-																		if !prop.save
-																			errors.push(Array.new([1103, "Unknown validation error"]))
-																			status = 500
-																		else
-																			properties[key] = value
+																		
+																		if key.length < min_property_name_length
+																			errors.push(Array.new([2206, "Field too short: Property.name"]))
+																			status = 400
+																		end
+																		
+																		if value.length > max_property_value_length
+																			errors.push(Array.new([2307, "Field too long: Property.value"]))
+																			status = 400
+																		end
+																		
+																		if value.length < min_property_value_length
+																			errors.push(Array.new([2207, "Field too short: Property.value"]))
+																			status = 400
 																		end
 																	end
 																end
 															end
-															
-															@result = obj.attributes
-															@result["properties"] = properties
-															@result["etag"] = generate_table_object_etag(obj)
-															
-															ok = true
+
+															if errors.length == 0
+																properties = Hash.new
+																object.each do |key, value|
+																	prop = Property.find_by(name: key, table_object_id: obj.id)
+																	
+																	if value
+																		if !prop && value.length > 0		# If the property does not exist and there is a value, create the property
+																			new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+																			
+																			if !new_prop.save
+																				errors.push(Array.new([1103, "Unknown validation error"]))
+																				status = 500
+																			else
+																				properties[key] = value
+																			end
+																		elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
+																			prop.destroy!
+																		elsif value.length > 0
+																			prop.update(name: key, value: value)
+																			if !prop.save
+																				errors.push(Array.new([1103, "Unknown validation error"]))
+																				status = 500
+																			else
+																				properties[key] = value
+																			end
+																		end
+																	end
+																end
+																
+																@result = obj.attributes
+																@result["properties"] = properties
+																@result["etag"] = generate_table_object_etag(obj)
+																
+																ok = true
+															end
 														end
 													end
 												end
@@ -1880,32 +1901,39 @@ class AppsController < ApplicationController
                            if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
                               errors.push(Array.new([1104, "Content-type not supported"]))
                               status = 415
-                           else
-                              json = request.body.string
-										object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-                              
-                              name = object["name"]
-                              if name
-                                 # Validate the table name
-                                 if name.length > max_table_name_length
-                                    errors.push(Array.new([2303, "Field too long: name"]))
-                                    status = 400
-                                 end
-                                 
-                                 if name.length < min_table_name_length
-                                    errors.push(Array.new([2203, "Field too short: name"]))
-                                    status = 400
-                                 end
-                                 
-                                 if name.include? " "
-                                    errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
-                                    status = 400
-                                 end
-                              end
-                              
-                              if errors.length == 0
-                                 table.name = (name[0].upcase + name[1..-1])
-                              end
+									else
+										begin
+                              	json = request.body.string
+											object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
+										rescue Exception => e
+											errors.push(Array.new([1103, "Unknown validation error"]))
+											status = 500
+										end
+										
+										if errors.length == 0
+											name = object["name"]
+											if name
+												# Validate the table name
+												if name.length > max_table_name_length
+													errors.push(Array.new([2303, "Field too long: name"]))
+													status = 400
+												end
+												
+												if name.length < min_table_name_length
+													errors.push(Array.new([2203, "Field too short: name"]))
+													status = 400
+												end
+												
+												if name.include? " "
+													errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
+													status = 400
+												end
+											end
+											
+											if errors.length == 0
+												table.name = (name[0].upcase + name[1..-1])
+											end
+										end
                            end
                            
                            if errors.length == 0

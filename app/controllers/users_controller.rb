@@ -533,219 +533,226 @@ class UsersController < ApplicationController
                         email_changed = false
 								password_changed = false
 								
-                        json = request.body.string
-								object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-                        
-                        email = object["email"]
-                        if email && email.length > 0
-                           if !validate_email(email)
-                              errors.push(Array.new([2401, "Field not valid: email"]))
-                              status = 400
-                           end
-                           
-                           if errors.length == 0
-                              # Set email_confirmation_token and send email
-                              user.new_email = email
-                              user.email_confirmation_token = generate_token
-                              email_changed = true
-                           end
-                        end
-                        
-                        username = object["username"]
-                        if username && username.length > 0
-                           if username.length < min_username_length
-                              errors.push(Array.new([2201, "Field too short: username"]))
-                              status = 400
-                           end
-                           
-                           if username.length > max_username_length
-                              errors.push(Array.new([2301, "Field too long: username"]))
-                              status = 400
-                           end
-                           
-                           if User.exists?(username: username)
-                              errors.push(Array.new([2701, "Field already taken: username"]))
-                              status = 400
-                           end
-                           
-                           if errors.length == 0
-                              user.username = username
-                           end
-                        end
-                        
-                        password = object["password"]
-                        if password && password.length > 0
-                           if password.length < min_password_length
-                              errors.push(Array.new([2202, "Field too short: password"]))
-                              status = 400
-                           end
-                           
-                           if password.length > max_password_length
-                              errors.push(Array.new([2302, "Field too long: password"]))
-                              status = 400
-                           end
-                           
-                           if errors.length == 0
-										# Set password_confirmation_token and send email
-                              user.new_password = BCrypt::Password.create(password)
-                              user.password_confirmation_token = generate_token
-                              password_changed = true
-                           end
-                        end
-
-                        avatar = object["avatar"]
-                        if avatar && avatar.length > 0
-                           if errors.length == 0
-                              begin
-                                 filename = user.id.to_s + ".png"
-											bytes = Base64.decode64(avatar)
-											img = MiniMagick::Image.read(bytes)
-											format = img.type
-
-                                 if format == "png" || format == "PNG" || format == "jpg" || format == "JPG" || format == "jpeg" || format == "JPEG"
-                                    # file extension okay
-                                    png_bytes = img.to_blob { |attrs| attrs.format = 'PNG' }
-
-                                    Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-                                    Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-                                    client = Azure::Blob::BlobService.new
-                                    blob = client.create_block_blob(ENV["AZURE_AVATAR_CONTAINER_NAME"], filename, png_bytes)
-                                 else
-                                    errors.push(Array.new([1109, "File extension not supported"]))
-                                    status = 400
-                                 end
-										rescue Exception => e
-											puts e
-                                 errors.push(Array.new([1103, "Unknown validation error"]))
-                                 status = 400
-                              end
-                           end
+								begin
+                        	json = request.body.string
+									object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
+								rescue Exception => e
+									errors.push(Array.new([1103, "Unknown validation error"]))
+									status = 500
 								end
 								
-								payment_token = object["payment_token"]
-
-								if payment_token
-									# Check if the user is saved on stripe
-									if user.stripe_customer_id
-										# Get the customer object
-										begin
-											customer = Stripe::Customer.retrieve(user.stripe_customer_id)
-											customer.source = payment_token
-											customer.save
-										rescue Stripe::InvalidRequestError => e
-											errors.push(Array.new([2405, "Field not valid: payment_token"]))
+								if errors.length == 0
+									email = object["email"]
+									if email && email.length > 0
+										if !validate_email(email)
+											errors.push(Array.new([2401, "Field not valid: email"]))
 											status = 400
+										end
+										
+										if errors.length == 0
+											# Set email_confirmation_token and send email
+											user.new_email = email
+											user.email_confirmation_token = generate_token
+											email_changed = true
 										end
 									end
 									
-									if !customer && errors.length == 0
-										begin
-											# Create a new customer object with the token information
-											customer = Stripe::Customer.create(
-												:email => user.email,
-												:source  => payment_token
-											)
-
-											user.stripe_customer_id = customer.id
-										rescue Stripe::InvalidRequestError => e
-											errors.push(Array.new([2405, "Field not valid: payment_token"]))
+									username = object["username"]
+									if username && username.length > 0
+										if username.length < min_username_length
+											errors.push(Array.new([2201, "Field too short: username"]))
 											status = 400
 										end
-									end
-								end
-
-								plan = object["plan"]
-
-								if plan
-									if plan != 0 && plan != 1
-										errors.push(Array.new([1108, "Plan does not exist"]))
-										status = 400
-									else
-										# Check if the user is saved on stripe
-										if !user.stripe_customer_id
-											errors.push(Array.new([1113, "Please add your payment information"]))
+										
+										if username.length > max_username_length
+											errors.push(Array.new([2301, "Field too long: username"]))
 											status = 400
-										else
+										end
+										
+										if User.exists?(username: username)
+											errors.push(Array.new([2701, "Field already taken: username"]))
+											status = 400
+										end
+										
+										if errors.length == 0
+											user.username = username
+										end
+									end
+									
+									password = object["password"]
+									if password && password.length > 0
+										if password.length < min_password_length
+											errors.push(Array.new([2202, "Field too short: password"]))
+											status = 400
+										end
+										
+										if password.length > max_password_length
+											errors.push(Array.new([2302, "Field too long: password"]))
+											status = 400
+										end
+										
+										if errors.length == 0
+											# Set password_confirmation_token and send email
+											user.new_password = BCrypt::Password.create(password)
+											user.password_confirmation_token = generate_token
+											password_changed = true
+										end
+									end
+
+									avatar = object["avatar"]
+									if avatar && avatar.length > 0
+										if errors.length == 0
+											begin
+												filename = user.id.to_s + ".png"
+												bytes = Base64.decode64(avatar)
+												img = MiniMagick::Image.read(bytes)
+												format = img.type
+
+												if format == "png" || format == "PNG" || format == "jpg" || format == "JPG" || format == "jpeg" || format == "JPEG"
+													# file extension okay
+													png_bytes = img.to_blob { |attrs| attrs.format = 'PNG' }
+
+													Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+													Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+
+													client = Azure::Blob::BlobService.new
+													blob = client.create_block_blob(ENV["AZURE_AVATAR_CONTAINER_NAME"], filename, png_bytes)
+												else
+													errors.push(Array.new([1109, "File extension not supported"]))
+													status = 400
+												end
+											rescue Exception => e
+												puts e
+												errors.push(Array.new([1103, "Unknown validation error"]))
+												status = 400
+											end
+										end
+									end
+									
+									payment_token = object["payment_token"]
+
+									if payment_token
+										# Check if the user is saved on stripe
+										if user.stripe_customer_id
 											# Get the customer object
 											begin
 												customer = Stripe::Customer.retrieve(user.stripe_customer_id)
-											rescue => e
-												puts e
+												customer.source = payment_token
+												customer.save
+											rescue Stripe::InvalidRequestError => e
+												errors.push(Array.new([2405, "Field not valid: payment_token"]))
+												status = 400
 											end
+										end
+										
+										if !customer && errors.length == 0
+											begin
+												# Create a new customer object with the token information
+												customer = Stripe::Customer.create(
+													:email => user.email,
+													:source  => payment_token
+												)
 
-											# Process the payment
-											plus_plan_product = Stripe::Product.retrieve(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'])
-											plus_plan = Stripe::Plan.retrieve(ENV['STRIPE_DAV_PLUS_EUR_PLAN_ID'])
+												user.stripe_customer_id = customer.id
+											rescue Stripe::InvalidRequestError => e
+												errors.push(Array.new([2405, "Field not valid: payment_token"]))
+												status = 400
+											end
+										end
+									end
 
-											# Update the current subscription or create a new one
-											subscription = Stripe::Subscription.list(customer: user.stripe_customer_id).data.first
+									plan = object["plan"]
 
-											if !subscription
-												if plan == 1
-													# Create new subscription
-													subscription = Stripe::Subscription.create(
-														:customer => user.stripe_customer_id,
-														:items => [
-															{
-																:plan => plus_plan.id,
-															},
-														]
-													)
-													user.plan = 1
-													user.subscription_status = 0
-												end
+									if plan
+										if plan != 0 && plan != 1
+											errors.push(Array.new([1108, "Plan does not exist"]))
+											status = 400
+										else
+											# Check if the user is saved on stripe
+											if !user.stripe_customer_id
+												errors.push(Array.new([1113, "Please add your payment information"]))
+												status = 400
 											else
-												if plan == 0
-													# Delete the subscription
-													subscription.delete(at_period_end: true)
-													user.subscription_status = 1
-												elsif plan == 1
-													# If the user is on plan 2
-													if subscription.items.data[0].plan.product != plus_plan_product
-														# Change the subscription to the plus plan
-														subscription.items.data[0].plan = plus_plan.id
-														subscription.save
+												# Get the customer object
+												begin
+													customer = Stripe::Customer.retrieve(user.stripe_customer_id)
+												rescue => e
+													puts e
+												end
+
+												# Process the payment
+												plus_plan_product = Stripe::Product.retrieve(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'])
+												plus_plan = Stripe::Plan.retrieve(ENV['STRIPE_DAV_PLUS_EUR_PLAN_ID'])
+
+												# Update the current subscription or create a new one
+												subscription = Stripe::Subscription.list(customer: user.stripe_customer_id).data.first
+
+												if !subscription
+													if plan == 1
+														# Create new subscription
+														subscription = Stripe::Subscription.create(
+															:customer => user.stripe_customer_id,
+															:items => [
+																{
+																	:plan => plus_plan.id,
+																},
+															]
+														)
 														user.plan = 1
 														user.subscription_status = 0
+													end
+												else
+													if plan == 0
+														# Delete the subscription
+														subscription.delete(at_period_end: true)
+														user.subscription_status = 1
+													elsif plan == 1
+														# If the user is on plan 2
+														if subscription.items.data[0].plan.product != plus_plan_product
+															# Change the subscription to the plus plan
+															subscription.items.data[0].plan = plus_plan.id
+															subscription.save
+															user.plan = 1
+															user.subscription_status = 0
+														end
 													end
 												end
 											end
 										end
 									end
+
+									
+									if errors.length == 0
+										# Update user with new properties
+										if !user.save
+											errors.push(Array.new([1103, "Unknown validation error"]))
+											status = 500
+										else
+											@result = user.attributes.except("email_confirmation_token", 
+																						"password_confirmation_token", 
+																						"new_password", 
+																						"password_digest",
+																						"stripe_customer_id")
+											avatar_info = BlobOperationsService.get_avatar_information(user.id)
+											@result["avatar"] = avatar_info[0]
+											@result["avatar_etag"] = avatar_info[1]
+											@result["total_storage"] = get_total_storage(user.plan)
+											@result["used_storage"] = user.used_storage
+											@result["apps"] = user.apps
+											@result["archives"] = user.archives
+
+											ok = true
+											
+											if email_changed
+												UserNotifier.send_change_email_email(user).deliver_later
+											end
+											
+											if password_changed
+												UserNotifier.send_change_password_email(user).deliver_later
+											end
+										end
+									end
 								end
-
-                        
-                        if errors.length == 0
-                           # Update user with new properties
-                           if !user.save
-                              errors.push(Array.new([1103, "Unknown validation error"]))
-                              status = 500
-                           else
-										@result = user.attributes.except("email_confirmation_token", 
-																					"password_confirmation_token", 
-																					"new_password", 
-																					"password_digest",
-																					"stripe_customer_id")
-										avatar_info = BlobOperationsService.get_avatar_information(user.id)
-                              @result["avatar"] = avatar_info[0]
-                              @result["avatar_etag"] = avatar_info[1]
-                              @result["total_storage"] = get_total_storage(user.plan)
-                              @result["used_storage"] = user.used_storage
-										@result["apps"] = user.apps
-										@result["archives"] = user.archives
-
-                              ok = true
-                              
-                              if email_changed
-											UserNotifier.send_change_email_email(user).deliver_later
-                              end
-                              
-										if password_changed
-											UserNotifier.send_change_password_email(user).deliver_later
-                              end
-                           end
-                        end
                      end
                   end
                end
