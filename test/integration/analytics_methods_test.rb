@@ -228,9 +228,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2111, resp["errors"][0][0])
+      assert_same(2102, resp["errors"][0][0])
       assert_same(2110, resp["errors"][1][0])
-      assert_same(2102, resp["errors"][2][0])
+      assert_same(2111, resp["errors"][2][0])
    end
 
    test "get_event_by_name can get all logs of an event by name" do

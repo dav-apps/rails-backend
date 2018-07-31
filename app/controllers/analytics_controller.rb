@@ -199,137 +199,91 @@ class AnalyticsController < ApplicationController
 			render json: result, status: validations.last["status"] 
 		end
 	end
-   
-   def get_event_by_name
-		event_name = params["name"]
+
+	def get_event_by_name
+		name = params["name"]
 		app_id = params["app_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		start_timestamp = params["start"]
 		end_timestamp = params["end"]
 
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !event_name || event_name.length < 1
-         errors.push(Array.new([2111, "Missing field: name"]))
-         status = 400
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			app_id_validation = ValidationService.validate_app_id(app_id)
+			name_validation = ValidationService.validate_name(name)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(app_id_validation) if !app_id_validation[:success]
+			errors.push(name_validation) if !name_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+
+			event = Event.find_by(name: name, app: app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_event(event))
+
+			# Make sure this is called from the website
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
+
+			# Return the data
+			result = event.attributes
+			
+			logs = Array.new
+			event.event_logs.each do |log|
+				# Check if the log was created within the specified timestamp
+				unix_time = DateTime.parse(log.created_at.to_s).strftime("%s")
+
+				if start_timestamp
+					if unix_time < start_timestamp
+						next
+					end
+				end
+
+				if end_timestamp
+					if unix_time > end_timestamp
+						next
+					end
+				end
+
+				log_hash = Hash.new
+				properties = Hash.new
+
+				log.event_log_properties.each do |property|
+					properties[property.name] = property.value
+				end
+
+				log_hash["id"] = log.id
+				log_hash["created_at"] = log.created_at
+				log_hash["properties"] = properties
+				logs.push(log_hash)
+			end
+
+			result["logs"] = logs
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)			
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"] 
 		end
-		
-		if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
-         status = 400
-      end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
-         
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-					else
-						app = App.find_by_id(app_id)
-                  
-						if !app
-							errors.push(Array.new([2803, "Resource does not exist: App"]))
-							status = 400
-						else
-							# Get the app of the event
-							event = Event.find_by(name: event_name, app: app_id)
-							
-							if !event
-								errors.push(Array.new([2807, "Resource does not exist: Event"]))
-								status = 404
-							else
-								# Make sure this can only be called from the website
-								if !((dev == Dev.first) && (app.dev == user.dev))
-									errors.push(Array.new([1102, "Action not allowed"]))
-									status = 403
-								else
-									@result = event.attributes
-									
-									logs = Array.new
-									event.event_logs.each do |log|
-										# Check if the log was created within the specified timestamp
-										unix_time = DateTime.parse(log.created_at.to_s).strftime("%s")
-
-										if start_timestamp
-											if unix_time < start_timestamp
-												next
-											end
-										end
-
-										if end_timestamp
-											if unix_time > end_timestamp
-												next
-											end
-										end
-
-										log_hash = Hash.new
-										properties = Hash.new
-
-										log.event_log_properties.each do |property|
-											properties[property.name] = property.value
-										end
-
-										log_hash["id"] = log.id
-										log_hash["created_at"] = log.created_at
-										log_hash["properties"] = properties
-										logs.push(log_hash)
-									end
-
-									@result["logs"] = logs
-
-									ok = true
-								end
-							end
-						end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
+	end
    
    define_method :update_event do
       event_id = params["id"]
