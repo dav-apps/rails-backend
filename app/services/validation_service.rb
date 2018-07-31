@@ -7,6 +7,15 @@ class ValidationService
 	min_property_value_length = 1
 	max_property_value_length = 65000
 
+	def self.get_errors_of_validations(validations)
+		errors = Array.new
+		validations.each do |validation|
+			errors.push(validation["error"])
+		end
+
+		return errors
+	end
+
 	def self.raise_validation_error(validation)
 		if !validation[:success]
 			raise RuntimeError, [validation].to_json
@@ -15,12 +24,17 @@ class ValidationService
 
 	def self.validate_app_belongs_to_dev(app, dev)
 		error_code = 1102
-		return app.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		app.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
+	def self.validate_website_call_and_user_is_app_dev(user, dev, app)
+		error_code = 1102
+		!((dev == Dev.first) && (app.dev == user.dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_unknown_validation_error(saved)
 		error_code = 1103
-		return !saved ? {success: false, error: [error_code, get_error_message(error_code)], status: 500} : {success: true}
+		!saved ? {success: false, error: [error_code, get_error_message(error_code)], status: 500} : {success: true}
 	end
 
 	def self.parse_json(json)
@@ -37,27 +51,54 @@ class ValidationService
 		if content_type == nil
 			content_type = ""
 		end
-		return !content_type.include?("application/json") ? {success: false, error: [error_code, get_error_message(error_code)], status: 415} : {success: true}
+		!content_type.include?("application/json") ? {success: false, error: [error_code, get_error_message(error_code)], status: 415} : {success: true}
+	end
+
+	def self.validate_jwt_signature(jwt)
+		begin
+			decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+			[{success: true}, decoded_jwt]
+		rescue JWT::ExpiredSignature
+			# JWT expired
+			error_code = 1301
+			[{success: false, error: [error_code, get_error_message(error_code)], status: 401}]
+		rescue JWT::DecodeError
+			error_code = 1302
+			[{success: false, error: [error_code, get_error_message(error_code)], status: 401}]
+		rescue Exception
+			error_code = 1303
+			[{success: false, error: [error_code, get_error_message(error_code)], status: 401}]
+		end
+	end
+
+	def self.validate_jwt(jwt)
+		error_code = 2102
+		!jwt || jwt.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
+	end
+
+	def self.validate_event_id(event_id)
+		error_code = 2103
+		!event_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_app_id(app_id)
 		error_code = 2110
-		return !app_id ? {success: false, error: [2110, "Missing field: app_id"], status: 400} : {success: true}
+		!app_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_name(name)
 		error_code = 2111
-		return !name || name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!name || name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_api_key(api_key)
 		error_code = 2118
-		return !api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_event_name_too_long do |name|
 		error_code = 2303
-		return name.length > max_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		name.length > max_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_event_name_too_short do |name|
@@ -85,14 +126,24 @@ class ValidationService
 		value.length > max_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_user(user)
+		error_code = 2801
+		!user ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_dev(dev)
 		error_code = 2802
-		return !dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_app(app)
 		error_code = 2803
-		return !app ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!app ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_event(event)
+		error_code = 2807
+		!event ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.get_error_message(code)
