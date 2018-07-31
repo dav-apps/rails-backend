@@ -455,98 +455,64 @@ class AnalyticsController < ApplicationController
 	def get_users
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
-		errors = Array.new
-      @result = Hash.new
-		ok = false
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			errors = Array.new
 
-		if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-		end
+			errors.push(jwt_validation) if !jwt_validation[:success]
 
-		if errors.length == 0
-			jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
 			end
 
-			if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-				dev_id = decoded_jwt[0]["dev_id"]
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-				user = User.find_by_id(user_id)
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
 
-				if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-				else
-					dev = Dev.find_by_id(dev_id)
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
 
-					if !dev
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-					else
-						if dev != Dev.first
-							errors.push(Array.new([1102, "Action not allowed"]))
-							status = 403
-						else
-							if user.dev != dev
-								errors.push(Array.new([1102, "Action not allowed"]))
-								status = 403
-							else
-								# Return the requested information
-								users = Array.new
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_users_dev_is_dev(user, dev))
 
-								User.all.each do |user|
-									hash = Hash.new
+			# Return the data
+			users = Array.new
+			result = Hash.new
 
-									hash["id"] = user.id
-									hash["created_at"] = user.created_at
-									hash["updated_at"] = user.updated_at
-									hash["confirmed"] = user.confirmed
-									hash["plan"] = user.plan
+			User.all.each do |user|
+				hash = Hash.new
 
-									apps = Array.new
-									user.apps.each do |app|
-										app_hash = Hash.new
-										app_hash["id"] = app.id
-										app_hash["name"] = app.name
-										apps.push(app_hash)
-									end
+				hash["id"] = user.id
+				hash["created_at"] = user.created_at
+				hash["updated_at"] = user.updated_at
+				hash["confirmed"] = user.confirmed
+				hash["plan"] = user.plan
 
-									hash["apps"] = apps
-
-									users.push(hash)
-								end
-
-								@result["users"] = users
-								ok = true
-							end
-						end
-					end
+				apps = Array.new
+				user.apps.each do |app|
+					app_hash = Hash.new
+					app_hash["id"] = app.id
+					app_hash["name"] = app.name
+					apps.push(app_hash)
 				end
-			end
-		end
 
-		if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
+				hash["apps"] = apps
+
+				users.push(hash)
+			end
+
+			result["users"] = users
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
 	end
 end

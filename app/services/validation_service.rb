@@ -27,6 +27,16 @@ class ValidationService
 		app.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
+	def self.validate_dev_is_first_dev(dev)
+		error_code = 1102
+		dev != Dev.first ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
+	def self.validate_users_dev_is_dev(user, dev)
+		error_code = 1102
+		user.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
 	def self.validate_website_call_and_user_is_app_dev(user, dev, app)
 		error_code = 1102
 		!((dev == Dev.first) && (app.dev == user.dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
@@ -133,22 +143,22 @@ class ValidationService
 
 	def self.validate_user(user)
 		error_code = 2801
-		!user ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!user ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
 	def self.validate_dev(dev)
 		error_code = 2802
-		!dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
 	def self.validate_app(app)
 		error_code = 2803
-		!app ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!app ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
 	def self.validate_event(event)
 		error_code = 2807
-		!event ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!event ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
 	def self.get_error_message(code)
