@@ -52,8 +52,8 @@ class AnalyticsController < ApplicationController
 
 			if !event
 				# Validate properties of the new event
-				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_long(name))
-				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_short(name))
+				ValidationService.raise_validation_error(ValidationService.validate_name_too_long(name))
+				ValidationService.raise_validation_error(ValidationService.validate_name_too_short(name))
 
 				# Create the new event
 				event = Event.new(name: name, app_id: app_id)
@@ -126,11 +126,11 @@ class AnalyticsController < ApplicationController
 
 		begin
 			jwt_validation = ValidationService.validate_jwt(jwt)
-			event_id_validation = ValidationService.validate_event_id(event_id)
+			id_validation = ValidationService.validate_id(event_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(event_id_validation) if !event_id_validation[:success]
+			errors.push(id_validation) if !id_validation[:success]
 
 			if errors.length > 0
 				raise RuntimeError, errors.to_json
@@ -277,147 +277,75 @@ class AnalyticsController < ApplicationController
 			result["logs"] = logs
 			render json: result, status: 200
 		rescue RuntimeError => e
-			validations = JSON.parse(e.message)			
+			validations = JSON.parse(e.message)
 			result = Hash.new
 			result["errors"] = ValidationService.get_errors_of_validations(validations)
 
-			render json: result, status: validations.last["status"] 
+			render json: result, status: validations.last["status"]
 		end
 	end
-   
-   define_method :update_event do
-      event_id = params["id"]
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !event_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
-         
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-               else
-                  event = Event.find_by_id(event_id)
-                  
-                  if !event
-                     errors.push(Array.new([2807, "Resource does not exist: Event"]))
-                     status = 400
-                  else
-                     app = App.find_by_id(event.app_id)
-                     
-                     if !app
-                        errors.push(Array.new([2803, "Resource does not exist: App"]))
-                        status = 400
-                     else
-                        # Make sure this can only be called from the website
-                        if !((dev == Dev.first) && (app.dev == user.dev))
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
-                        else
-                           if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
-                              errors.push(Array.new([1104, "Content-type not supported"]))
-                              status = 415
-									else
-										begin
-											json = request.body.string
-											object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-										rescue Exception => e
-											errors.push(Array.new([1103, "Unknown validation error"]))
-											status = 500
-										end
-										
-										if errors.length == 0
-											name = object["name"]
-											if name
-												# Validate properties
-												if name.length > max_event_name_length
-													errors.push(Array.new([2303, "Field too long: name"]))
-													status = 400
-												end
-												
-												if name.length < min_event_name_length
-													errors.push(Array.new([2203, "Field too short: name"]))
-													status = 400
-												end
-												
-												if Event.exists?(name: name, app_id: app.id) && event.name != name
-													errors.push(Array.new([2703, "Field already taken: name"]))
-													status = 400
-												end
-												
-												if errors.length == 0
-													event.name = name
-												end
-											end
-										end
-										
-										if errors.length == 0
-											if !event.save
-												errors.push(Array.new([1103, "Unknown validation error"]))
-												status = 500
-											else
-												@result = event.attributes
-												ok = true
-											end
-										end
-									end
-                        end
-                     end
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
+
+	def update_event
+		event_id = params["id"]
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			id_validation = ValidationService.validate_id(event_id)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(id_validation) if !id_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+
+			event = Event.find_by_id(event_id)
+			ValidationService.raise_validation_error(ValidationService.validate_event(event))
+			
+			app = App.find_by_id(event.app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+
+			# Make sure this is called from the website
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
+
+			# Only accept application/json as Content-Type
+			ValidationService.raise_validation_error(ValidationService.validate_content_type(request.headers["Content-Type"]))
+
+			object = ValidationService.parse_json(request.body.string)
+			name = object["name"]
+
+			if name
+				ValidationService.raise_validation_error(ValidationService.validate_name_too_short(name))
+				ValidationService.raise_validation_error(ValidationService.validate_name_too_long(name))
+				ValidationService.raise_validation_error(ValidationService.validate_event_name_taken(name, event.name, app.id))
+			end
+
+			event.name = name
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(event.save))
+
+			result = event.attributes
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
    
    def delete_event
       event_id = params["id"]

@@ -76,9 +76,9 @@ class ValidationService
 		!jwt || jwt.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
 	end
 
-	def self.validate_event_id(event_id)
+	def self.validate_id(id)
 		error_code = 2103
-		!event_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		!id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_app_id(app_id)
@@ -96,12 +96,7 @@ class ValidationService
 		!api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	define_singleton_method :validate_event_name_too_long do |name|
-		error_code = 2303
-		name.length > max_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
-	end
-
-	define_singleton_method :validate_event_name_too_short do |name|
+	define_singleton_method :validate_name_too_short do |name|
 		error_code = 2203
 		name.length < min_event_name_length ? {success: false, error: Array.new([error_code, get_error_message(error_code)]), status: 400} : {success: true}
 	end
@@ -116,6 +111,11 @@ class ValidationService
 		value.length < min_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_name_too_long do |name|
+		error_code = 2303
+		name.length > max_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_property_name_too_long do |name|
 		error_code = 2306
 		name.length > max_property_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -124,6 +124,11 @@ class ValidationService
 	define_singleton_method :validate_property_value_too_long do |value|
 		error_code = 2307
 		value.length > max_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_event_name_taken(new_name, old_name, app_id)
+		error_code = 2703
+		Event.exists?(name: new_name, app_id: app_id) && old_name != new_name ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_user(user)
