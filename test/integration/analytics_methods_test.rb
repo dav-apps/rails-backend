@@ -492,7 +492,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       get "/v1/analytics/app/2?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
 
-      assert_response 404
+      assert_response 400
       assert_same(2803, resp["errors"][0][0])
    end
 
