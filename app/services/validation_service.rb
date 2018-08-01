@@ -48,6 +48,11 @@ class ValidationService
 		!((dev == Dev.first) && (app.dev == user.dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
+	def self.validate_website_call_and_user_is_app_dev_or_user_is_dev(user, dev, app)
+		error_code = 1102
+		!(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
 	def self.validate_unknown_validation_error(saved)
 		error_code = 1103
 		!saved ? {success: false, error: [error_code, get_error_message(error_code)], status: 500} : {success: true}
