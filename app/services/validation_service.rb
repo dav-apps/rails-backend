@@ -28,6 +28,15 @@ class ValidationService
 		end
 	end
 
+	def self.validate_authorization(auth)
+		error_code = 1101
+		if auth
+         api_key = auth.split(",")[0]
+         sig = auth.split(",")[1]
+      end
+		!check_authorization(api_key, sig) ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
+	end
+
 	def self.validate_app_belongs_to_dev(app, dev)
 		error_code = 1102
 		app.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
@@ -90,6 +99,11 @@ class ValidationService
 			error_code = 1303
 			[{success: false, error: [error_code, get_error_message(error_code)], status: 401}]
 		end
+	end
+
+	def self.validate_auth(auth)
+		error_code = 2101
+		!auth || auth.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
 	end
 
 	def self.validate_jwt(jwt)
@@ -379,6 +393,27 @@ class ValidationService
 		else
 			raise RuntimeError, "The error code #{code} does not exist!"
 		end
+	end
+
+	def self.check_authorization(api_key, signature)
+      dev = Dev.find_by(api_key: api_key)
+      
+      if !dev
+         false
+      else
+         if api_key == dev.api_key
+            
+            new_sig = Base64.strict_encode64(OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid))
+            
+            if new_sig == signature
+               true
+            else
+               false
+            end
+         else
+            false
+         end
+      end
 	end
 
 	def self.validate_url(url)
