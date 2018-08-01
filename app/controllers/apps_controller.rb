@@ -238,7 +238,7 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
 			object = ValidationService.parse_json(request.body.string)
 			errors = Array.new
@@ -350,326 +350,208 @@ class AppsController < ApplicationController
 		end
 	end
    
-   # TableObject methods
-   define_method :create_object do
+	# TableObject methods
+	def create_object
 		table_name = params["table_name"]
 		table_id = params["table_id"]
       app_id = params["app_id"]
 		visibility = params["visibility"]
 		ext = params["ext"]
 		uuid = params["uuid"]
-      
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-		ok = false
-		
-		# Prefer table_name, if table_name and table_id is missing, return that table_name is missing
-      if (!table_name || table_name.length < 1) && !table_id
-         errors.push(Array.new([2113, "Missing field: table_name"]))
-         status = 400
-      end
-      
-      if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
-         status = 400
-      end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			app_id_validation = ValidationService.validate_app_id(app_id)
+			table_name_validation = ValidationService.validate_table_name_and_table_id(table_name, table_id)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(app_id_validation) if !app_id_validation[:success]
+			errors.push(table_name_validation) if !table_name_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
 			end
-			
-			if jwt_valid
-				user_id = decoded_jwt[0]["user_id"]
-				dev_id = decoded_jwt[0]["dev_id"]
 
-				user = User.find_by_id(user_id)
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-				if !user
-					errors.push(Array.new([2801, "Resource does not exist: User"]))
-					status = 400
-				else
-					dev = Dev.find_by_id(dev_id)
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
 
-					if !dev
-						errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-						status = 400
-					else
-						app = App.find_by_id(app_id)
-						# Check if the app exists
-						if !app
-							errors.push(Array.new([2803, "Resource does not exist: App"]))
-							status = 400
-						else
-							if app.dev_id != dev.id       # Check if the app belongs to the dev
-								errors.push(Array.new([1102, "Action not allowed"]))
-								status = 403
-							else
-								# Try to get the table by the table_id
-								if table_id
-									table = Table.find_by(id: table_id, app_id: app_id)
-								else
-									table = Table.find_by(name: table_name, app_id: app_id)
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
 
-									if !table
-										# Only create the table when the dev is logged in
-										if dev.user_id != user.id
-											errors.push(Array.new([2804, "Resource does not exist: Table"]))
-											status = 400
-										else
-											# Check if table_name is too long or too short
-											if table_name.length > max_table_name_length
-												errors.push(Array.new([2305, "Field too long: table_name"]))
-												status = 400
-											end
-											
-											if table_name.length < min_table_name_length
-												errors.push(Array.new([2205, "Field too short: table_name"]))
-												status = 400
-											end
-											
-											if table_name.include? " "
-												errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
-												status = 400
-											end
-											
-											# Create a new table
-											table = Table.new(app_id: app.id, name: (table_name[0].upcase + table_name[1..-1]))
-											if !table.save
-												errors.push(Array.new([1103, "Unknown validation error"]))
-												status = 500
-											end
-										end
-									end
-								end
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
 
-								# Check if the uuid is already in use
-								if uuid
-									object = TableObject.find_by(uuid: uuid)
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
-									if object
-										errors.push(Array.new([2704, "Field already taken: uuid"]))
-										status = 400
-									end
-								end
+			if table_id
+				table = Table.find_by(id: table_id, app_id: app_id)
+			else
+				table = Table.find_by(name: table_name, app_id: app_id)
 
-								if request.headers["Content-Type"] == "application/x-www-form-urlencoded" || request.headers["Content-Type"] == nil
-									errors.push(Array.new([1104, "Content-type not supported"]))
-									status = 415
-								end
+				if !table
+					# If the dev is not logged in, return 2804: Resource does not exist: Table
+					ValidationService.raise_validation_error(ValidationService.validate_users_dev_is_dev(user, dev, 2804))
 
+					# Validate the table name
+					table_name_too_short_validation = ValidationService.validate_table_name_too_short(table_name)
+					table_name_too_long_validation = ValidationService.validate_table_name_too_long(table_name)
+					table_name_invalid_validation = ValidationService.validate_table_name_invalid(table_name)
+					errors = Array.new
 
-								obj = TableObject.new(table_id: table.id, user_id: user.id)
+					errors.push(table_name_too_short_validation) if !table_name_too_short_validation[:success]
+					errors.push(table_name_too_long_validation) if !table_name_too_long_validation[:success]
+					errors.push(table_name_invalid_validation) if !table_name_invalid_validation[:success]
 
-								if uuid
-									obj.uuid = uuid
-								else
-									obj.uuid = SecureRandom.uuid
-								end
-								
-								begin
-									if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
-										obj.visibility = visibility.to_i
-									end
-								end
+					if errors.length > 0
+						raise RuntimeError, errors.to_json
+					end
 
-								if errors.length == 0
-									# If there is an ext property, save object as a file
-									if !ext || ext.length < 1
-										# If there is no ext, Content-Type must be application/json
-										if !request.headers["Content-Type"].include? "application/json"
-											errors.push(Array.new([1104, "Content-type not supported"]))
-											status = 415
-										else		# Save object normally
-											if errors.length == 0
-												if !obj.save
-													errors.push(Array.new([1103, "Unknown validation error"]))
-													status = 500
-												else
-													# Get the body of the request
-													begin
-														json = request.body.string
-														object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-													rescue Exception => e
-														errors.push(Array.new([1103, "Unknown validation error"]))
-														status = 500
-													end
-													
-													if errors.length == 0
-														if object.length < 1
-															errors.push(Array.new([2116, "Missing field: object"]))
-															status = 400
-														else
-															object.each do |key, value|
-																# Validate the length of the properties
-																if value
-																	if value.length > 0
-																		if key.length > max_property_name_length
-																			errors.push(Array.new([2306, "Field too long: Property.name"]))
-																			status = 400
-																		end
-																		
-																		if key.length < min_property_name_length
-																			errors.push(Array.new([2206, "Field too short: Property.name"]))
-																			status = 400
-																		end
-																		
-																		if value.length > max_property_value_length
-																			errors.push(Array.new([2307, "Field too long: Property.value"]))
-																			status = 400
-																		end
-																		
-																		if value.length < min_property_value_length
-																			errors.push(Array.new([2207, "Field too short: Property.value"]))
-																			status = 400
-																		end
-																	end
-																end
-															end
-														end
-														
-														if errors.length == 0
-															properties = Hash.new
-															
-															object.each do |key, value|
-																if value
-																	if value.length > 0
-																		if !Property.create(table_object_id: obj.id, name: key, value: value)
-																			errors.push(Array.new([1103, "Unknown validation error"]))
-																			status = 500
-																		else
-																			properties[key] = value
-																		end
-																	end
-																end
-															end
-															
-															# Save that user uses the app
-															if !user.apps.find_by_id(app.id)
-																users_app = UsersApp.create(app_id: app.id, user_id: user.id)
-																users_app.save
-															end
-															
-															@result = obj.attributes
-															@result["properties"] = properties
-															@result["etag"] = generate_table_object_etag(obj)
-															
-															ok = true
-														end
-													end
-												end
-											end
-										end
-									else
-										# Check if the user has enough free storage
-										file_size = get_file_size(request.body)
-										free_storage = get_total_storage(user.plan) - user.used_storage
-										obj.file = true
+					# Create the table
+					table = Table.new(app_id: app.id, name: (table_name[0].upcase + table_name[1..-1]))
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(table.save))
+				end
+			end
 
-										if free_storage < file_size
-											errors.push(Array.new([1110, "Not enough storage space"]))
-											status = 400
-										end
+			if uuid
+				# Check if the uuid is already in use
+				ValidationService.raise_validation_error(ValidationService.validate_table_object_uuid_taken(uuid))
+			end
 
-										if errors.length == 0
-											if !obj.save
-												errors.push(Array.new([1103, "Unknown validation error"]))
-												status = 500
-											else
-												begin
-													blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
-													etag = blob.properties[:etag]
-													# Remove the first and the last character of etag, because they are "" for whatever 
-													etag = etag[1...etag.size-1]
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(request.headers["Content-Type"]))
 
-													# Save extension as property
-													ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
-													# Save etag as property
-													etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
-													# Save the new used_storage
-													update_used_storage(user.id, app.id, file_size)
+			obj = TableObject.new(table_id: table.id, user_id: user.id)
 
-													if !ext_prop.save || !etag_prop.save
-														errors.push(Array.new([1103, "Unknown validation error"]))
-														status = 500
-													else
-														size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+			if uuid
+				obj.uuid = uuid
+			else
+				obj.uuid = SecureRandom.uuid
+			end
 
-														if !size_prop.save
-															errors.push(Array.new([1103, "Unknown validation error"]))
-															status = 500
-														else
-															# Save that user uses the app
-															if !user.apps.find_by_id(app.id)
-																users_app = UsersApp.create(app_id: app.id, user_id: user.id)
-																users_app.save
-															end
+			begin
+				if visibility && visibility.to_i <= 2 && visibility.to_i >= 0
+					obj.visibility = visibility.to_i
+				end
+			end
 
-															@result = obj.attributes
+			# If there is an ext property, save object as a file
+			if !ext || ext.length < 1
+				# Save the object normally
+				# Content-Type must be application/json
+				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(obj.save))
 
-															properties = Hash.new
-															obj.properties.each do |prop|
-																properties[prop.name] = prop.value
-															end
+				object = ValidationService.parse_json(request.body.string)
+				ValidationService.raise_validation_error(ValidationService.validate_object_missing(object))
 
-															@result["properties"] = properties
-															@result["etag"] = generate_table_object_etag(obj)
+				object.each do |key, value|
+					if value
+						if value.length > 0
+							property_name_too_short_validation = ValidationService.validate_property_name_too_short(key)
+							property_name_too_long_validation = ValidationService.validate_property_name_too_long(key)
+							property_value_too_short_validation = ValidationService.validate_property_value_too_short(value)
+							property_value_too_long_validation = ValidationService.validate_property_value_too_long(value)
+							errors = Array.new
+							
+							errors.push(property_name_too_short_validation) if !property_name_too_short_validation[:success]
+							errors.push(property_name_too_long_validation) if !property_name_too_long_validation[:success]
+							errors.push(property_value_too_short_validation) if !property_value_too_short_validation[:success]
+							errors.push(property_value_too_long_validation) if !property_value_too_long_validation[:success]
 
-															ok = true
-														end
-													end
-												rescue Exception => e
-													errors.push(Array.new([1103, "Unknown validation error"]))
-													status = 500
-												end
-											end
-										end
-									end
-								end
+							if errors.length > 0
+								raise RuntimeError, errors.to_json
 							end
 						end
 					end
 				end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 201
-		else
-			# Delete the uploaded blob and the object
-			begin
-				BlobOperationsService.delete_blob(app.id, obj.id)
-				TableObject.find_by_id(obj.id).destroy!
-			rescue Exception => e
-				
-			end
 
-         @result.clear
-         @result["errors"] = errors
-      end
-		
-		render json: @result, status: status if status
-   end
+				properties = Hash.new
+				
+				object.each do |key, value|
+					if value
+						if value.length > 0
+							property = Property.new(table_object_id: obj.id, name: key, value: value)
+							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(property.save))
+							properties[key] = value
+						end
+					end
+				end
+
+				# Save that user uses the app
+				if !user.apps.find_by_id(app.id)
+					users_app = UsersApp.create(app_id: app.id, user_id: user.id)
+					users_app.save
+				end
+
+				# Return the data
+				result = obj.attributes
+				result["properties"] = properties
+				result["etag"] = generate_table_object_etag(obj)
+				render json: result, status: 201
+			else
+				# Save the object as a file
+				# Check if the user has enough free storage
+				file_size = get_file_size(request.body)
+				free_storage = get_total_storage(user.plan) - user.used_storage
+				obj.file = true
+
+				ValidationService.raise_validation_error(ValidationService.validate_storage_space(free_storage, file_size))
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(obj.save))
+
+				begin
+					blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
+					etag = blob.properties[:etag]
+					# Remove the first and the last character of etag, because they are "" for whatever 
+					etag = etag[1...etag.size-1]
+
+					# Save extension as property
+					ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+					# Save etag as property
+					etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+					# Save the new used_storage
+					update_used_storage(user.id, app.id, file_size)
+
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(ext_prop.save))
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
+					
+					size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
+
+					# Save that user uses the app
+					if !user.apps.find_by_id(app.id)
+						users_app = UsersApp.create(app_id: app.id, user_id: user.id)
+						users_app.save
+					end
+
+					# Return the data
+					result = obj.attributes
+
+					properties = Hash.new
+					obj.properties.each do |prop|
+						properties[prop.name] = prop.value
+					end
+
+					result["properties"] = properties
+					result["etag"] = generate_table_object_etag(obj)
+					render json: result, status: 201
+				rescue Exception => e
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(false))
+				end
+			end
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
    
    def get_object
       object_id = params["id"]

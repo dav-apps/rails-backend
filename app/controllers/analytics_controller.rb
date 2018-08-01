@@ -44,7 +44,7 @@ class AnalyticsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
 			if request.body.string.length > 0
-				ValidationService.raise_validation_error(ValidationService.validate_content_type(request.headers["Content-Type"]))
+				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 			end
 
 			# Check if the event with the name already exists
@@ -322,7 +322,7 @@ class AnalyticsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
 			# Only accept application/json as Content-Type
-			ValidationService.raise_validation_error(ValidationService.validate_content_type(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
 			object = ValidationService.parse_json(request.body.string)
 			name = object["name"]

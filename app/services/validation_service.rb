@@ -47,8 +47,7 @@ class ValidationService
 		dev != Dev.first ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
-	def self.validate_users_dev_is_dev(user, dev)
-		error_code = 1102
+	def self.validate_users_dev_is_dev(user, dev, error_code = 1102)
 		user.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
@@ -76,12 +75,22 @@ class ValidationService
 		end
 	end
 
-	def self.validate_content_type(content_type)
+	def self.validate_content_type_json(content_type)
 		error_code = 1104
 		if content_type == nil
 			content_type = ""
 		end
 		!content_type.include?("application/json") ? {success: false, error: [error_code, get_error_message(error_code)], status: 415} : {success: true}
+	end
+
+	def self.validate_content_type_is_supported(content_type)
+		error_code = 1104
+		content_type == "application/x-www-form-urlencoded" || content_type == nil ? {success: false, error: [error_code, get_error_message(error_code)], status: 415} : {success: true}
+	end
+
+	def self.validate_storage_space(free_storage, file_size)
+		error_code = 1110
+		free_storage < file_size ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_jwt_signature(jwt)
@@ -131,6 +140,17 @@ class ValidationService
 		!desc || desc.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_table_name_and_table_id(table_name, table_id)
+		# Prefer table_name over table_id; if table_name and table_id is missing, return that table_name is missing
+		error_code = 2113
+		((!table_name || table_name.length < 1) && !table_id) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_object_missing(object)
+		error_code = 2116
+		object.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_api_key(api_key)
 		error_code = 2118
 		!api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -144,6 +164,11 @@ class ValidationService
 	define_singleton_method :validate_desc_too_short do |desc|
 		error_code = 2204
 		desc.length < min_app_desc_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_table_name_too_short do |table_name|
+		error_code = 2205
+		table_name.length < min_table_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_property_name_too_short do |name|
@@ -164,6 +189,11 @@ class ValidationService
 	define_singleton_method :validate_desc_too_long do |desc|
 		error_code = 2304
 		desc.length > max_app_desc_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_table_name_too_long do |table_name|
+		error_code = 2305
+		table_name.length > max_table_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_property_name_too_long do |name|
@@ -191,9 +221,19 @@ class ValidationService
 		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_table_name_invalid(table_name)
+		error_code = 2501
+		table_name.include?(" ") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_event_name_taken(new_name, old_name, app_id)
 		error_code = 2703
 		Event.exists?(name: new_name, app_id: app_id) && old_name != new_name ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_table_object_uuid_taken(uuid)
+		error_code = 2704		
+		TableObject.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_user(user)
