@@ -258,7 +258,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      assert_response 400
+      assert_response 404
       assert_same(2801, resp["errors"][0][0])
    end
    
@@ -365,7 +365,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"link_play\":\"_\"}", 
+				params: "{\"link_play\":\"\"}", 
 				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       

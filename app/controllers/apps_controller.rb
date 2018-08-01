@@ -207,184 +207,104 @@ class AppsController < ApplicationController
 		end
 	end
 
-	define_method :update_app do
-      app_id = params["id"]
-      
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !app_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
-         
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-               else
-                  app = App.find_by_id(app_id)
-               
-                  if !app
-                     errors.push(Array.new([2803, "Resource does not exist: App"]))
-                     status = 400
-                  else
-                     # Make sure this is only called from the website and from the dev of the app
-                     if !((dev == Dev.first) && (app.dev == user.dev))
-                        errors.push(Array.new([1102, "Action not allowed"]))
-                        status = 403
-                     else
-                        if request.headers["Content-Type"] != "application/json" && request.headers["Content-Type"] != "application/json; charset=utf-8"
-                           errors.push(Array.new([1104, "Content-type not supported"]))
-                           status = 415
-								else
-									begin
-                           	json = request.body.string
-										object = json && json.length >= 2 ? JSON.parse(json) : Hash.new
-									rescue Exception => e
-										errors.push(Array.new([1103, "Unknown validation error"]))
-										status = 500
-									end
-									
-									if errors.length == 0
-										name = object["name"]
-										if name
-											if name.length < min_app_name_length
-												errors.push(Array.new([2203, "Field too short: name"]))
-												status = 400
-											end
-											
-											if name.length > max_app_name_length
-												errors.push(Array.new([2303, "Field too long: name"]))
-												status = 400
-											end
-											
-											if errors.length == 0
-												app.name = name
-											end
-										end
-                           
-										desc = object["description"]
-										if desc
-											if desc.length < min_app_desc_length
-												errors.push(Array.new([2204, "Field too short: description"]))
-												status = 400
-											end
-											
-											if desc.length > max_app_desc_length
-												errors.push(Array.new([2304, "Field too long: description"]))
-												status = 400
-											end
-											
-											if errors.length == 0
-												app.description = desc
-											end
-										end
-										
-										link_web = object["link_web"]
-										if link_web
-											if link_web == link_blank_string
-												app.link_web = ""
-											elsif !validate_url(link_web)
-												# Invalid link
-												errors.push(Array.new([2402, "Field not valid: link_web"]))
-												status = 400
-											else
-												app.link_web = link_web
-											end
-										end
+	def update_app
+		app_id = params["id"]
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			id_validation = ValidationService.validate_id(app_id)
+			errors = Array.new
 
-										link_play = object["link_play"]
-										if link_play
-											if link_play == link_blank_string
-												app.link_play = ""
-											elsif !validate_url(link_play)
-												# Invalid link
-												errors.push(Array.new([2403, "Field not valid: link_play"]))
-												status = 400
-											else
-												app.link_play = link_play
-											end
-										end
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(id_validation) if !id_validation[:success]
 
-										link_windows = object["link_windows"]
-										if link_windows
-											if link_windows == link_blank_string
-												app.link_windows = ""
-											elsif !validate_url(link_windows)
-												# Invalid link
-												errors.push(Array.new([2404, "Field not valid: link_windows"]))
-												status = 400
-											else
-												app.link_windows = link_windows
-											end
-										end
-									end
-                        end
-                        
-                        if errors.length == 0
-                           # Update app
-                           if !app.save
-                              errors.push(Array.new([1103, "Unknown validation error"]))
-                              status = 500
-                           else
-                              @result = app
-                              ok = true
-                           end
-                        end
-                     end
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type(request.headers["Content-Type"]))
+
+			object = ValidationService.parse_json(request.body.string)
+			errors = Array.new
+
+			name = object["name"]
+			if name
+				name_too_short_validation = ValidationService.validate_name_too_short(name)
+				name_too_long_validation = ValidationService.validate_name_too_long(name)
+
+				errors.push(name_too_short_validation) if !name_too_short_validation[:success]
+				errors.push(name_too_long_validation) if !name_too_long_validation[:success]
+
+				app.name = name
+			end
+
+			desc = object["description"]
+			if desc
+				desc_too_short_validation = ValidationService.validate_desc_too_short(desc)
+				desc_too_long_validation = ValidationService.validate_desc_too_long(desc)
+				
+				errors.push(desc_too_short_validation) if !desc_too_short_validation[:success]
+				errors.push(desc_too_long_validation) if !desc_too_long_validation[:success]
+
+				app.description = desc
+			end
+
+			link_web = object["link_web"]
+			if link_web
+				link_web_validation = ValidationService.validate_link_web(link_web)
+				errors.push(link_web_validation) if !link_web_validation[:success]
+
+				app.link_web = link_web
+			end
+
+			link_play = object["link_play"]
+			if link_play
+				link_play_validation = ValidationService.validate_link_play(link_play)
+				errors.push(link_play_validation) if !link_play_validation[:success]
+
+				app.link_play = link_play
+			end
+
+			link_windows = object["link_windows"]
+			if link_windows
+				link_windows_validation = ValidationService.validate_link_windows(link_windows)
+				errors.push(link_windows_validation) if !link_windows_validation[:success]
+
+				app.link_windows = link_windows
+			end
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			# Update the app
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(app.save))
+			result = app
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
    
    define_method :delete_app do
       app_id = params["id"]
