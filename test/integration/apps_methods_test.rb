@@ -26,7 +26,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/apps/app?jwt=#{matts_jwt}&name=Test&desc=Hello World"
       resp = JSON.parse response.body
       
-      assert_response 400
+      assert_response 404
       assert_same(resp["errors"][0][0], 2802)
    end
    

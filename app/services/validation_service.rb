@@ -1,11 +1,17 @@
 class ValidationService
+	max_table_name_length = 100
+   min_table_name_length = 2
+   max_property_name_length = 100
+   min_property_name_length = 1
+   max_property_value_length = 65000
+   min_property_value_length = 1
+   max_app_name_length = 30
+   min_app_name_length = 2
+   max_app_desc_length = 500
+	min_app_desc_length = 3
 	min_event_name_length = 2
 	max_event_name_length = 15
 	max_event_data_length = 65000
-	min_property_name_length = 1
-	max_property_name_length = 100
-	min_property_value_length = 1
-	max_property_value_length = 65000
 
 	def self.get_errors_of_validations(validations)
 		errors = Array.new
@@ -101,6 +107,11 @@ class ValidationService
 		!name || name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_desc(desc)
+		error_code = 2112
+		!desc || desc.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_api_key(api_key)
 		error_code = 2118
 		!api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -108,7 +119,12 @@ class ValidationService
 
 	define_singleton_method :validate_name_too_short do |name|
 		error_code = 2203
-		name.length < min_event_name_length ? {success: false, error: Array.new([error_code, get_error_message(error_code)]), status: 400} : {success: true}
+		name.length < min_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_desc_too_short do |desc|
+		error_code = 2204
+		desc.length < min_app_desc_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_property_name_too_short do |name|
@@ -126,6 +142,11 @@ class ValidationService
 		name.length > max_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_desc_too_long do |desc|
+		error_code = 2304
+		desc.length > max_app_desc_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_property_name_too_long do |name|
 		error_code = 2306
 		name.length > max_property_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -134,6 +155,21 @@ class ValidationService
 	define_singleton_method :validate_property_value_too_long do |value|
 		error_code = 2307
 		value.length > max_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_link_web(link)
+		error_code = 2402
+		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_link_play(link)
+		error_code = 2403
+		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_link_windows(link)
+		error_code = 2404
+		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_event_name_taken(new_name, old_name, app_id)
@@ -339,4 +375,8 @@ class ValidationService
 			raise RuntimeError, "The error code #{code} does not exist!"
 		end
 	end
+
+	def self.validate_url(url)
+      /\A#{URI::regexp}\z/.match?(url)
+   end
 end

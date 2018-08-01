@@ -19,10 +19,10 @@ class ApplicationController < ActionController::API
             false
          end
       end
-   end
-
-   def validate_url(url)
-      url =~ /\A#{URI::regexp}\z/
+	end
+	
+	def validate_url(url)
+      /\A#{URI::regexp}\z/.match?(url)
    end
 
    def get_file_size(file)
