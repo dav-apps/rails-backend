@@ -552,194 +552,113 @@ class AppsController < ApplicationController
 			render json: result, status: validations.last["status"]
 		end
 	end
-   
-   def get_object
-      object_id = params["id"]
+
+	def get_object
+		object_id = params["id"]
 		token = params["access_token"]
 		file = params["file"]
-      
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      can_access = false
-      
-      if !object_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-		if errors.length == 0 
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_id(object_id))
+
 			obj = TableObject.find_by(uuid: object_id)
-			
 			if !obj
 				obj = TableObject.find_by_id(object_id)
 			end
-         
-         if !obj
-            errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
-            status = 404
-         else
-            table = Table.find_by_id(obj.table_id)
-            
-            if !table
-               errors.push(Array.new([2804, "Resource does not exist: Table"]))
-               status = 400
-            else
-               app = App.find_by_id(table.app_id)
-               
-               if !app
-                  errors.push(Array.new([2803, "Resource does not exist: App"]))
-                  status = 400
-               else
-                  # Check the visibility
-                  if obj.visibility != 2
-                     # Check JWT
-                     if !jwt || jwt.length < 1
-                        # Check access_token
-                        if !token || token.length < 1
-									# Token and JWT missing
-									if !jwt || jwt.length < 1
-                              errors.push(Array.new([2102, "Missing field: jwt"]))
-                              status = 401
-                           end
+			ValidationService.raise_validation_error(ValidationService.validate_table_object(obj))
 
-                           if !token || token.length < 1
-                              errors.push(Array.new([2117, "Missing field: access_token"]))
-                              status = 400
-                           end
-                        else
-                           # Check if the token is valid
-                           obj.access_tokens.each do |access_token|
-                              if access_token.token == token
-                                 can_access = true
-                              end
-                           end
-                        end
-                     else
-                        jwt_valid = false
-                        begin
-                           decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-                           jwt_valid = true
-                        rescue JWT::ExpiredSignature
-                           # JWT expired
-                           errors.push(Array.new([1301, "JWT: expired"]))
-                           status = 401
-                        rescue JWT::DecodeError
-                           errors.push(Array.new([1302, "JWT: not valid"]))
-                           status = 401
-                           # rescue other errors
-                        rescue Exception
-                           errors.push(Array.new([1303, "JWT: unknown error"]))
-                           status = 401
-                        end
-                        
-                        if jwt_valid
-                           user_id = decoded_jwt[0]["user_id"]
-                           dev_id = decoded_jwt[0]["dev_id"]
-                           
-                           user = User.find_by_id(user_id)
-                           
-                           if !user
-                              errors.push(Array.new([2801, "Resource does not exist: User"]))
-                              status = 400
-                           else
-                              dev = Dev.find_by_id(dev_id)
-                              
-                              if !dev     # Check if the dev exists
-                                 errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                                 status = 400
-                              else
-                                 # Check if the app belongs to the dev
-                                 if app.dev_id != dev.id
-                                    errors.push(Array.new([1102, "Action not allowed"]))
-                                    status = 403
-                                 else
-                                    if obj.user_id != user.id   # Check if the object belongs to the user
-                                       if obj.visibility == 0
-                                          errors.push(Array.new([1102, "Action not allowed"]))
-                                          status = 403
-                                       else
-                                          can_access = true
-                                       end
-                                    else  # Object does belong to the user
-                                       can_access = true
-                                    end
-                                 end
-                              end
-                           end
-                        end
-                     end
-						else
-							# Visibility == 2
-                     can_access = true
-                  end
-               end
-            end
-         end
-         
-			if errors.length == 0 && can_access
-				if file == "true" && obj.file
-					# Return the file
-					Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-					Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-					filename = "#{app.id}/#{obj.id}"
+			table = Table.find_by_id(obj.table_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table(table))
 
-					begin
-						client = Azure::Blob::BlobService.new
-						blob = client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
+			app = App.find_by_id(table.app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			can_access = false
 
-						@result = blob[1]
-
-						# Get the file extension
-						obj.properties.each do |prop|
-							if prop.name == "ext"
-								filename += ".#{prop.value}"
+			if obj.visibility != 2
+				if !jwt || jwt.length < 1
+					if !token || token.length < 1
+						# JWT and token missing
+						jwt_validation = ValidationService.validate_jwt(jwt)
+						token_validation = ValidationService.validate_access_token(token)
+						errors = [jwt_validation, token_validation]
+						raise RuntimeError, errors.to_json
+					else
+						# Check if the token is valid
+						obj.access_tokens.each do |access_token|
+							if access_token.token == token
+								can_access = true
 							end
 						end
-						
-						ok = true
-						file = true
-					rescue Exception => e
-						errors.push(Array.new([1111, "File does not exist"]))
-            		status = 400
+
+						if !can_access
+							ValidationService.raise_validation_error(ValidationService.get_access_not_allowed_error)
+						end
 					end
 				else
-					@result = obj.attributes
-					properties = Hash.new
-					obj.properties.each do |prop|
-						properties[prop.name] = prop.value
-					end
-					@result["properties"] = properties
-					@result["etag"] = generate_table_object_etag(obj)
+					# There is a jwt
+					jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+					ValidationService.raise_validation_error(jwt_signature_validation[0])
+					user_id = jwt_signature_validation[1][0]["user_id"]
+					dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-					ok = true
-					file = false
+					user = User.find_by_id(user_id)
+					ValidationService.raise_validation_error(ValidationService.validate_user(user))
+
+					dev = Dev.find_by_id(dev_id)
+					ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+
+					ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+
+					if obj.visibility != 1
+						ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
+					end
 				end
-         elsif errors.length == 0 && !can_access
-            errors.push(Array.new([1102, "Action not allowed"]))
-            status = 403
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-			@result.clear
-         @result["errors"] = errors
-      end
-		
-		if file && errors.length == 0
-			if status
-				send_data(@result, status: status, filename: filename)
-			else
-				send_data(@result)
 			end
-		else
-			render json: @result, status: status if status
+
+			if file == "true" && obj.file
+				# Return the file of the object
+				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+				filename = "#{app.id}/#{obj.id}"
+
+				begin
+					client = Azure::Blob::BlobService.new
+					blob = client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
+
+					result = blob[1]
+
+					# Get the file extension
+					obj.properties.each do |prop|
+						if prop.name == "ext"
+							filename += ".#{prop.value}"
+						end
+					end
+				rescue Exception => e
+					ValidationService.raise_validation_error(ValidationService.get_file_does_not_exist_error)
+				end
+
+				send_data(result, status: 200, filename: filename)
+			else
+				# Return the object data
+				result = obj.attributes
+				properties = Hash.new
+				obj.properties.each do |prop|
+					properties[prop.name] = prop.value
+				end
+				result["properties"] = properties
+				result["etag"] = generate_table_object_etag(obj)
+
+				render json: result, status: 200
+			end
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
 		end
-   end
+	end
    
    define_method :update_object do
       object_id = params["id"]

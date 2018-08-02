@@ -37,6 +37,11 @@ class ValidationService
 		!check_authorization(api_key, sig) ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
 	end
 
+	def self.get_access_not_allowed_error
+		error_code = 1102
+		{success: false, error: [error_code, get_error_message(error_code)], status: 403}
+	end
+
 	def self.validate_app_belongs_to_dev(app, dev)
 		error_code = 1102
 		app.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
@@ -59,6 +64,11 @@ class ValidationService
 	def self.validate_website_call_and_user_is_app_dev_or_user_is_dev(user, dev, app)
 		error_code = 1102
 		!(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
+	def self.validate_table_object_belongs_to_user(obj, user)
+		error_code = 1102
+		obj.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_unknown_validation_error(saved)
@@ -91,6 +101,11 @@ class ValidationService
 	def self.validate_storage_space(free_storage, file_size)
 		error_code = 1110
 		free_storage < file_size ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.get_file_does_not_exist_error
+		error_code = 1111
+		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
 	end
 
 	def self.validate_jwt_signature(jwt)
@@ -149,6 +164,11 @@ class ValidationService
 	def self.validate_object_missing(object)
 		error_code = 2116
 		object.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_access_token(token)
+		error_code = 2117
+		!token || token.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_api_key(api_key)
@@ -249,6 +269,16 @@ class ValidationService
 	def self.validate_app(app)
 		error_code = 2803
 		!app ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
+	def self.validate_table(table)
+		error_code = 2804
+		!table ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
+	def self.validate_table_object(table_object)
+		error_code = 2805
+		!table_object ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
 	def self.validate_event(event)
