@@ -837,8 +837,75 @@ class AppsController < ApplicationController
 			render json: result, status: validations.last["status"]
 		end
 	end
+
+	def delete_object
+		object_id = params["id"]
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			id_validation = ValidationService.validate_id(object_id)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(id_validation) if !id_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+
+			obj = TableObject.find_by(uuid: object_id)
+
+			if !obj
+				obj = TableObject.find_by_id(object_id)
+			end
+
+			ValidationService.raise_validation_error(ValidationService.validate_table_object(obj))
+
+			table = Table.find_by_id(obj.table_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+
+			app = App.find_by_id(table.app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
+
+			# Delete the file if it exists
+			if obj.file
+				BlobOperationsService.delete_blob(app.id, obj.id)
+				size_prop = obj.properties.find_by(name: "size")
+
+				if size_prop
+					# Save the new used_storage value
+					update_used_storage(user.id, app.id, -size_prop.value.to_i)
+				end
+			end
+
+			obj.destroy!
+			result = {}
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			
+			render json: result, status: validations.last["status"]
+		end
+	end
    
-   def delete_object
+   def delete_object_old
 		object_id = params["id"]
       
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
