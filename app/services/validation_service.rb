@@ -134,42 +134,42 @@ class ValidationService
 		end
 	end
 
-	def self.validate_auth(auth)
+	def self.validate_auth_missing(auth)
 		error_code = 2101
 		!auth || auth.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
 	end
 
-	def self.validate_jwt(jwt)
+	def self.validate_jwt_missing(jwt)
 		error_code = 2102
 		!jwt || jwt.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
 	end
 
-	def self.validate_id(id)
+	def self.validate_id_missing(id)
 		error_code = 2103
 		!id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_app_id(app_id)
+	def self.validate_app_id_missing(app_id)
 		error_code = 2110
 		!app_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_name(name)
+	def self.validate_name_missing(name)
 		error_code = 2111
 		!name || name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_desc(desc)
+	def self.validate_desc_missing(desc)
 		error_code = 2112
 		!desc || desc.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_table_name(table_name)
+	def self.validate_table_name_missing(table_name)
 		error_code = 2113
 		!table_name || table_name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_table_name_and_table_id(table_name, table_id)
+	def self.validate_table_name_and_table_id_missing(table_name, table_id)
 		# Prefer table_name over table_id; if table_name and table_id is missing, return that table_name is missing
 		error_code = 2113
 		((!table_name || table_name.length < 1) && !table_id) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -180,12 +180,12 @@ class ValidationService
 		object.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_access_token(token)
+	def self.validate_access_token_missing(token)
 		error_code = 2117
 		!token || token.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_api_key(api_key)
+	def self.validate_api_key_missing(api_key)
 		error_code = 2118
 		!api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
@@ -240,22 +240,22 @@ class ValidationService
 		value.length > max_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_link_web(link)
+	def self.validate_link_web_not_valid(link)
 		error_code = 2402
 		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_link_play(link)
+	def self.validate_link_play_not_valid(link)
 		error_code = 2403
 		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_link_windows(link)
+	def self.validate_link_windows_not_valid(link)
 		error_code = 2404
 		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_table_name_invalid(table_name)
+	def self.validate_table_name_contains_not_allowed_characters(table_name)
 		error_code = 2501
 		table_name.include?(" ") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
@@ -270,37 +270,42 @@ class ValidationService
 		TableObject.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_user(user)
+	def self.validate_user_does_not_exist(user)
 		error_code = 2801
 		!user ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
-	def self.validate_dev(dev)
+	def self.validate_dev_does_not_exist(dev)
 		error_code = 2802
 		!dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
-	def self.validate_app(app)
+	def self.validate_app_does_not_exist(app)
 		error_code = 2803
 		!app ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
-	def self.validate_table(table)
+	def self.validate_table_does_not_exist(table)
 		error_code = 2804
 		!table ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
-	def self.validate_table_object(table_object)
+	def self.validate_table_object_does_not_exist(table_object)
 		error_code = 2805
 		!table_object ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
-	def self.validate_event(event)
+	def self.validate_event_does_not_exist(event)
 		error_code = 2807
 		!event ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
-	def self.validate_table_exists(table)
+	def self.validate_access_token_does_not_exist(token)
+		error_code = 2809
+		!token ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
+	def self.validate_table_already_exists(table)
 		error_code = 2904
 		table ? {success: false, error: [error_code, get_error_message(error_code)], status: 202} : {success: true}
 	end

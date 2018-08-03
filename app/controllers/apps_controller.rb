@@ -21,9 +21,9 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			name_validation = ValidationService.validate_name(name)
-			desc_validation = ValidationService.validate_desc(desc)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			name_validation = ValidationService.validate_name_missing(name)
+			desc_validation = ValidationService.validate_desc_missing(desc)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -40,10 +40,10 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
@@ -67,17 +67,17 @@ class AppsController < ApplicationController
 			errors = Array.new
 
 			if link_web
-				link_web_validation = ValidationService.validate_link_web(link_web)
+				link_web_validation = ValidationService.validate_link_web_not_valid(link_web)
 				errors.push(link_web_validation) if !link_web_validation[:success]
 			end
 
 			if link_play
-				link_play_validation = ValidationService.validate_link_play(link_play)
+				link_play_validation = ValidationService.validate_link_play_not_valid(link_play)
 				errors.push(link_play_validation) if !link_play_validation[:success]
 			end
 
 			if link_windows
-				link_windows_validation = ValidationService.validate_link_windows(link_windows)
+				link_windows_validation = ValidationService.validate_link_windows_not_valid(link_windows)
 				errors.push(link_windows_validation) if !link_windows_validation[:success]
 			end
 
@@ -118,8 +118,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(app_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(app_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -135,13 +135,13 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			app = App.find_by_id(app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			# Make sure this is called from the website or from the associated dev
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_user_is_dev(user, dev, app))
@@ -174,13 +174,13 @@ class AppsController < ApplicationController
 		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			ValidationService.raise_validation_error(ValidationService.validate_auth(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
 
 			api_key = auth.split(",")[0]
          sig = auth.split(",")[1]
 
 			dev = Dev.find_by(api_key: api_key)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
@@ -212,8 +212,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(app_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(app_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -229,13 +229,13 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			app = App.find_by_id(app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
@@ -267,7 +267,7 @@ class AppsController < ApplicationController
 
 			link_web = object["link_web"]
 			if link_web
-				link_web_validation = ValidationService.validate_link_web(link_web)
+				link_web_validation = ValidationService.validate_link_web_not_valid(link_web)
 				errors.push(link_web_validation) if !link_web_validation[:success]
 
 				app.link_web = link_web
@@ -275,7 +275,7 @@ class AppsController < ApplicationController
 
 			link_play = object["link_play"]
 			if link_play
-				link_play_validation = ValidationService.validate_link_play(link_play)
+				link_play_validation = ValidationService.validate_link_play_not_valid(link_play)
 				errors.push(link_play_validation) if !link_play_validation[:success]
 
 				app.link_play = link_play
@@ -283,7 +283,7 @@ class AppsController < ApplicationController
 
 			link_windows = object["link_windows"]
 			if link_windows
-				link_windows_validation = ValidationService.validate_link_windows(link_windows)
+				link_windows_validation = ValidationService.validate_link_windows_not_valid(link_windows)
 				errors.push(link_windows_validation) if !link_windows_validation[:success]
 
 				app.link_windows = link_windows
@@ -311,8 +311,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(app_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(app_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -328,13 +328,13 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			app = App.find_by_id(app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
@@ -361,9 +361,9 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			app_id_validation = ValidationService.validate_app_id(app_id)
-			table_name_validation = ValidationService.validate_table_name_and_table_id(table_name, table_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			app_id_validation = ValidationService.validate_app_id_missing(app_id)
+			table_name_validation = ValidationService.validate_table_name_and_table_id_missing(table_name, table_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -380,13 +380,13 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			app = App.find_by_id(app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
@@ -402,7 +402,7 @@ class AppsController < ApplicationController
 					# Validate the table name
 					table_name_too_short_validation = ValidationService.validate_table_name_too_short(table_name)
 					table_name_too_long_validation = ValidationService.validate_table_name_too_long(table_name)
-					table_name_invalid_validation = ValidationService.validate_table_name_invalid(table_name)
+					table_name_invalid_validation = ValidationService.validate_table_name_contains_not_allowed_characters(table_name)
 					errors = Array.new
 
 					errors.push(table_name_too_short_validation) if !table_name_too_short_validation[:success]
@@ -560,27 +560,27 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			ValidationService.raise_validation_error(ValidationService.validate_id(object_id))
+			ValidationService.raise_validation_error(ValidationService.validate_id_missing(object_id))
 
 			obj = TableObject.find_by(uuid: object_id)
 			if !obj
 				obj = TableObject.find_by_id(object_id)
 			end
-			ValidationService.raise_validation_error(ValidationService.validate_table_object(obj))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
 
 			table = Table.find_by_id(obj.table_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			app = App.find_by_id(table.app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 			can_access = false
 
 			if obj.visibility != 2
 				if !jwt || jwt.length < 1
 					if !token || token.length < 1
 						# JWT and token missing
-						jwt_validation = ValidationService.validate_jwt(jwt)
-						token_validation = ValidationService.validate_access_token(token)
+						jwt_validation = ValidationService.validate_jwt_missing(jwt)
+						token_validation = ValidationService.validate_access_token_missing(token)
 						errors = [jwt_validation, token_validation]
 						raise RuntimeError, errors.to_json
 					else
@@ -603,10 +603,10 @@ class AppsController < ApplicationController
 					dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 					user = User.find_by_id(user_id)
-					ValidationService.raise_validation_error(ValidationService.validate_user(user))
+					ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 					dev = Dev.find_by_id(dev_id)
-					ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+					ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 					ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
@@ -667,8 +667,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(object_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(object_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -684,10 +684,10 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			obj = TableObject.find_by(uuid: object_id)
 
@@ -695,13 +695,13 @@ class AppsController < ApplicationController
 				obj = TableObject.find_by_id(object_id)
 			end
 
-			ValidationService.raise_validation_error(ValidationService.validate_table_object(obj))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
 			
 			table = Table.find_by_id(obj.table_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			app = App.find_by_id(table.app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(request.headers["Content-Type"]))
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
@@ -843,8 +843,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(object_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(object_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -860,10 +860,10 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			obj = TableObject.find_by(uuid: object_id)
 
@@ -871,13 +871,13 @@ class AppsController < ApplicationController
 				obj = TableObject.find_by_id(object_id)
 			end
 
-			ValidationService.raise_validation_error(ValidationService.validate_table_object(obj))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
 
 			table = Table.find_by_id(obj.table_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			app = App.find_by_id(table.app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
@@ -912,9 +912,9 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			app_id_validation = ValidationService.validate_app_id(app_id)
-			table_name_validation = ValidationService.validate_table_name(table_name)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			app_id_validation = ValidationService.validate_app_id_missing(app_id)
+			table_name_validation = ValidationService.validate_table_name_missing(table_name)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -931,23 +931,23 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			app = App.find_by_id(app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_user_is_dev(user, dev, app))
 
 			table = Table.find_by(name: table_name, app_id: app.id)
-			ValidationService.raise_validation_error(ValidationService.validate_table_exists(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_already_exists(table))
 
 			# Validate the properties
 			name_too_short_validation = ValidationService.validate_table_name_too_short(table_name)
 			name_too_long_validation = ValidationService.validate_table_name_too_long(table_name)
-			name_invalid_validation = ValidationService.validate_table_name_invalid(table_name)
+			name_invalid_validation = ValidationService.validate_table_name_contains_not_allowed_characters(table_name)
 			errors = Array.new
 
 			errors.push(name_too_short_validation) if !name_too_short_validation[:success]
@@ -978,9 +978,9 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			app_id_validation = ValidationService.validate_app_id(app_id)
-			table_name_validation = ValidationService.validate_table_name(table_name)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			app_id_validation = ValidationService.validate_app_id_missing(app_id)
+			table_name_validation = ValidationService.validate_table_name_missing(table_name)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -997,16 +997,16 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			app = App.find_by_id(app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			table = Table.find_by(name: table_name, app_id: app.id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app))
 
@@ -1041,8 +1041,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(table_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(table_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -1058,16 +1058,16 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			table = Table.find_by_id(table_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			app = App.find_by_id(table.app.id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app))
 
@@ -1101,8 +1101,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(table_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(table_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -1118,16 +1118,16 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			table = Table.find_by_id(table_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			app = App.find_by_id(table.app.id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
@@ -1140,7 +1140,7 @@ class AppsController < ApplicationController
 			if name
 				name_too_short_validation = ValidationService.validate_name_too_short(name)
 				name_too_long_validation = ValidationService.validate_name_too_long(name)
-				name_invalid_validation = ValidationService.validate_table_name_invalid(name)
+				name_invalid_validation = ValidationService.validate_table_name_contains_not_allowed_characters(name)
 				errors = Array.new
 
 				errors.push(name_too_short_validation) if !name_too_short_validation[:success]
@@ -1171,8 +1171,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(table_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(table_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -1188,16 +1188,16 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			table = Table.find_by_id(table_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			app = App.find_by_id(table.app.id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
@@ -1219,8 +1219,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(object_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(object_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -1236,19 +1236,19 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			object = TableObject.find_by_id(object_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table_object(object))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(object))
 
 			table = Table.find_by_id(object.table_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			app = App.find_by_id(table.app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(object, user))
@@ -1275,8 +1275,8 @@ class AppsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt(jwt)
-			id_validation = ValidationService.validate_id(object_id)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(object_id)
 			errors = Array.new
 
 			errors.push(jwt_validation) if !jwt_validation[:success]
@@ -1292,19 +1292,19 @@ class AppsController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			object = TableObject.find_by_id(object_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table_object(object))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(object))
 
 			table = Table.find_by_id(object.table_id)
-			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			app = App.find_by_id(table.app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(object, user))
@@ -1323,255 +1323,134 @@ class AppsController < ApplicationController
 			render json: result, status: validations.last["status"]
 		end
 	end
-   
+	
 	def add_access_token_to_object
 		object_id = params["id"]
 		token = params["token"]
-      
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !object_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-		end
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
-		if !token || token.length < 1
-			errors.push(Array.new([2117, "Missing field: access_token"]))
-			status = 400
-		end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-		end
-		
-		if errors.length == 0
-			jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(object_id)
+			token_validation = ValidationService.validate_access_token_missing(token)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(id_validation) if !id_validation[:success]
+			errors.push(token_validation) if !token_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
 			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			object = TableObject.find_by_id(object_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(object))
+
+			table = Table.find_by_id(object.table_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
+
+			app = App.find_by_id(table.app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(object, user))
+
+			access_token = AccessToken.find_by(token: token)
+			ValidationService.raise_validation_error(ValidationService.validate_access_token_does_not_exist(access_token))
+
+			# Add access token relationship to object
+			relation = TableObjectsAccessToken.new(table_object_id: object.id, access_token_id: access_token.id)
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(relation.save))
+
+			# Return the data
+			result = access_token.attributes
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
 			
-			if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-				user = User.find_by_id(user_id)
-				
-				if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-				else
-					dev = Dev.find_by_id(dev_id)
-               
-               if !dev     # Check if the dev exists
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-					else
-						# Check if the object belongs to the user
-                  object = TableObject.find_by_id(object_id)
-                  
-                  if !object
-                     errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
-                     status = 400
-						else
-							table = Table.find_by_id(object.table_id)
-                     
-                     if !table
-                        errors.push(Array.new([2804, "Resource does not exist: Table"]))
-                        status = 400
-							else
-								app = App.find_by_id(table.app_id)
-                        
-                        if !app
-                           errors.push(Array.new([2803, "Resource does not exist: App"]))
-                           status = 400
-								else
-									if app.dev != dev
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-									else
-										if object.user != user
-                                 errors.push(Array.new([1102, "Action not allowed"]))
-                                 status = 403
-										else
-											access_token = AccessToken.find_by(token: token)
-
-											if !access_token
-												errors.push(Array.new([2809, "Resource does not exist: AccessToken"]))
-                           			status = 400
-											else
-												# Add access token relationship to object
-												relation = TableObjectsAccessToken.new(table_object_id: object.id, access_token_id: access_token.id)
-
-												if !relation.save
-													errors.push(Array.new([1103, "Unknown validation error"]))
-													status = 500
-												else
-													@result = access_token.attributes
-													ok = true
-												end
-											end
-										end
-									end
-								end
-							end
-						end
-					end
-				end
-			end
+			render json: result, status: validations.last["status"]
 		end
-
-		if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
 	end
 
 	def remove_access_token_from_object
 		object_id = params["id"]
 		token = params["token"]
-      
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !object_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-		end
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
-		if !token || token.length < 1
-			errors.push(Array.new([2117, "Missing field: access_token"]))
-			status = 400
-		end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-		end
-		
-		if errors.length == 0
-			jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(object_id)
+			token_validation = ValidationService.validate_access_token_missing(token)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(id_validation) if !id_validation[:success]
+			errors.push(token_validation) if !token_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
 			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			object = TableObject.find_by_id(object_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(object))
+
+			table = Table.find_by_id(object.table_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
+
+			app = App.find_by_id(table.app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(object, user))
+
+			access_token = AccessToken.find_by(token: token)
+			ValidationService.raise_validation_error(ValidationService.validate_access_token_does_not_exist(access_token))
+
+			# Find access token relationship with object
+			relation = TableObjectsAccessToken.find_by(table_object_id: object.id, access_token_id: access_token.id)
+
+			if relation
+				relation.destroy!
+			end
+
+			# If the access token belongs to no objects, destroy it
+			if access_token.table_objects.length == 0
+				access_token.destroy!
+			end
+
+			result = access_token.attributes
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
 			
-			if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-				user = User.find_by_id(user_id)
-				
-				if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-				else
-					dev = Dev.find_by_id(dev_id)
-               
-               if !dev     # Check if the dev exists
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-					else
-						# Check if the object belongs to the user
-                  object = TableObject.find_by_id(object_id)
-                  
-                  if !object
-                     errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
-                     status = 400
-						else
-							table = Table.find_by_id(object.table_id)
-                     
-                     if !table
-                        errors.push(Array.new([2804, "Resource does not exist: Table"]))
-                        status = 400
-							else
-								app = App.find_by_id(table.app_id)
-                        
-                        if !app
-                           errors.push(Array.new([2803, "Resource does not exist: App"]))
-                           status = 400
-								else
-									if app.dev != dev
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-									else
-										if object.user != user
-                                 errors.push(Array.new([1102, "Action not allowed"]))
-                                 status = 403
-										else
-											access_token = AccessToken.find_by(token: token)
-
-											if !access_token
-												errors.push(Array.new([2809, "Resource does not exist: AccessToken"]))
-                           			status = 400
-											else
-												# Find access token relationship with object
-												relation = TableObjectsAccessToken.find_by(table_object_id: object.id, access_token_id: access_token.id)
-
-												if relation
-													relation.destroy!
-												end
-
-												# If the access token belongs to no objects, destroy it
-												if access_token.table_objects.length == 0
-													access_token.destroy!
-												end
-
-												@result = access_token.attributes
-												ok = true
-											end
-										end
-									end
-								end
-							end
-						end
-					end
-				end
-			end
+			render json: result, status: validations.last["status"]
 		end
-
-		if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
 	end
    
    
