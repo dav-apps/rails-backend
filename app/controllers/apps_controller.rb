@@ -1269,111 +1269,61 @@ class AppsController < ApplicationController
 			render json: result, status: validations.last["status"]
 		end
 	end
-   
+
 	def get_access_token
 		object_id = params["id"]
-      
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !object_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
-         
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev     # Check if the dev exists
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-               else
-                  # Check if the object belongs to the user
-                  object = TableObject.find_by_id(object_id)
-                  
-                  if !object
-                     errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
-                     status = 400
-                  else
-                     table = Table.find_by_id(object.table_id)
-                     
-                     if !table
-                        errors.push(Array.new([2804, "Resource does not exist: Table"]))
-                        status = 400
-                     else
-                        app = App.find_by_id(table.app_id)
-                        
-                        if !app
-                           errors.push(Array.new([2803, "Resource does not exist: App"]))
-                           status = 400
-                        else
-                           if app.dev != dev
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              if object.user != user
-                                 errors.push(Array.new([1102, "Action not allowed"]))
-                                 status = 403
-										else
-											access_token = object.access_tokens
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			id_validation = ValidationService.validate_id(object_id)
+			errors = Array.new
 
-											@result["access_token"] = access_token
-											ok = true
-                              end
-                           end
-                        end
-                     end
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(id_validation) if !id_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+
+			object = TableObject.find_by_id(object_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table_object(object))
+
+			table = Table.find_by_id(object.table_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+
+			app = App.find_by_id(table.app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(object, user))
+
+			# Return the data
+			access_token = object.access_tokens
+
+			result = Hash.new
+			result["access_token"] = access_token
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			
+			render json: result, status: validations.last["status"]
+		end
 	end
-	
+   
 	def add_access_token_to_object
 		object_id = params["id"]
 		token = params["token"]
