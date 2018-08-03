@@ -1270,9 +1270,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2113, resp["errors"][0][0])
+      assert_same(2102, resp["errors"][0][0])
       assert_same(2110, resp["errors"][1][0])
-      assert_same(2102, resp["errors"][2][0])
+      assert_same(2113, resp["errors"][2][0])
    end
    
    test "Can't create a table for the app of another dev" do
@@ -1361,9 +1361,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2110, resp["errors"][0][0])
-      assert_same(2113, resp["errors"][1][0])
-      assert_same(2102, resp["errors"][2][0])
+      assert_same(2102, resp["errors"][0][0])
+      assert_same(2110, resp["errors"][1][0])
+      assert_same(2113, resp["errors"][2][0])
    end
    
    test "Can't get the table of the app of another dev" do

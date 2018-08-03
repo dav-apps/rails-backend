@@ -905,355 +905,137 @@ class AppsController < ApplicationController
 		end
 	end
    
-   def delete_object_old
-		object_id = params["id"]
-      
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !object_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
-         
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev     # Check if the dev exists
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-               else
-						obj = TableObject.find_by(uuid: object_id)
-
-						if !obj
-							obj = TableObject.find_by_id(object_id)
-						end
-               
-                  if !obj
-                     errors.push(Array.new([2805, "Resource does not exist: TableObject"]))
-                     status = 400
-                  else
-                     table = Table.find_by_id(obj.table_id)
-                  
-                     if !table
-                        errors.push(Array.new([2804, "Resource does not exist: Table"]))
-                        status = 400
-                     else
-                        app = App.find_by_id(table.app_id)
-                     
-                        if !app
-                           errors.push(Array.new([2803, "Resource does not exist: App"]))
-                           status = 400
-                        else
-									if (app.dev_id != dev.id)    # Check if the app belongs to the dev
-                              errors.push(Array.new([1102, "Action not allowed"]))
-                              status = 403
-                           else
-                              # Check if user owns the object
-										if obj.user_id != user.id
-                                 errors.push(Array.new([1102, "Action not allowed"]))
-                                 status = 403
-										else
-											# Delete the file if it exists
-											if obj.file
-												BlobOperationsService.delete_blob(app.id, obj.id)
-												size_prop = obj.properties.find_by(name: "size")
-
-												if size_prop
-													# Save the new used_storage value
-													update_used_storage(user.id, app.id, -size_prop.value.to_i)
-												end
-											end
-
-                                 obj.destroy!
-                                 @result = {}
-                                 ok = true
-                              end
-                           end
-                        end
-                     end
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
-   
-   # Table methods
-   define_method :create_table do
-      table_name = params["table_name"]
+	# Table methods
+	def create_table
+		table_name = params["table_name"]
       app_id = params["app_id"]
-      
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !table_name || table_name.length < 1
-         errors.push(Array.new([2113, "Missing field: table_name"]))
-         status = 400
-      end
-      
-      if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
-         status = 400
-      end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
-         
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev     # Check if the dev exists
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-               else
-                  app = App.find_by_id(app_id)
-                  # Check if the app exists
-                  if !app
-                     errors.push(Array.new([2803, "Resource does not exist: App"]))
-                     status = 400
-                  else
-                     if !(((dev == Dev.first) && (app.dev == user.dev)) || (user.dev == dev) && (app.dev == user.dev))  # Von Webseite oder als Dev & Nutzer
-                        errors.push(Array.new([1102, "Action not allowed"]))
-                        status = 403
-                     else
-                        table = Table.find_by(name: table_name, app_id: app.id)
-                        
-                        if table
-                           errors.push(Array.new([2904, "Resource already exists: Table"]))
-                           status = 202
-                        else
-                           # Check if table_name is too long or too short
-                           if table_name.length > max_table_name_length
-                              errors.push(Array.new([2305, "Field too long: table_name"]))
-                              status = 400
-                           end
-                           
-                           if table_name.length < min_table_name_length
-                              errors.push(Array.new([2205, "Field too short: table_name"]))
-                              status = 400
-                           end
-                           
-                           if table_name.include? " "
-                              errors.push(Array.new([2501, "Field contains not allowed characters: table_name"]))
-                              status = 400
-                           end
-                           
-                           if errors.length == 0
-                              # Create the new table and return it
-                              table = Table.new(name: (table_name[0].upcase + table_name[1..-1]), app_id: app.id)
-                              if !table.save
-                                 errors.push(Array.new([1103, "Unknown validation error"]))
-                                 status = 500
-                              else
-                                 @result = table
-                                 ok = true
-                              end
-                           end
-                        end
-                     end
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 201
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
-   
-   def get_table
-      app_id = params["app_id"]
-      table_name = params["table_name"]
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !app_id
-         errors.push(Array.new([2110, "Missing field: app_id"]))
-         status = 400
-      end
-      
-      if !table_name || table_name.length < 1
-         errors.push(Array.new([2113, "Missing field: table_name"]))
-         status = 400
-      end
-      
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
-         
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
-            
-            user = User.find_by_id(user_id)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev     # Check if the dev exists
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-               else
-                  app = App.find_by_id(app_id)
-                  # Check if the app exists
-                  if !app
-                     errors.push(Array.new([2803, "Resource does not exist: App"]))
-                     status = 400
-                  else
-                     table = Table.find_by(name: table_name, app_id: app.id)
-                     # Check if the table exists
-                     if !table
-                        errors.push(Array.new([2804, "Resource does not exist: Table"]))
-                        status = 404
-                     else
-                        # Jeder kann zugreifen, solange die App dem Dev gehört oder man auf eigene Tabellen von der Webseite zugreift
-                        if !(((dev == Dev.first) && (app.dev == user.dev)) || app.dev == dev)
-                           errors.push(Array.new([1102, "Action not allowed"]))
-                           status = 403
-                        else
-                           @result = table.attributes
-                           
-                           array = Array.new
-                           
-                           table.table_objects.each do |table_object|
-                              if table_object.user_id == user.id
-                                 object = Hash.new
-											object["id"] = table_object.id
-											object["uuid"] = table_object.uuid
-											object["etag"] = generate_table_object_etag(table_object)
-											
-                                 array.push(object)
-                              end
-                           end
-                           
-                           @result["table_objects"] = array
-                           ok = true
-                        end
-                     end
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			app_id_validation = ValidationService.validate_app_id(app_id)
+			table_name_validation = ValidationService.validate_table_name(table_name)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(app_id_validation) if !app_id_validation[:success]
+			errors.push(table_name_validation) if !table_name_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_user_is_dev(user, dev, app))
+
+			table = Table.find_by(name: table_name, app_id: app.id)
+			ValidationService.raise_validation_error(ValidationService.validate_table_exists(table))
+
+			# Validate the properties
+			name_too_short_validation = ValidationService.validate_table_name_too_short(table_name)
+			name_too_long_validation = ValidationService.validate_table_name_too_long(table_name)
+			name_invalid_validation = ValidationService.validate_table_name_invalid(table_name)
+			errors = Array.new
+
+			errors.push(name_too_short_validation) if !name_too_short_validation[:success]
+			errors.push(name_too_long_validation) if !name_too_long_validation[:success]
+			errors.push(name_invalid_validation) if !name_invalid_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			# Create the table and return the data
+			table = Table.new(name: (table_name[0].upcase + table_name[1..-1]), app_id: app.id)
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(table.save))
+			result = table
+			render json: result, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			
+			render json: result, status: validations.last["status"]
+		end
 	end
-	
+
+	def get_table
+		app_id = params["app_id"]
+      table_name = params["table_name"]
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		begin
+			jwt_validation = ValidationService.validate_jwt(jwt)
+			app_id_validation = ValidationService.validate_app_id(app_id)
+			table_name_validation = ValidationService.validate_table_name(table_name)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(app_id_validation) if !app_id_validation[:success]
+			errors.push(table_name_validation) if !table_name_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev(dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app(app))
+
+			table = Table.find_by(name: table_name, app_id: app.id)
+			ValidationService.raise_validation_error(ValidationService.validate_table(table))
+
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app))
+
+			# Return the data
+			result = table.attributes
+			array = Array.new
+         
+			table.table_objects.each do |table_object|
+				if table_object.user_id == user.id
+					object = Hash.new
+					object["id"] = table_object.id
+					object["uuid"] = table_object.uuid
+					object["etag"] = generate_table_object_etag(table_object)
+					
+					array.push(object)
+				end
+			end
+			
+			result["table_objects"] = array
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			
+			render json: result, status: validations.last["status"]
+		end
+	end
+   
 	def get_table_by_id
       table_id = params["id"]      
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last

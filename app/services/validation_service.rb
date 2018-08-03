@@ -63,7 +63,16 @@ class ValidationService
 
 	def self.validate_website_call_and_user_is_app_dev_or_user_is_dev(user, dev, app)
 		error_code = 1102
-		!(((dev == Dev.first) && (app.dev == user.dev)) || user.dev == dev) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		# (Dev is first dev and the user is the dev of the app) or (Dev is user and dev and app belongs to dev)
+		# Only the dev of the app can call this
+		!(((dev == Dev.first) && (app.dev == user.dev)) || (user.dev == dev) && (app.dev == dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
+	def self.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app)
+		error_code = 1102
+		# (Dev is first dev and the user is the dev of the app) or (app belongs to dev)
+		# Every user of the dev can call this
+		!(((dev == Dev.first) && (app.dev == user.dev)) || (app.dev == dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_table_object_belongs_to_user(obj, user)
@@ -153,6 +162,11 @@ class ValidationService
 	def self.validate_desc(desc)
 		error_code = 2112
 		!desc || desc.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_table_name(table_name)
+		error_code = 2113
+		!table_name || table_name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_table_name_and_table_id(table_name, table_id)
@@ -284,6 +298,11 @@ class ValidationService
 	def self.validate_event(event)
 		error_code = 2807
 		!event ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
+	def self.validate_table_exists(table)
+		error_code = 2904
+		table ? {success: false, error: [error_code, get_error_message(error_code)], status: 202} : {success: true}
 	end
 
 	def self.get_error_message(code)
