@@ -74,86 +74,56 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def login
-      email = params[:email]
+	def login
+		email = params[:email]
       password = params[:password]
-      
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !email || email.length < 1
-         errors.push(Array.new([2106, "Missing field: email"]))
-         status = 400
-      end
-      
-      if !password || password.length < 1
-         errors.push(Array.new([2107, "Missing field: password"]))
-         status = 400
-      end
-      
-      if !auth || auth.length < 1
-         errors.push(Array.new([2101, "Missing field: auth"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         dev = Dev.find_by(api_key: api_key)
-         
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            user = User.find_by(email: email)
-            
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               if !check_authorization(api_key, sig)
-                  errors.push(Array.new([1101, "Authentication failed"]))
-                  status = 401
-               else
-                  if !user.authenticate(password)
-                     errors.push(Array.new([1201, "Password is incorrect"]))
-                     status = 401
-                  else
-                     if !user.confirmed
-                        errors.push(Array.new([1202, "User is not confirmed"]))
-                        status = 400
-                     else
-                        ok = true
-                     end
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         # Create JWT and result
+		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		begin
+			auth_validation = ValidationService.validate_auth_missing(auth)
+			email_validation = ValidationService.validate_email_missing(email)
+			password_validation = ValidationService.validate_password_missing(password)
+			errors = Array.new
+
+			errors.push(auth_validation) if !auth_validation[:success]
+			errors.push(email_validation) if !email_validation[:success]
+			errors.push(password_validation) if  !password_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			api_key = auth.split(",")[0]
+			sig = auth.split(",")[1]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			user = User.find_by(email: email)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+			ValidationService.raise_validation_error(ValidationService.authenticate_user(user, password))
+			ValidationService.raise_validation_error(ValidationService.validate_user_is_confirmed(user))
+
+			# Return the data
+			# Create JWT and result
+			result = Hash.new
          expHours = Rails.env.production? ? 7000 : 10000000
          exp = Time.now.to_i + expHours * 3600
          payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
          token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
-         @result["jwt"] = token
-         @result["user_id"] = user.id
-         
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
+         result["jwt"] = token
+         result["user_id"] = user.id
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
 
    def login_by_jwt
       api_key = params[:api_key]
@@ -433,14 +403,14 @@ class UsersController < ApplicationController
       
       errors = Array.new
       @result = Hash.new
-      ok = false
+		ok = false
       
       if !jwt || jwt.length < 1
          errors.push(Array.new([2102, "Missing field: jwt"]))
          status = 401
-      end
+		end
       
-      if errors.length == 0
+		if errors.length == 0
          jwt_valid = false
          begin
             decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }

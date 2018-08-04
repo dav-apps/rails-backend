@@ -128,6 +128,16 @@ class ValidationService
 		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
 	end
 
+	def self.authenticate_user(user, password)
+		error_code = 1201
+		!user.authenticate(password) ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
+	end
+
+	def self.validate_user_is_confirmed(user)
+		error_code = 1202
+		!user.confirmed ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_jwt_signature(jwt)
 		begin
 			decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
