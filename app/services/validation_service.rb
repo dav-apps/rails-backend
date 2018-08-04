@@ -305,9 +305,14 @@ class ValidationService
 		!token ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
+	def self.validate_dev_already_exists(dev)
+		error_code = 2902
+		dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
+	end
+
 	def self.validate_table_already_exists(table)
 		error_code = 2904
-		table ? {success: false, error: [error_code, get_error_message(error_code)], status: 202} : {success: true}
+		table ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
 	end
 
 	def self.get_error_message(code)

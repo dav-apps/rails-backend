@@ -22,7 +22,7 @@ class DevsMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/devs/dev?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
       
-      assert_response 400
+      assert_response 409
       assert_same(2902, resp["errors"][0][0])
    end
    
