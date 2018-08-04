@@ -125,9 +125,59 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def login_by_jwt
-      api_key = params[:api_key]
+	def login_by_jwt
+		api_key = params[:api_key]
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			api_key_validation = ValidationService.validate_api_key_missing(api_key)
+			errors = Array.new
 
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(api_key_validation) if !api_key_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+			
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			dev_api_key = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev_api_key))
+
+			# Return the data
+			# Create JWT and result
+			result = Hash.new
+         expHours = Rails.env.production? ? 7000 : 10000000
+         exp = Time.now.to_i + expHours * 3600
+         payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev_api_key.id, :exp => exp}
+         token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
+         result["jwt"] = token
+         result["user_id"] = user.id
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
+   def login_by_jwt_old
+      api_key = params[:api_key]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
       errors = Array.new
