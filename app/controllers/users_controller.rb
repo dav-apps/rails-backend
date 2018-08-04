@@ -486,74 +486,54 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def delete_user
-      email_confirmation_token = params[:email_confirmation_token]
+	def delete_user
+		email_confirmation_token = params[:email_confirmation_token]
       password_confirmation_token = params[:password_confirmation_token]
-      user_id = params[:id]
+		user_id = params[:id]
+		
+		begin
+			id_validation = ValidationService.validate_user_id_missing(user_id)
+			email_confirmation_token_validation = ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
+			password_confirmation_token_validation = ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+			errors = Array.new
 
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !email_confirmation_token || email_confirmation_token.length < 1
-         errors.push(Array.new([2108, "Missing field: email_confirmation_token"]))
-         status = 400
-      end
+			errors.push(id_validation) if !id_validation[:success]
+			errors.push(email_confirmation_token_validation) if !email_confirmation_token_validation[:success]
+			errors.push(password_confirmation_token_validation) if !password_confirmation_token_validation[:success]
 
-      if !password_confirmation_token || password_confirmation_token.length < 1
-         errors.push(Array.new([2109, "Missing field: password_confirmation_token"]))
-         status = 400
-      end
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
 
-      if !user_id
-         errors.push(Array.new([2104, "Missing field: user_id"]))
-         status = 400
-      end
-      
-      if errors.length == 0
-         user = User.find_by_id(user_id)
-         
-         if !user
-            errors.push(Array.new([2801, "Resource does not exist: User"]))
-            status = 400
-         else
-            if user.email_confirmation_token != email_confirmation_token
-               errors.push(Array.new([1204, "Email confirmation token is not correct"]))
-               status = 400
-            else
-               if user.password_confirmation_token != password_confirmation_token
-                  errors.push(Array.new([1203, "Password confirmation token is not correct"]))
-                  status = 400
-               else
-                  # Delete the avatar of the user
-						BlobOperationsService.delete_avatar(user.id)
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			ValidationService.raise_validation_error(ValidationService.validate_password_confirmation_token_of_user(user, password_confirmation_token))
+			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_of_user(user, email_confirmation_token))
+
+			# Delete the avatar of the user
+			BlobOperationsService.delete_avatar(user.id)
 						
-						# Delete the stripe customer
-						if user.stripe_customer_id
-							customer = Stripe::Customer.retrieve(user.stripe_customer_id)
-							if customer
-								customer.delete
-							end
-						end
+			# Delete the stripe customer
+			if user.stripe_customer_id
+				customer = Stripe::Customer.retrieve(user.stripe_customer_id)
+				if customer
+					customer.delete
+				end
+			end
 
-                  # Delete the user
-                  user.destroy!
-                  @result = {}
-                  ok = true
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
+			# Delete the user
+			user.destroy!
+			result = {}
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
 
    def remove_app
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last

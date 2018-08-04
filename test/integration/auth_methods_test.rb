@@ -669,7 +669,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1204, resp["errors"][0][0])
+      assert_same(1203, resp["errors"][0][0])
    end
    
    test "User will be deleted" do

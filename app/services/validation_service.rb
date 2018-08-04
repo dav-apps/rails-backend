@@ -158,6 +158,16 @@ class ValidationService
 		!user.confirmed ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_password_confirmation_token_of_user(user, token)
+		error_code = 1203
+		user.password_confirmation_token != token ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_email_confirmation_token_of_user(user, token)
+		error_code = 1204
+		user.email_confirmation_token != token ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_jwt_signature(jwt)
 		begin
 			decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
@@ -208,6 +218,16 @@ class ValidationService
 	def self.validate_password_missing(password)
 		error_code = 2107
 		!password || password.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_email_confirmation_token_missing(token)
+		error_code = 2108
+		!token || token.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_password_confirmation_token_missing(token)
+		error_code = 2109
+		!token || token.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_app_id_missing(app_id)
