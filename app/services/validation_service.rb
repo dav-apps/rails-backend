@@ -123,6 +123,16 @@ class ValidationService
 		dev.apps.length != 0 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_plan_exists(plan)
+		error_code = 1108
+		plan != 0 && plan != 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_file_extension_supported(format)
+		error_code = 1109
+		!(format == "png" || format == "PNG" || format == "jpg" || format == "JPG" || format == "jpeg" || format == "JPEG") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_storage_space(free_storage, file_size)
 		error_code = 1110
 		free_storage < file_size ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -131,6 +141,11 @@ class ValidationService
 	def self.get_file_does_not_exist_error
 		error_code = 1111
 		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
+	end
+
+	def self.validate_user_is_stripe_customer(user)
+		error_code = 1113
+		!user.stripe_customer_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.authenticate_user(user, password)
@@ -324,6 +339,16 @@ class ValidationService
 	def self.validate_link_windows_not_valid(link)
 		error_code = 2404
 		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.get_payment_token_not_valid_error
+		error_code = 2405
+		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
+	end
+
+	def self.validate_payment_token_not_valid(payment_token)
+		error_code = 2405
+
 	end
 
 	def self.validate_table_name_contains_not_allowed_characters(table_name)
