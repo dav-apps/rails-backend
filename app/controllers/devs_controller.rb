@@ -72,69 +72,51 @@ class DevsController < ApplicationController
       end
    end
 
-   define_method :get_dev_by_api_key do
+   def get_dev_by_api_key
       requested_dev_api_key = params["api_key"]
       auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      if auth
-         api_key = auth.split(",")[0]
+
+      begin
+         auth_validation = ValidationService.validate_auth_missing(auth)
+         api_key_validation = ValidationService.validate_api_key_missing(requested_dev_api_key)
+         errors = Array.new
+
+         errors.push(auth_validation) if !auth_validation[:success]
+         errors.push(api_key_validation) if !api_key_validation[:success]
+
+         if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+			
+			api_key = auth.split(",")[0]
          sig = auth.split(",")[1]
-      end
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !auth || auth.length < 1
-         errors.push(Array.new([2101, "Missing field: auth"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         dev = Dev.find_by(api_key: api_key)
          
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([1101, "Authentication failed"]))
-               status = 401
-            else
-               if dev.user_id != Dev.first.user_id
-                  errors.push(Array.new([1102, "Action not allowed"]))
-                  status = 403
-               else
-                  # Get requested dev
-                  requested_dev = Dev.find_by(api_key: requested_dev_api_key)
-                  
-                  if !requested_dev
-                     errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                     status = 400
-                  else
-							@result = requested_dev.attributes
-							
-							apps_array = Array.new
-							requested_dev.apps.each { |app| apps_array.push(app) }
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-							@result["apps"] = apps_array
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-                     ok = true
-                  end
-               end
-            end
-         end
+			requested_dev = Dev.find_by(api_key: requested_dev_api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(requested_dev))
+
+			# Return the data
+			result = requested_dev.attributes
+			
+			apps_array = Array.new
+			requested_dev.apps.each { |app| apps_array.push(app) }
+
+			result["apps"] = apps_array
+			render json: result, status: 200
+      rescue RuntimeError => e
+         validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
       end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
    end
-   
+
    define_method :delete_dev do
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
