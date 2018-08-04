@@ -139,10 +139,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2106, resp["errors"][0][0])
-      assert_same(2107, resp["errors"][1][0])
-      assert_same(2105, resp["errors"][2][0])
-      assert_same(2101, resp["errors"][3][0])
+      assert_same(2101, resp["errors"][0][0])
+      assert_same(2105, resp["errors"][1][0])
+      assert_same(2106, resp["errors"][2][0])
+      assert_same(2107, resp["errors"][3][0])
    end
    
    test "Email already taken in signup" do
@@ -172,8 +172,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2202, resp["errors"][0][0])
-      assert_same(2201, resp["errors"][1][0])
+      assert_same(2201, resp["errors"][0][0])
+      assert_same(2202, resp["errors"][1][0])
    end
    
    test "Can't signup with too long username and password" do
@@ -183,8 +183,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2302, resp["errors"][0][0])
-      assert_same(2301, resp["errors"][1][0])
+      assert_same(2301, resp["errors"][0][0])
+      assert_same(2302, resp["errors"][1][0])
    end
    
    test "Can't signup with invalid email" do

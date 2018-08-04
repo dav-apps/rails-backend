@@ -1,4 +1,10 @@
 class ValidationService
+	require 'jwt'
+   min_username_length = 2
+   max_username_length = 25
+   min_password_length = 7
+	max_password_length = 25
+	max_archive_count = 10
 	max_table_name_length = 100
    min_table_name_length = 2
    max_property_name_length = 100
@@ -154,6 +160,21 @@ class ValidationService
 		!id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_username_missing(username)
+		error_code = 2105
+		!username || username.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_email_missing(email)
+		error_code = 2106
+		!email || email.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_password_missing(password)
+		error_code = 2107
+		!password || password.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_app_id_missing(app_id)
 		error_code = 2110
 		!app_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -195,6 +216,16 @@ class ValidationService
 		!api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_username_too_short do |username|
+		error_code = 2201
+		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_password_too_short do |password|
+		error_code = 2202
+		password.length < min_password_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_name_too_short do |name|
 		error_code = 2203
 		name.length < min_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -218,6 +249,16 @@ class ValidationService
 	define_singleton_method :validate_property_value_too_short do |value|
 		error_code = 2207
 		value.length < min_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_username_too_long do |username|
+		error_code = 2301
+		username.length > max_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_password_too_long do |password|
+		error_code = 2302
+		password.length > max_password_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_name_too_long do |name|
@@ -245,6 +286,11 @@ class ValidationService
 		value.length > max_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_email_not_valid(email)
+		error_code = 2401
+		!validate_email(email) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_link_web_not_valid(link)
 		error_code = 2402
 		!(link.length == 0 || validate_url(link)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -263,6 +309,16 @@ class ValidationService
 	def self.validate_table_name_contains_not_allowed_characters(table_name)
 		error_code = 2501
 		table_name.include?(" ") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_username_taken(username)
+		error_code = 2701
+		User.exists?(username: username) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_email_taken(email)
+		error_code = 2702
+		User.exists?(email: email) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_event_name_taken(new_name, old_name, app_id)
@@ -522,5 +578,10 @@ class ValidationService
 
 	def self.validate_url(url)
       /\A#{URI::regexp}\z/.match?(url)
+	end
+	
+	def self.validate_email(email)
+      reg = Regexp.new("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?")
+      return (reg.match(email))? true : false
    end
 end

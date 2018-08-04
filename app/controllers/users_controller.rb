@@ -5,122 +5,75 @@ class UsersController < ApplicationController
    min_password_length = 7
 	max_password_length = 25
 	max_archive_count = 10
-   
-   define_method :signup do
-      email = params[:email]
+	
+	def signup
+		email = params[:email]
       password = params[:password]
-      username = params[:username]
-      
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      if auth
-         api_key = auth.split(",")[0]
-         sig = auth.split(",")[1]
-      end
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !email || email.length < 1
-         errors.push(Array.new([2106, "Missing field: email"]))
-         status = 400
-      end
-      
-      if !password || password.length < 1
-         errors.push(Array.new([2107, "Missing field: password"]))
-         status = 400
-      end
-      
-      if !username || username.length < 1
-         errors.push(Array.new([2105, "Missing field: username"]))
-         status = 400
-      end
-      
-      if !auth || auth.length < 1
-         errors.push(Array.new([2101, "Missing field: auth"]))
-         status = 401
-      end
-      
-      if errors.length == 0
-         dev = Dev.find_by(api_key: api_key)
-         
-         if !dev     # Check if the dev exists
-            errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-            status = 400
-         else
-            if !check_authorization(api_key, sig)
-               errors.push(Array.new([1101, "Authentication failed"]))
-               status = 401
-            else
-               if dev.user_id != Dev.first.user_id
-                  errors.push(Array.new([1102, "Action not allowed"]))
-                  status = 403
-               else
-                  if User.exists?(email: email)
-                     errors.push(Array.new([2702, "Field already taken: email"]))
-                     status = 400
-                  else
-                     # Validate the fields
-                     if !validate_email(email)
-                        errors.push(Array.new([2401, "Field not valid: email"]))
-                        status = 400
-                     end
-                     
-                     if password.length < min_password_length
-                        errors.push(Array.new([2202, "Field too short: password"]))
-                        status = 400
-                     end
-                     
-                     if password.length > max_password_length
-                        errors.push(Array.new([2302, "Field too long: password"]))
-                        status = 400
-                     end
-                     
-                     if username.length < min_username_length
-                        errors.push(Array.new([2201, "Field too short: username"]))
-                        status = 400
-                     end
-                     
-                     if username.length > max_username_length
-                        errors.push(Array.new([2301, "Field too long: username"]))
-                        status = 400
-                     end
-                     
-                     if User.exists?(username: username)
-                        errors.push(Array.new([2701, "Field already taken: username"]))
-                        status = 400
-                     end
-                     
-                     if errors.length == 0
-                        @user = User.new(email: email, password: password, username: username)
-                        # Save the new user
-                        @user.email_confirmation_token = generate_token
-								
-                        if !@user.save
-                           errors.push(Array.new([1103, "Unknown validation error"]))
-                           status = 500
-                        else
-									UserNotifier.send_verification_email(@user).deliver_later
-                           ok = true
-                        end
-                     end
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 201
-         @result = @user
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
-   
+		username = params[:username]
+		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+
+		begin
+			auth_validation = ValidationService.validate_auth_missing(auth)
+			username_validation = ValidationService.validate_username_missing(username)
+			email_validation = ValidationService.validate_email_missing(email)
+			password_validation = ValidationService.validate_password_missing(password)
+			errors = Array.new
+
+			errors.push(auth_validation) if !auth_validation[:success]
+			errors.push(username_validation) if !username_validation[:success]
+			errors.push(email_validation) if !email_validation[:success]
+			errors.push(password_validation) if !password_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			api_key = auth.split(",")[0]
+			sig = auth.split(",")[1]
+			
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_email_taken(email))
+
+			# Validate the properties
+			email_validation = ValidationService.validate_email_not_valid(email)
+			username_too_short_validation = ValidationService.validate_username_too_short(username)
+			username_too_long_validation = ValidationService.validate_username_too_long(username)
+			password_too_short_validation = ValidationService.validate_password_too_short(password)
+			password_too_long_validation = ValidationService.validate_password_too_long(password)
+			username_taken_validation = ValidationService.validate_username_taken(username)
+			errors = Array.new
+
+			errors.push(email_validation) if !email_validation[:success]
+			errors.push(username_too_short_validation) if !username_too_short_validation[:success]
+			errors.push(username_too_long_validation) if !username_too_long_validation[:success]
+			errors.push(password_too_short_validation) if !password_too_short_validation[:success]
+			errors.push(password_too_long_validation) if !password_too_long_validation[:success]
+			errors.push(username_taken_validation) if !username_taken_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			# Create the new user
+			user = User.new(email: email, password: password, username: username)
+			user.email_confirmation_token = generate_token
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+
+			UserNotifier.send_verification_email(@user).deliver_later
+			render json: user, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
    def login
       email = params[:email]
       password = params[:password]

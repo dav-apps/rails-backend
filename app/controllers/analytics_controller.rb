@@ -1,12 +1,4 @@
 class AnalyticsController < ApplicationController
-   
-   min_event_name_length = 2
-	max_event_name_length = 15
-	max_event_data_length = 65000
-	min_property_name_length = 1
-	max_property_name_length = 100
-	min_property_value_length = 1
-	max_property_value_length = 65000
 	
 	def create_event_log
 		api_key = params["api_key"]
