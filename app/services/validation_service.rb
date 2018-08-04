@@ -107,6 +107,11 @@ class ValidationService
 		content_type == "application/x-www-form-urlencoded" || content_type == nil ? {success: false, error: [error_code, get_error_message(error_code)], status: 415} : {success: true}
 	end
 
+	def self.validate_all_apps_deleted(dev)
+		error_code = 1107
+		dev.apps.length != 0 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_storage_space(free_storage, file_size)
 		error_code = 1110
 		free_storage < file_size ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
