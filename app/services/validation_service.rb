@@ -62,6 +62,11 @@ class ValidationService
 		user.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
+	def self.validate_user_is_user(user1, user2)
+		error_code = 1102
+		user1 != user2 ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
 	def self.validate_website_call_and_user_is_app_dev(user, dev, app)
 		error_code = 1102
 		!((dev == Dev.first) && (app.dev == user.dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
@@ -168,6 +173,11 @@ class ValidationService
 	def self.validate_id_missing(id)
 		error_code = 2103
 		!id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_user_id_missing(user_id)
+		error_code = 2104
+		!user_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_username_missing(username)
