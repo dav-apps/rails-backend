@@ -239,88 +239,53 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def get_user_by_jwt
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
+	def get_user_by_jwt
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
-      if !jwt || jwt.length < 1
-         errors.push(Array.new([2102, "Missing field: jwt"]))
-         status = 401
-      end
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
 
-      if errors.length == 0
-         jwt_valid = false
-         begin
-            decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-            jwt_valid = true
-         rescue JWT::ExpiredSignature
-            # JWT expired
-            errors.push(Array.new([1301, "JWT: expired"]))
-            status = 401
-         rescue JWT::DecodeError
-            errors.push(Array.new([1302, "JWT: not valid"]))
-            status = 401
-            # rescue other errors
-         rescue Exception
-            errors.push(Array.new([1303, "JWT: unknown error"]))
-            status = 401
-         end
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-         if jwt_valid
-            user_id = decoded_jwt[0]["user_id"]
-            dev_id = decoded_jwt[0]["dev_id"]
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-            user = User.find_by_id(user_id)
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-            if !user
-               errors.push(Array.new([2801, "Resource does not exist: User"]))
-               status = 400
-            else
-               dev = Dev.find_by_id(dev_id)
-               
-               if !dev
-                  errors.push(Array.new([2802, "Resource does not exist: Dev"]))
-                  status = 400
-               else
-						@result = user.attributes.except("email_confirmation_token", 
-																	"password_confirmation_token", 
-																	"new_password", 
-																	"password_digest",
-																	"stripe_customer_id")
-                  avatar_info = BlobOperationsService.get_avatar_information(user.id)
-                  @result["avatar"] = avatar_info[0]
-                  @result["avatar_etag"] = avatar_info[1]
-                  @result["total_storage"] = get_total_storage(user.plan)
-                  @result["used_storage"] = user.used_storage
+			result = user.attributes.except("email_confirmation_token", 
+														"password_confirmation_token", 
+														"new_password", 
+														"password_digest",
+														"stripe_customer_id")
 
-						users_apps = Array.new
-						UsersApp.where(user_id: user.id).each do |users_app|
-							app_hash = users_app.app.attributes
-							app_hash["used_storage"] = users_app.used_storage
-							users_apps.push(app_hash)
-						end
-						@result["apps"] = users_apps
-						@result["archives"] = user.archives
+			avatar_info = BlobOperationsService.get_avatar_information(user.id)
+			result["avatar"] = avatar_info[0]
+			result["avatar_etag"] = avatar_info[1]
+			result["total_storage"] = get_total_storage(user.plan)
+			result["used_storage"] = user.used_storage
 
-                  ok = true
-               end
-            end
-         end
-      end
+			users_apps = Array.new
+			UsersApp.where(user_id: user.id).each do |users_app|
+				app_hash = users_app.app.attributes
+				app_hash["used_storage"] = users_app.used_storage
+				users_apps.push(app_hash)
+			end
+			result["apps"] = users_apps
+			result["archives"] = user.archives
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
 
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
-   
+			render json: result, status: validations.last["status"]
+		end
+	end
+
    define_method :update_user do
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
       
