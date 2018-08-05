@@ -1,4 +1,3 @@
-# encoding: UTF-8
 # This file is auto-generated from the current state of the database. Instead
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
@@ -13,112 +12,112 @@
 
 ActiveRecord::Schema.define(version: 20180713143210) do
 
-  create_table "access_tokens", force: :cascade do |t|
-    t.string   "token",      limit: 255
+  create_table "access_tokens", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.string "token"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  create_table "apps", force: :cascade do |t|
-    t.string   "name",         limit: 255
-    t.text     "description",  limit: 65535
-    t.integer  "dev_id",       limit: 4
-    t.boolean  "published",                  default: false
+  create_table "apps", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.string "name"
+    t.text "description"
+    t.integer "dev_id"
+    t.boolean "published", default: false
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "link_web",     limit: 255
-    t.string   "link_play",    limit: 255
-    t.string   "link_windows", limit: 255
+    t.string "link_web"
+    t.string "link_play"
+    t.string "link_windows"
   end
 
-  create_table "archives", force: :cascade do |t|
-    t.integer  "user_id",    limit: 4
+  create_table "archives", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "user_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "name",       limit: 255
-    t.boolean  "completed",              default: false
+    t.string "name"
+    t.boolean "completed", default: false
   end
 
-  create_table "devs", force: :cascade do |t|
-    t.integer  "user_id",    limit: 4
-    t.string   "api_key",    limit: 255
-    t.string   "secret_key", limit: 255
+  create_table "devs", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "user_id"
+    t.string "api_key"
+    t.string "secret_key"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "uuid",       limit: 255
+    t.string "uuid"
   end
 
-  create_table "event_log_properties", force: :cascade do |t|
-    t.integer "event_log_id", limit: 4
-    t.string  "name",         limit: 255
-    t.text    "value",        limit: 65535
+  create_table "event_log_properties", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "event_log_id"
+    t.string "name"
+    t.text "value"
   end
 
-  create_table "event_logs", force: :cascade do |t|
-    t.integer  "event_id",   limit: 4
+  create_table "event_logs", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "event_id"
     t.datetime "created_at"
   end
 
-  create_table "events", force: :cascade do |t|
-    t.string   "name",       limit: 255
-    t.integer  "app_id",     limit: 4
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  create_table "properties", force: :cascade do |t|
-    t.integer "table_object_id", limit: 4
-    t.string  "name",            limit: 255
-    t.text    "value",           limit: 65535
-  end
-
-  create_table "table_objects", force: :cascade do |t|
-    t.integer  "table_id",   limit: 4
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.integer  "user_id",    limit: 4
-    t.integer  "visibility", limit: 4,   default: 0
-    t.string   "uuid",       limit: 255
-    t.boolean  "file",                   default: false
-  end
-
-  create_table "table_objects_access_tokens", force: :cascade do |t|
-    t.integer "table_object_id", limit: 4
-    t.integer "access_token_id", limit: 4
-  end
-
-  create_table "tables", force: :cascade do |t|
-    t.integer  "app_id",     limit: 4
-    t.string   "name",       limit: 255
+  create_table "events", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.string "name"
+    t.integer "app_id"
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
-  create_table "users", force: :cascade do |t|
-    t.string   "email",                       limit: 255
-    t.string   "password_digest",             limit: 255
-    t.string   "username",                    limit: 255
-    t.boolean  "confirmed",                               default: false
-    t.string   "email_confirmation_token",    limit: 255
-    t.string   "password_confirmation_token", limit: 255
-    t.string   "new_password",                limit: 255
-    t.string   "new_email",                   limit: 255
+  create_table "properties", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "table_object_id"
+    t.string "name"
+    t.text "value"
+  end
+
+  create_table "table_objects", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "table_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.string   "old_email",                   limit: 255
-    t.integer  "plan",                        limit: 4,   default: 0
-    t.string   "stripe_customer_id",          limit: 255
+    t.integer "user_id"
+    t.integer "visibility", default: 0
+    t.string "uuid"
+    t.boolean "file", default: false
+  end
+
+  create_table "table_objects_access_tokens", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "table_object_id"
+    t.integer "access_token_id"
+  end
+
+  create_table "tables", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "app_id"
+    t.string "name"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  create_table "users", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.string "email"
+    t.string "password_digest"
+    t.string "username"
+    t.boolean "confirmed", default: false
+    t.string "email_confirmation_token"
+    t.string "password_confirmation_token"
+    t.string "new_password"
+    t.string "new_email"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.string "old_email"
+    t.integer "plan", default: 0
+    t.string "stripe_customer_id"
     t.datetime "period_end"
-    t.integer  "subscription_status",         limit: 4,   default: 0
-    t.integer  "used_storage",                limit: 8,   default: 0
+    t.integer "subscription_status", default: 0
+    t.bigint "used_storage", default: 0
   end
 
-  create_table "users_apps", force: :cascade do |t|
-    t.integer  "user_id",      limit: 4
-    t.integer  "app_id",       limit: 4
+  create_table "users_apps", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "user_id"
+    t.integer "app_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "used_storage", limit: 8, default: 0
+    t.bigint "used_storage", default: 0
   end
 
 end

@@ -825,57 +825,34 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def reset_new_email
-      # This method exists to reset the new email, when the email change was not intended by the account owner
-      user_id = params["id"]
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !user_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if errors.length == 0
-         user = User.find_by_id(user_id)
-         
-         if !user
-            errors.push(Array.new([2801, "Resource does not exist: User"]))
-            status = 400
-         else
-            if !user.old_email || user.old_email.length < 1
-               errors.push(Array.new([2602, "Field is empty: old_email"]))
-               status = 400
-            else
-               # set new_email to email and email to old_email
-               user.email = user.old_email
-					user.old_email = nil
-					
-					# Save the new email on stripe
-					save_email_to_stripe_customer(user)
-               
-               if !user.save
-                  errors.push(Array.new([1103, "Unknown validation error"]))
-                  status = 500
-               else
-                  ok = true
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
+	def reset_new_email
+		user_id = params["id"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_id_missing(user_id))
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_old_email_empty(user.old_email))
+
+			# Set new_email to email and email to old_email
+			user.email = user.old_email
+			user.old_email = nil
+			
+			# Save the new email on stripe
+			save_email_to_stripe_customer(user)
+
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+			result = {}
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
 	end
-	
+
 	define_method :create_archive do
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		

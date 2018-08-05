@@ -391,6 +391,11 @@ class ValidationService
 		new_email == nil || new_email.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_old_email_empty(old_email)
+		error_code = 2602
+		old_email == nil || old_email.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_new_password_empty(new_password)
 		error_code = 2603
 		new_password == nil || new_password.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
