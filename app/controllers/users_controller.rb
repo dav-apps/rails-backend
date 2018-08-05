@@ -621,51 +621,31 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def send_verification_email
-      email = params["email"]
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !email || email.length < 1
-         errors.push(Array.new([2106, "Missing field: email"]))
-         status = 400
-      end
-      
-      if errors.length == 0
-         user = User.find_by(email: email)
-         
-         if !user
-            errors.push(Array.new([2801, "Resource does not exist: User"]))
-            status = 400
-         else
-            if user.confirmed == true
-               errors.push(Array.new([1106, "User is already confirmed"]))
-               status = 400
-            else
-               user.email_confirmation_token = generate_token
-               if !user.save
-                  errors.push(Array.new([1103, "Unknown validation error"]))
-                  status = 500
-               else
-                  ok = true
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-			# Send email
+	def send_verification_email
+		email = params["email"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_email_missing(email))
+
+			user = User.find_by(email: email)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			ValidationService.raise_validation_error(ValidationService.validate_user_is_not_confirmed(user))
+			
+			user.email_confirmation_token = generate_token
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+
 			UserNotifier.send_verification_email(user).deliver_later
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
+			result = {}
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
 
    def send_delete_account_email
       email = params["email"]
