@@ -585,59 +585,42 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def confirm_user
-      email_confirmation_token = params["email_confirmation_token"]
-      user_id = params["id"]
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !email_confirmation_token || email_confirmation_token.length < 1
-         errors.push(Array.new([2108, "Missing field: email_confirmation_token"]))
-         status = 400
-      end
-      
-      if !user_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if errors.length == 0
-         user = User.find_by_id(user_id)
-         
-         if !user
-            errors.push(Array.new([2801, "Resource does not exist: User"]))
-            status = 400
-         else
-            if user.confirmed == true
-               errors.push(Array.new([1106, "User is already confirmed"]))
-               status = 400
-            else
-               if user.email_confirmation_token != email_confirmation_token
-                  errors.push(Array.new([1204, "Email confirmation token is not correct"]))
-                  status = 400
-               else
-                  user.email_confirmation_token = nil
-                  user.confirmed = true
-                  user.save!
-                  
-                  ok = true
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
-   
+	def confirm_user
+		email_confirmation_token = params["email_confirmation_token"]
+		user_id = params["id"]
+		
+		begin
+			id_validation = ValidationService.validate_id_missing(user_id)
+			token_validation = ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
+			errors = Array.new
+
+			errors.push(id_validation) if !id_validation[:success]
+			errors.push(token_validation) if !token_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			ValidationService.raise_validation_error(ValidationService.validate_user_is_not_confirmed(user))
+			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_of_user(user, email_confirmation_token))
+
+			user.email_confirmation_token = nil
+         user.confirmed = true
+			user.save!
+			result = {}
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
    def send_verification_email
       email = params["email"]
       
