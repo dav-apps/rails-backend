@@ -386,6 +386,11 @@ class ValidationService
 		table_name.include?(" ") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_new_password_empty(new_password)
+		error_code = 2603
+		new_password == nil || new_password.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_username_taken(username)
 		error_code = 2701
 		User.exists?(username: username) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}

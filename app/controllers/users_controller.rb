@@ -745,66 +745,41 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def save_new_password
-      user_id = params["id"]
-      password_confirmation_token = params["password_confirmation_token"]
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !user_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !password_confirmation_token || password_confirmation_token.length < 1
-         errors.push(Array.new([2109, "Missing field: password_confirmation_token"]))
-         status = 400
-      end
-      
-      if errors.length == 0
-         user = User.find_by_id(user_id)
-         
-         if !user
-            errors.push(Array.new([2801, "Resource does not exist: User"]))
-            status = 400
-         else
-            if password_confirmation_token != user.password_confirmation_token
-               errors.push(Array.new([1203, "Password confirmation token is not correct"]))
-               status = 400
-            else
-               if user.new_password == nil || user.new_password.length < 1
-                  errors.push(Array.new([2603, "Field is empty: new_password"]))
-                  status = 400
-               else
-                  # Save new password
-                  user.password_digest = user.new_password
-                  user.new_password = nil
-                  
-                  user.password_confirmation_token = nil
-                  
-                  if !user.save
-                     errors.push(Array.new([1103, "Unknown validation error"]))
-                     status = 500
-                  else
-                     ok = true
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
-   
+	def save_new_password
+		user_id = params["id"]
+		password_confirmation_token = params["password_confirmation_token"]
+		
+		begin
+			id_validation = ValidationService.validate_id_missing(user_id)
+			token_validation = ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+			errors = Array.new
+
+			errors.push(id_validation) if !id_validation[:success]
+			errors.push(token_validation) if !token_validation[:success]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			ValidationService.raise_validation_error(ValidationService.validate_password_confirmation_token_of_user(user, password_confirmation_token))
+			ValidationService.raise_validation_error(ValidationService.validate_new_password_empty(user.new_password))
+
+			# Save new password
+         user.password_digest = user.new_password
+			user.new_password = nil
+			user.password_confirmation_token = nil
+
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+			result = {}
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
    def save_new_email
       user_id = params["id"]
       email_confirmation_token = params["email_confirmation_token"]
