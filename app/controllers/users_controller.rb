@@ -699,65 +699,51 @@ class UsersController < ApplicationController
 		end
 	end
 
-   define_method :set_password do
-      password_confirmation_token = params["password_confirmation_token"]
-      password = params["password"]
+	def set_password
+		password_confirmation_token = params["password_confirmation_token"]
+		password = params["password"]
+		
+		begin
+			password_validation = ValidationService.validate_password_missing(password)
+			token_validation = ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+			errors = Array.new
 
-      errors = Array.new
-      @result = Hash.new
-      ok = false
+			errors.push(password_validation) if !password_validation[:success]
+			errors.push(token_validation) if !token_validation[:success]
 
-      if !password_confirmation_token || password_confirmation_token.length < 1
-         errors.push(Array.new([2109, "Missing field: password_confirmation_token"]))
-         status = 400
-      end
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
 
-      if !password || password.length < 1
-         errors.push(Array.new([2107, "Missing field: password"]))
-         status = 400
-      end
+			user = User.find_by(password_confirmation_token: password_confirmation_token)
+			ValidationService.raise_validation_error(ValidationService.get_password_confirmation_token_incorrect_error(!user))
 
-      if errors.length == 0
-         user = User.find_by(password_confirmation_token: password_confirmation_token)
+			# Validate the password
+			too_short_validation = ValidationService.validate_password_too_short(password)
+			too_long_validation = ValidationService.validate_password_too_long(password)
+			errors = Array.new
 
-         if !user
-            errors.push(Array.new([1203, "Password confirmation token is not correct"]))
-            status = 400
-         else
-            # Validate password
-            if password.length < min_password_length
-               errors.push(Array.new([2202, "Field too short: password"]))
-               status = 400
-            end
-            
-            if password.length > max_password_length
-               errors.push(Array.new([2302, "Field too long: password"]))
-               status = 400
-            end
-            
-            if errors.length == 0
-               user.password = password
-               user.password_confirmation_token = nil
+			errors.push(too_short_validation) if !too_short_validation[:success]
+			errors.push(too_long_validation) if !too_long_validation[:success]
 
-               if !user.save
-                  errors.push(Array.new([1103, "Unknown validation error"]))
-                  status = 500
-               else
-                  ok = true
-               end
-            end
-         end
-      end
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
 
-      if ok && errors.length == 0
-         status = 200
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
+			user.password = password
+			user.password_confirmation_token = nil
+
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+			result = {}
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
 
    def save_new_password
       user_id = params["id"]

@@ -168,6 +168,11 @@ class ValidationService
 		user.password_confirmation_token != token ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.get_password_confirmation_token_incorrect_error(bool)
+		error_code = 1203
+		bool ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_email_confirmation_token_of_user(user, token)
 		error_code = 1204
 		user.email_confirmation_token != token ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
