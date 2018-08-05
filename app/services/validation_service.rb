@@ -91,6 +91,11 @@ class ValidationService
 		obj.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
+	def self.validate_archive_belongs_to_user(archive, user)
+		error_code = 1102
+		archive.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
 	def self.validate_unknown_validation_error(saved)
 		error_code = 1103
 		!saved ? {success: false, error: [error_code, get_error_message(error_code)], status: 500} : {success: true}
@@ -286,6 +291,11 @@ class ValidationService
 		!api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_archive_id_missing(archive_id)
+		error_code = 2119
+		!archive_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
 		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -459,6 +469,11 @@ class ValidationService
 	def self.validate_access_token_does_not_exist(token)
 		error_code = 2809
 		!token ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
+	def self.validate_archive_does_not_exist(archive)
+		error_code = 2810
+		!archive ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
 	def self.validate_dev_already_exists(dev)
