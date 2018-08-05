@@ -780,71 +780,51 @@ class UsersController < ApplicationController
 		end
 	end
 
-   def save_new_email
-      user_id = params["id"]
-      email_confirmation_token = params["email_confirmation_token"]
-      
-      errors = Array.new
-      @result = Hash.new
-      ok = false
-      
-      if !user_id
-         errors.push(Array.new([2103, "Missing field: id"]))
-         status = 400
-      end
-      
-      if !email_confirmation_token || email_confirmation_token.length < 1
-         errors.push(Array.new([2108, "Missing field: email_confirmation_token"]))
-         status = 400
-      end
-      
-      if errors.length == 0
-         user = User.find_by_id(user_id)
-         
-         if !user
-            errors.push(Array.new([2801, "Resource does not exist: User"]))
-            status = 400
-         else
-            if email_confirmation_token != user.email_confirmation_token
-               errors.push(Array.new([1204, "Email confirmation token is not correct"]))
-               status = 400
-            else
-               if user.new_email == nil || user.new_email.length < 1
-                  errors.push(Array.new([2601, "Field is empty: new_email"]))
-                  status = 400
-               else
-                  # Save new email
-                  user.old_email = user.email
-                  user.email = user.new_email
-                  user.new_email = nil
-                  
-						user.email_confirmation_token = nil
-						
-						# Save the new email on stripe
-						save_email_to_stripe_customer(user)
-                  
-                  if !user.save
-                     errors.push(Array.new([1103, "Unknown validation error"]))
-                     status = 500
-                  else
-                     ok = true
-                  end
-               end
-            end
-         end
-      end
-      
-      if ok && errors.length == 0
-			status = 200
+	def save_new_email
+		user_id = params["id"]
+		email_confirmation_token = params["email_confirmation_token"]
+		
+		begin
+			id_validation = ValidationService.validate_id_missing(user_id)
+			token_validation = ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
+			errors = Array.new
+
+			errors.push(id_validation) if !id_validation[:success]
+			errors.push(token_validation) if !token_validation[:success]
+			
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_of_user(user, email_confirmation_token))
+			ValidationService.raise_validation_error(ValidationService.validate_new_email_empty(user.new_email))
+
+			# Save new email
+			user.old_email = user.email
+			user.email = user.new_email
+			user.new_email = nil
+			user.email_confirmation_token = nil
+			
+			# Save the new email on stripe
+			save_email_to_stripe_customer(user)
+
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+
 			UserNotifier.send_reset_new_email_email(user).deliver_later
-      else
-         @result.clear
-         @result["errors"] = errors
-      end
-      
-      render json: @result, status: status if status
-   end
-   
+			result = {}
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
    def reset_new_email
       # This method exists to reset the new email, when the email change was not intended by the account owner
       user_id = params["id"]

@@ -386,6 +386,11 @@ class ValidationService
 		table_name.include?(" ") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_new_email_empty(new_email)
+		error_code = 2601
+		new_email == nil || new_email.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_new_password_empty(new_password)
 		error_code = 2603
 		new_password == nil || new_password.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
