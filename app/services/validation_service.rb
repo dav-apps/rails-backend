@@ -148,6 +148,11 @@ class ValidationService
 		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
 	end
 
+	def self.validate_max_archive_count(user)
+		error_code = 1112
+		user.archives.count >= max_archive_count ? {success: false, error: [error_code, get_error_message(error_code)], status: 422} : {success: true}
+	end
+
 	def self.validate_user_is_stripe_customer(user)
 		error_code = 1113
 		!user.stripe_customer_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -491,7 +496,7 @@ class ValidationService
 		when 1111
 			"File does not exist"
 		when 1112
-			"You can't create more than 10 archives"
+			"You can't create more than #{max_archive_count} archives"
 		when 1113
 			"Please add your payment information"
 		when 1201
