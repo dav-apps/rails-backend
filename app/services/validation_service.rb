@@ -153,7 +153,7 @@ class ValidationService
 		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
 	end
 
-	def self.validate_max_archive_count(user)
+	define_singleton_method :validate_max_archive_count do |user|
 		error_code = 1112
 		user.archives.count >= max_archive_count ? {success: false, error: [error_code, get_error_message(error_code)], status: 422} : {success: true}
 	end
@@ -486,7 +486,7 @@ class ValidationService
 		table ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
 	end
 
-	def self.get_error_message(code)
+	define_singleton_method :get_error_message do |code|
 		case code
 		when 1101
 			"Authentication failed"
