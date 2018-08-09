@@ -27,6 +27,7 @@ gem 'rack-cors', :require => 'rack/cors'
 
 # Azure File Storage
 gem 'azure'
+gem 'azure-contrib', git: 'https://github.com/dmichael/azure-contrib.git'
 
 # MiniMagick for image processing
 gem "mini_magick"
