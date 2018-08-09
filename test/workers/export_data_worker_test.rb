@@ -71,4 +71,40 @@ class ExportDataWorkerTest < ActiveSupport::TestCase
 		# Delete the archive from the blob storage
 		FileUtils.rm_rf(Dir.glob(export_data_folder_path)) if File.exists?(export_data_folder_path)
 	end
+
+	test "ExportDataWorker will split the archive to multiple parts and create archive_parts" do
+		Sidekiq::Testing.inline!
+
+		archive = archives(:MattsSecondArchive)
+		archive.name = "dav-export-#{archive.id}.zip"
+		archive.save
+
+		matt = users(:matt)
+		table = tables(:card)
+		archive_part_name = "dav-export-#{archive.id}.z01"
+
+		# Create table objects with files
+		obj1 = TableObject.new(table_id: table.id, user_id: matt.id, file: true, uuid: SecureRandom.uuid)
+		assert obj1.save
+		BlobOperationsService.upload_blob(table.app_id, obj1.id, "#{Rails.root}/test/fixtures/files/test.png")
+		prop1 = Property.new(table_object_id: obj1.id, name: "ext", value: "png")
+		assert prop1.save
+
+		obj2 = TableObject.new(table_id: table.id, user_id: matt.id, file: true, uuid: SecureRandom.uuid)
+		assert obj2.save
+		BlobOperationsService.upload_blob(table.app_id, obj1.id, "#{Rails.root}/test/fixtures/files/test3.gif")
+		prop2 = Property.new(table_object_id: obj2.id, name: "ext", value: "gif")
+		assert prop2.save
+
+		# Create the archive
+		ExportDataWorker.perform_async(matt.id, archive.id, 1)
+
+		# Try to download the archive part
+		assert_not_nil(BlobOperationsService.download_archive(archive_part_name))
+
+		# Tidy up
+		obj1.destroy!
+		obj2.destroy!
+		archive.destroy!
+	end
 end

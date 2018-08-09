@@ -1,7 +1,7 @@
 class ExportDataWorker
 	include Sidekiq::Worker
 
-	def perform(user_id, archive_id)
+	def perform(user_id, archive_id, max_size_mb = 100)
 		user = User.find_by_id(user_id)
 		archive = Archive.find_by_id(archive_id)
 
@@ -77,8 +77,7 @@ class ExportDataWorker
 
 			root_hash["apps"] = apps_array
 
-			#max_zip_file_bytes = 100000000	# 100 MB
-			max_zip_file_bytes = 5000000	# 5 MB
+			max_zip_file_bytes = max_size_mb * 1000000
 			archive_temp_folder_name = "archive-#{archive.id}"
 			first_archive_name = "1-#{archive.name}"
 			uploaded_files = Array.new
@@ -120,7 +119,7 @@ class ExportDataWorker
 
 			# Create the data.json file
 			File.open(data_json_file_path, "w") { |f| f.write(root_hash.to_json) }
-
+			
 			# Copy the contents of the source folder
 			FileUtils.cp_r(Rails.root + "lib/dav-export/source/", archive_temp_path)
 

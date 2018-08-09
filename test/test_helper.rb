@@ -51,6 +51,8 @@ class ActiveSupport::TestCase
    end
 
    def extract_zip(file, destination)
+      require 'zip'
+      
       FileUtils.mkdir_p(destination)
 		
       Zip::File.open(file) do |zip_file|
