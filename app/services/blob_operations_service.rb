@@ -54,7 +54,7 @@ class BlobOperationsService
 
 		client = Azure::Blob::BlobService.new
       begin
-         client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, File.read(archive_path), chunking: File.size(archive_path) > 64000000)
+         client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, File.read(archive_path))
       rescue Exception => e
          puts e
       end
