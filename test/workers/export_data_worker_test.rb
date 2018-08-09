@@ -37,7 +37,7 @@ class ExportDataWorkerTest < ActiveSupport::TestCase
 		Dir.mkdir(export_data_folder_path) unless File.exists?(export_data_folder_path)
 		Dir.mkdir(zip_file_content_folder_path) unless File.exists?(zip_file_content_folder_path)
 
-		File.write(zip_file_path, BlobOperationsService.download_archive(archive.id)[1], encoding: 'ascii-8bit')
+		File.write(zip_file_path, BlobOperationsService.download_archive(archive.name)[1], encoding: 'ascii-8bit')
 		extract_zip(zip_file_path, zip_file_content_folder_path)
 
 		# Check the content of the archive

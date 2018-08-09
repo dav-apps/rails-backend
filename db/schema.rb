@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180713143210) do
+ActiveRecord::Schema.define(version: 20180809133221) do
 
   create_table "access_tokens", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
     t.string "token"
@@ -28,6 +28,11 @@ ActiveRecord::Schema.define(version: 20180713143210) do
     t.string "link_web"
     t.string "link_play"
     t.string "link_windows"
+  end
+
+  create_table "archive_parts", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+    t.integer "archive_id"
+    t.string "name"
   end
 
   create_table "archives", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|

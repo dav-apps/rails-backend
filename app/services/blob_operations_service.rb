@@ -54,34 +54,31 @@ class BlobOperationsService
 
       client = Azure::Blob::BlobService.new
       begin
-         blob = client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, File.read(archive_path), chunking: true)
+         client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, File.read(archive_path), chunking: true)
       rescue Exception => e
          puts e
       end
 	end
 	
-	def self.download_archive(archive_id)
+	def self.download_archive(archive_name)
       Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
       Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
 
       begin
-         archive = Archive.find_by_id(archive_id)
          client = Azure::Blob::BlobService.new
-         blob = client.get_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], "dav-export-#{archive.id}.zip")
-         return blob
+         client.get_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive_name)
       rescue Exception => e
          
       end
-   end
+	end
 
-   def self.delete_archive(archive_id)
+   def self.delete_archive(archive_name)
       Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
       Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
 
       client = Azure::Blob::BlobService.new
       begin
-         archive = Archive.find_by_id(archive_id)
-         client.delete_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive.name)
+         client.delete_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive_name)
       rescue Exception => e
          
       end

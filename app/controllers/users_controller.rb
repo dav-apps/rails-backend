@@ -923,7 +923,7 @@ class UsersController < ApplicationController
 
 			if file
 				# Return the file itself
-				result = BlobOperationsService.download_archive(archive.id)[1]
+				result = BlobOperationsService.download_archive(archive.name)[1]
 				send_data(result, status: 200, filename: archive.name)
 			else
 				# Return the archive object

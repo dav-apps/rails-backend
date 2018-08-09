@@ -77,7 +77,8 @@ class ExportDataWorker
 
 			root_hash["apps"] = apps_array
 
-			max_zip_file_bytes = 100000000	# 100 MB
+			#max_zip_file_bytes = 100000000	# 100 MB
+			max_zip_file_bytes = 5000000	# 5 MB
 			archive_temp_folder_name = "archive-#{archive.id}"
 			first_archive_name = "1-#{archive.name}"
 			uploaded_files = Array.new
@@ -177,6 +178,10 @@ class ExportDataWorker
 									# Upload the part file
 									BlobOperationsService.upload_archive(file_path)
 									uploaded_files.push(file_extension)
+
+									# Create a new archive_part object
+									archive_part = ArchivePart.new(archive_id: archive.id, name: filename)
+									archive_part.save
 								end
 
 								# Delete the part file
