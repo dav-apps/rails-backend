@@ -1160,7 +1160,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 		
 		assert_response 200
-		assert_same(archive_id, resp["id"])
+      assert_same(archive_id, resp["id"])
+      assert_same(archive_parts(:FirstPartOfMattsFirstArchive).id, resp["parts"][0]["id"])
 	end
 
 	test "Can't get an archive that does not exist" do

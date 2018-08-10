@@ -926,8 +926,20 @@ class UsersController < ApplicationController
 				result = BlobOperationsService.download_archive(archive.name)[1]
 				send_data(result, status: 200, filename: archive.name)
 			else
+				parts = Array.new
+
+				archive.archive_parts.each do |part|
+					hash = Hash.new
+
+					hash["id"] = part.id
+					hash["name"] = part.name
+					parts.push(hash)
+				end
+
 				# Return the archive object
 				result = archive.attributes
+				result["parts"] = parts
+
 				render json: result, status: 200
 			end
 		rescue RuntimeError => e
