@@ -889,7 +889,7 @@ class UsersController < ApplicationController
 	def get_archive
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		archive_id = params[:id]
-		file = params[:file]
+		file = params[:file] == "true"
 
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
@@ -928,6 +928,62 @@ class UsersController < ApplicationController
 			else
 				# Return the archive object
 				result = archive.attributes
+				render json: result, status: 200
+			end
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
+	def get_archive_part
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		id = params[:id]
+		file = params[:file] == "true"
+
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			id_validation = ValidationService.validate_id_missing(id)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(id_Validation) if !id_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			archive_part = ArchivePart.find_by_id(id)
+			ValidationService.raise_validation_error(ValidationService.validate_archive_part_does_not_exist(archive_part))
+
+			archive = Archive.find_by_id(archive_part.archive_id)
+			ValidationService.raise_validation_error(ValidationService.validate_archive_does_not_exist(archive))
+
+			ValidationService.raise_validation_error(ValidationService.validate_archive_belongs_to_user(archive, user))
+			
+			if file
+				# Return the file
+				result = BlobOperationsService.download_archive(archive_part.name)[1]
+				send_data(result, status: 200, filename: archive_part.name)
+			else
+				# Return the data
+				result = archive_part.attributes
 				render json: result, status: 200
 			end
 		rescue RuntimeError => e

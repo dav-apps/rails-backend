@@ -476,6 +476,11 @@ class ValidationService
 		!archive ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
+	def self.validate_archive_part_does_not_exist(archive_part)
+		error_code = 2811
+		!archive_part ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
 	def self.validate_dev_already_exists(dev)
 		error_code = 2902
 		dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
@@ -642,6 +647,8 @@ class ValidationService
 			"Resource does not exist: AccessToken"
 		when 2810
 			"Resource does not exist: Archive"
+		when 2811
+			"Resource does not exist: ArchivePart"
 		when 2901
 			"Resource already exists: User"
 		when 2902

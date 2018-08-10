@@ -21,6 +21,7 @@ Rails.application.routes.draw do
   
   match '/v1/auth/archive', to: 'users#create_archive', via: 'post'
   match '/v1/auth/archive/:id', to: 'users#get_archive', via: 'get'
+  match '/v1/auth/archive_part/:id', to: 'users#get_archive_part', via: 'get'
   match '/v1/auth/archive/:id', to: 'users#delete_archive', via: 'delete'
   
   # Dev routes
