@@ -105,6 +105,8 @@ class ExportDataWorkerTest < ActiveSupport::TestCase
 		# Tidy up
 		obj1.destroy!
 		obj2.destroy!
+		BlobOperationsService.delete_archive(archive.name)
+		BlobOperationsService.delete_archive(archive_part_name)
 		archive.destroy!
 	end
 end
