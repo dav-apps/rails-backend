@@ -1,7 +1,7 @@
 class ExportDataWorker
 	include Sidekiq::Worker
 
-	def perform(user_id, archive_id, max_size_mb = 200)
+	def perform(user_id, archive_id, max_size_mb = 64)
 		user = User.find_by_id(user_id)
 		archive = Archive.find_by_id(archive_id)
 
