@@ -49,12 +49,11 @@ class BlobOperationsService
       Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
       Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
 
-      file = File.open(archive_path, "rb")
       filename = File.basename(archive_path)
 
 		client = Azure::Blob::BlobService.new
       begin
-         client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, File.read(archive_path))
+			client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, archive_path, chunking: true)
       rescue Exception => e
          puts e
       end
