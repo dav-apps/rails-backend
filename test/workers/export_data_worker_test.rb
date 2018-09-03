@@ -81,7 +81,7 @@ class ExportDataWorkerTest < ActiveSupport::TestCase
 
 		matt = users(:matt)
 		table = tables(:card)
-		archive_part_name = "dav-export-#{archive.id}.z01"
+		archive_part_name = "dav-export-#{archive.id}-files-1.zip"
 
 		# Create table objects with files
 		obj1 = TableObject.new(table_id: table.id, user_id: matt.id, file: true, uuid: SecureRandom.uuid)
