@@ -1,7 +1,7 @@
 class ExportDataWorker
 	include Sidekiq::Worker
 
-	def perform(user_id, archive_id, max_size_mb = 64)
+	def perform(user_id, archive_id, max_size_mb = 20)
 		user = User.find_by_id(user_id)
 		archive = Archive.find_by_id(archive_id)
 
@@ -79,8 +79,7 @@ class ExportDataWorker
 
 			max_zip_file_bytes = max_size_mb * 1000000
 			archive_temp_folder_name = "archive-#{archive.id}"
-			first_archive_name = "1-#{archive.name}"
-			uploaded_files = Array.new
+			files_archive_name = "#{archive.name[0..archive.name.length - 5]}-files-"
 
 			# Directories
 			temp_path = "#{Rails.root}/tmp/"
@@ -92,7 +91,6 @@ class ExportDataWorker
 			# Files
 			avatar_file_path = files_temp_path + "avatar.png"
 			data_json_file_path = data_temp_path + "data.json"
-			first_zip_file_path = archive_temp_path + first_archive_name
 			zip_file_path = archive_temp_path + archive.name
 
 			Dir.mkdir(temp_path) unless File.exists?(temp_path)
@@ -127,7 +125,7 @@ class ExportDataWorker
 			FileUtils.cp(Rails.root + "lib/dav-export/index.html", archive_temp_path)
 
 			# Create the zip file of the folder
-			command = "$(cd #{archive_temp_path} && zip -r #{first_archive_name} *)"
+			command = "$(cd #{archive_temp_path} && zip -r #{archive.name} *)"
 			pid = spawn(command)
 			Process.wait pid
 
@@ -144,57 +142,39 @@ class ExportDataWorker
 			# Delete the avatar
 			File.delete(avatar_file_path) if File.exists?(avatar_file_path)
 
+			i = 1
+
 			# Download the files
 			files_array.each do |file|
+				# Download the file
 				BlobOperationsService.download_blob(file["app_id"], file["id"], file["ext"], files_temp_path)
+
+				# If the size of the files folder is too big, create the zip file and upload it
+				files_size = 0
+
+				# Get the size of the files folder
 				Dir.entries(files_temp_path).select { |f| !File.directory? f }.each do |filename|
-					# Add the file to the zip file
-					command = "$(cd #{archive_temp_path} && zip #{first_archive_name} files/#{filename})"
-					pid = spawn(command)
-					Process.wait pid
-
-					file = File.open(files_temp_path + filename)
-
-					# Delete the file
-					File.delete(file)
+					files_size = files_size + File.size(files_temp_path + filename)
 				end
 
-				# Check the size of the zip file
-				if File.size(first_zip_file_path) > max_zip_file_bytes
-					# Split the zip into one more part
-					command = "$(cd #{archive_temp_path} && zip #{first_archive_name} --out #{archive.name} -s #{max_zip_file_bytes / 1000000}m)"
-					pid = spawn(command)
-					Process.wait pid
+				if files_size > max_zip_file_bytes
+					filename = files_archive_name + i.to_s + ".zip"
+					filepath = archive_temp_path + filename
 
-					# Find the part file
-					Dir.entries(archive_temp_path).select { |f| !File.directory? f }.each do |filename|
-						if filename.split('.').count > 1
-							file_extension = filename.split('.')[1]
-							if file_extension != "zip"
-								file_path = archive_temp_path + filename
+					upload_files(filename, filepath, files_temp_path, archive_temp_path, archive.id)
 
-								if !uploaded_files.include?(file_extension)
-									# Upload the part file
-									BlobOperationsService.upload_archive(file_path)
-									uploaded_files.push(file_extension)
-
-									# Create a new archive_part object
-									archive_part = ArchivePart.new(archive_id: archive.id, name: filename)
-									archive_part.save
-								end
-
-								# Delete the part file
-								File.delete(file_path)
-							end
-						end
-					end
+					i = i + 1
 				end
 			end
 
-			
-			if !File.exists?(zip_file_path)
-				# Rename the first zip file
-				File.rename(first_zip_file_path, zip_file_path)
+			# Upload the remaining files
+			if Dir.entries(files_temp_path).select { |f| !File.directory? f }.length > 0
+				filename = files_archive_name + i.to_s + ".zip"
+				filepath = archive_temp_path + filename
+
+				upload_files(filename, filepath, files_temp_path, archive_temp_path, archive.id)
+
+				i = i + 1
 			end
 
 			# Upload the zip file
@@ -210,5 +190,25 @@ class ExportDataWorker
 			# Send the email
 			UserNotifier.send_export_data_email(user).deliver_now
 		end
+	end
+
+	def upload_files(filename, filepath, files_temp_path, archive_temp_path, archive_id)
+		# Create a zip file of the files folder
+		command = "$(cd #{archive_temp_path} && zip #{filename} files/*)"
+		pid = spawn(command)
+		Process.wait pid
+
+		# Upload the zip file
+		BlobOperationsService.upload_archive(filepath)
+
+		# Create a new archive_part object
+		archive_part = ArchivePart.new(archive_id: archive_id, name: filename)
+		archive_part.save
+
+		# Delete the files
+		FileUtils.rm_rf Dir.glob("#{files_temp_path}/*")
+
+		# Delete the zip file
+		File.delete(filepath)
 	end
 end
