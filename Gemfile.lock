@@ -5,8 +5,9 @@ GIT
     ipinfo_io (0.1.0)
       faraday
 
-PATH
-  remote: ../azure-contrib
+GIT
+  remote: https://github.com/Dav2070/azure-contrib.git
+  revision: 45ea03036badd093963515aa59eb33489f03256b
   specs:
     azure-contrib (0.1.0)
       addressable
