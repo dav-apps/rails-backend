@@ -1414,6 +1414,32 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
    end
+
+	test "Can get a table in pages" do
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		count = 1
+		page = 1
+		
+		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}&count=#{count}&page=#{page}"
+		resp = JSON.parse response.body
+
+		assert_same(count, resp["table_objects"].count)
+		assert_equal(table_objects(:first).uuid, resp["table_objects"][0]["uuid"])
+	end
+
+	test "Can get the second page of a table" do
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		count = 1
+		page = 2
+		
+		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}&count=#{count}&page=#{page}"
+		resp = JSON.parse response.body
+
+		assert_same(count, resp["table_objects"].count)
+		assert_equal(table_objects(:third).uuid, resp["table_objects"][0]["uuid"])
+	end
    # End get_table tests
 
    # get_table_by_id tests
@@ -1473,6 +1499,32 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
    end
+
+	test "Can get a table by id and in pages" do
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		count = 1
+		page = 1
+		
+		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}&count=#{count}&page=#{page}"
+		resp = JSON.parse response.body
+
+		assert_same(count, resp["table_objects"].count)
+		assert_equal(table_objects(:first).uuid, resp["table_objects"][0]["uuid"])
+	end
+
+	test "Can get the second page of a table by id" do
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		count = 1
+		page = 2
+		
+		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}&count=#{count}&page=#{page}"
+		resp = JSON.parse response.body
+
+		assert_same(count, resp["table_objects"].count)
+		assert_equal(table_objects(:third).uuid, resp["table_objects"][0]["uuid"])
+	end
    # End get_table_by_id
    
    # update_table tests

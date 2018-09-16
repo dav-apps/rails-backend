@@ -966,6 +966,15 @@ class AppsController < ApplicationController
       table_name = params["table_name"]
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
+		default_count = 100
+		default_page = 1
+
+		count = params["count"].to_i || default_count
+		page = params["page"].to_i || default_page
+
+		count = count < 1 ? default_count : count
+		page = page < 1 ? default_page : page
+
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
 			app_id_validation = ValidationService.validate_app_id_missing(app_id)
@@ -1002,18 +1011,33 @@ class AppsController < ApplicationController
 			# Return the data
 			result = table.attributes
 			array = Array.new
-         
-			table.table_objects.each do |table_object|
-				if table_object.user_id == user.id
-					object = Hash.new
-					object["id"] = table_object.id
-					object["uuid"] = table_object.uuid
-					object["etag"] = generate_table_object_etag(table_object)
-					
-					array.push(object)
+
+			if count > 0
+				all_table_objects = table.table_objects.where(user_id: user.id)
+				array_start = count * (page - 1)
+				array_length = count > all_table_objects.count ? all_table_objects.count : count
+
+				selected_table_objects = all_table_objects[array_start, array_length]
+
+				if all_table_objects.count > 0
+					pages = all_table_objects.count % count == 0 ? all_table_objects.count / count : (all_table_objects.count / count) + 1
+				else
+					pages = 1
+				end
+				
+				if selected_table_objects
+					selected_table_objects.each do |table_object|
+						object = Hash.new
+						object["id"] = table_object.id
+						object["uuid"] = table_object.uuid
+						object["etag"] = generate_table_object_etag(table_object)
+						
+						array.push(object)
+					end
 				end
 			end
 			
+			result["pages"] = pages
 			result["table_objects"] = array
 			render json: result, status: 200
 		rescue RuntimeError => e
@@ -1029,6 +1053,15 @@ class AppsController < ApplicationController
 		table_id = params["id"]      
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
+		default_count = 100
+		default_page = 1
+
+		count = params["count"].to_i || default_count
+		page = params["page"].to_i || default_page
+
+		count = count < 1 ? default_count : count
+		page = page < 1 ? default_page : page
+
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
 			id_validation = ValidationService.validate_id_missing(table_id)
@@ -1060,20 +1093,36 @@ class AppsController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app))
 
+			# Return the data
 			result = table.attributes
 			array = Array.new
 			
-			table.table_objects.each do |table_object|
-				if table_object.user_id == user.id
-					object = Hash.new
-					object["id"] = table_object.id
-					object["uuid"] = table_object.uuid
-					object["etag"] = generate_table_object_etag(table_object)
-					
-					array.push(object)
+			if count > 0
+				all_table_objects = table.table_objects.where(user_id: user.id)
+				array_start = count * (page - 1)
+				array_length = count > all_table_objects.count ? all_table_objects.count : count
+
+				selected_table_objects = all_table_objects[array_start, array_length]
+
+				if all_table_objects.count > 0
+					pages = all_table_objects.count % count == 0 ? all_table_objects.count / count : (all_table_objects.count / count) + 1
+				else
+					pages = 1
+				end
+
+				if selected_table_objects
+					selected_table_objects.each do |table_object|
+						object = Hash.new
+						object["id"] = table_object.id
+						object["uuid"] = table_object.uuid
+						object["etag"] = generate_table_object_etag(table_object)
+						
+						array.push(object)
+					end
 				end
 			end
 			
+			result["pages"] = pages
 			result["table_objects"] = array
 			render json: result, status: 200
 		rescue RuntimeError => e
