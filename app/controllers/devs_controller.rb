@@ -187,4 +187,13 @@ class DevsController < ApplicationController
 			render json: result, status: validations.last["status"]
 		end
 	end
+
+	def tasks
+		remove_archives
+		update_used_storage_of_users
+		update_used_storage_of_users_apps
+		update_users_apps
+
+		render json: {}, status: 200
+	end
 end

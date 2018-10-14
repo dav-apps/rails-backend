@@ -30,6 +30,7 @@ Rails.application.routes.draw do
   match '/v1/devs/dev/:api_key', to: 'devs#get_dev_by_api_key', via: 'get'
   match '/v1/devs/dev', to: 'devs#delete_dev', via: 'delete'
   match '/v1/devs/generate_new_keys', to: 'devs#generate_new_keys', via: 'post'
+  match '/v1/tasks', to: 'devs#tasks', via: 'get'
   
   # Apps routes
   match '/v1/apps/object', to: 'apps#create_object', via: 'post'
