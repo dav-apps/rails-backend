@@ -478,10 +478,14 @@ class AppsController < ApplicationController
 					users_app.save
 				end
 
+				# Notify connected clients of the new object
+				ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
+
 				# Return the data
 				result = obj.attributes
 				result["properties"] = properties
 				result["etag"] = generate_table_object_etag(obj)
+
 				render json: result, status: 201
 			else
 				# Save the object as a file
@@ -525,6 +529,9 @@ class AppsController < ApplicationController
 					obj.properties.each do |prop|
 						properties[prop.name] = prop.value
 					end
+
+					# Notify connected clients of the new object
+					ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
 
 					result["properties"] = properties
 					result["etag"] = generate_table_object_etag(obj)
@@ -755,6 +762,9 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
 
+				# Notify connected clients of the updated object
+				ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
+
 				# Return the data
 				result = obj.attributes
 
@@ -812,6 +822,9 @@ class AppsController < ApplicationController
 						end
 					end
 				end
+
+				# Notify connected clients of the updated object
+				ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
 
 				result = obj.attributes
 				result["properties"] = properties
@@ -881,6 +894,9 @@ class AppsController < ApplicationController
 					update_used_storage(user.id, app.id, -size_prop.value.to_i)
 				end
 			end
+
+			# Notify connected clients of the deleted object
+			ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
 
 			obj.destroy!
 			result = {}
