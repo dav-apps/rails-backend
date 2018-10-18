@@ -479,7 +479,7 @@ class AppsController < ApplicationController
 				end
 
 				# Notify connected clients of the new object
-				ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
+				TableObjectUpdateChannel.broadcast_to(app.id, uuid: obj.uuid, change: 0)
 
 				# Return the data
 				result = obj.attributes
@@ -531,7 +531,7 @@ class AppsController < ApplicationController
 					end
 
 					# Notify connected clients of the new object
-					ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
+					TableObjectUpdateChannel.broadcast_to(app.id, uuid: obj.uuid, change: 0)
 
 					result["properties"] = properties
 					result["etag"] = generate_table_object_etag(obj)
@@ -763,7 +763,7 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
 
 				# Notify connected clients of the updated object
-				ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
+				TableObjectUpdateChannel.broadcast_to(app.id, uuid: obj.uuid, change: 1)
 
 				# Return the data
 				result = obj.attributes
@@ -824,7 +824,7 @@ class AppsController < ApplicationController
 				end
 
 				# Notify connected clients of the updated object
-				ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
+				TableObjectUpdateChannel.broadcast_to(app.id, uuid: obj.uuid, change: 1)
 
 				result = obj.attributes
 				result["properties"] = properties
@@ -896,7 +896,7 @@ class AppsController < ApplicationController
 			end
 
 			# Notify connected clients of the deleted object
-			ActionCable.server.broadcast "table_object_update", table_id: obj.table_id, uuid: obj.uuid
+			TableObjectUpdateChannel.broadcast_to(app.id, uuid: obj.uuid, change: 2)
 
 			obj.destroy!
 			result = {}
