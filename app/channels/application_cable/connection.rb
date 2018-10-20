@@ -19,7 +19,13 @@ module ApplicationCable
 			# Validate the JWT
 			begin
 				decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
-				self.current_user = decoded_jwt[0]
+				user = User.find_by_id(decoded_jwt[0]["user_id"])
+
+				if(!user)
+					reject_unauthorized_connection
+				end
+
+				self.current_user = user
 			rescue
 				reject_unauthorized_connection
 			end
@@ -28,11 +34,6 @@ module ApplicationCable
 			self.current_app = App.find_by_id(app_id)
 
 			if !self.current_app
-				reject_unauthorized_connection
-			end
-
-			# Validate that the app belongs to the dev
-			if self.current_app.dev_id != self.current_user["dev_id"]
 				reject_unauthorized_connection
 			end
       end
