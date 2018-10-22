@@ -486,6 +486,11 @@ class ValidationService
 		!archive_part ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
+	def self.validate_notification_does_not_exist(notification)
+		error_code = 2812
+		!notification ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
 	def self.validate_dev_already_exists(dev)
 		error_code = 2902
 		dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
@@ -656,6 +661,8 @@ class ValidationService
 			"Resource does not exist: Archive"
 		when 2811
 			"Resource does not exist: ArchivePart"
+		when 2812
+			"Resource does not exist: Notification"
 		when 2901
 			"Resource already exists: User"
 		when 2902
