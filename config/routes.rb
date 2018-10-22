@@ -55,6 +55,8 @@ Rails.application.routes.draw do
   match '/v1/apps/object/:id/access_token/:token', to: 'apps#add_access_token_to_object', via: 'put'
   match '/v1/apps/object/:id/access_token/:token', to: 'apps#remove_access_token_from_object', via: 'delete'
   
+  match '/v1/apps/notification', to: 'apps#create_notification', via: 'post'
+
   # Analytics routes
   match '/v1/analytics/event', to: 'analytics#create_event_log', via: 'post'
   match '/v1/analytics/event/:id', to: 'analytics#get_event', via: 'get'

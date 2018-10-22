@@ -1267,7 +1267,9 @@ class AppsController < ApplicationController
 			render json: result, status: validations.last["status"]
 		end
 	end
+	# End table methods
 
+	# Access Token methods
 	def create_access_token
 		object_id = params["id"]
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
@@ -1506,6 +1508,107 @@ class AppsController < ApplicationController
 			render json: result, status: validations.last["status"]
 		end
 	end
+	# End Access Token methods
+
+	# Notification methods
+	def create_notification
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		app_id = params["app_id"]
+		time = params["time"]		# The unix timestamp as integer
+		interval = params["interval"]
+
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			app_id_validation = ValidationService.validate_app_id_missing(app_id)
+			time_validation = ValidationService.validate_time_missing(time)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(app_id_validation) if !app_id_validation[:success]
+			errors.push(time_validation) if !time_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			# Validate the properties
+			body = ValidationService.parse_json(request.body.string)
+
+			body.each do |key, value|
+				if value
+					if value.length > 0
+						property_name_too_short_validation = ValidationService.validate_property_name_too_short(key)
+						property_name_too_long_validation = ValidationService.validate_property_name_too_long(key)
+						property_value_too_short_validation = ValidationService.validate_property_value_too_short(value)
+						property_value_too_long_validation = ValidationService.validate_property_value_too_long(value)
+						errors = Array.new
+						
+						errors.push(property_name_too_short_validation) if !property_name_too_short_validation[:success]
+						errors.push(property_name_too_long_validation) if !property_name_too_long_validation[:success]
+						errors.push(property_value_too_short_validation) if !property_value_too_short_validation[:success]
+						errors.push(property_value_too_long_validation) if !property_value_too_long_validation[:success]
+
+						if errors.length > 0
+							raise RuntimeError, errors.to_json
+						end
+					end
+				end
+			end
+
+			# Create the notification
+			datetime = Time.at(time.to_i).to_s(:db)
+			notification = Notification.new(app_id: app.id, user_id: user.id, time: datetime, interval: 0)
+
+			if interval
+				notification.interval = interval
+			end
+
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(notification.save))
+
+			properties = Hash.new
+
+			# Create the properties
+			body.each do |key, value|
+				if value
+					if value.length > 0
+						property = NotificationProperty.new(notification_id: notification.id, name: key, value: value)
+						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(property.save))
+						properties[key] = value
+					end
+				end
+			end
+
+			# Return the data
+			result = notification.attributes
+			result["properties"] = properties
+
+			render json: result, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+	# End Notification methods
    
    
    private

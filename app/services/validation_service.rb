@@ -296,6 +296,11 @@ class ValidationService
 		!archive_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_time_missing(time)
+		error_code = 2121
+		!time ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
 		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -573,6 +578,8 @@ class ValidationService
 			"Missing field: archive_id"
 		when 2120
 			"Missing field: payment_token"
+		when 2121
+			"Missing field: time"
 		when 2201
 			"Field too short: username"
 		when 2202
