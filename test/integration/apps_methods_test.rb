@@ -1938,5 +1938,98 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 201
       assert_not_nil(UsersApp.find_by(user_id: tester2.id))
    end
-   # End users_apps tests
+	# End users_apps tests
+
+	# create_notification tests
+	test "Missing fields in create_notification" do
+		post "/v1/apps/notification"
+		resp = JSON.parse response.body
+
+		assert(response.status == 400 || response.status ==  401)
+		assert_same(2102, resp["errors"][0][0])
+		assert_same(2110, resp["errors"][1][0])
+		assert_same(2121, resp["errors"][2][0])
+	end
+
+	test "Can't create a notification for the app of another dev" do
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		post "/v1/apps/notification?jwt=#{matts_jwt}&app_id=#{apps(:davApp).id}&time=123213123"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create a notification when using another Content-Type than application/json" do
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		time = 1231312
+		interval = 121221
+
+		post "/v1/apps/notification?jwt=#{matts_jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}",
+				params: '{"test": "testvalue"}'
+		resp = JSON.parse response.body
+
+		assert_response 415
+		assert_same(1104, resp["errors"][0][0])
+	end
+
+	test "Can create a notification with interval and body" do
+		matt = users(:matt)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		time = 1231312
+		interval = 121221
+		first_property_name = "test"
+		first_property_value = "testvalue"
+		second_property_name = "bla"
+		second_property_value = "testtest"
+
+		post "/v1/apps/notification?jwt=#{matts_jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}",
+				params: "{\"#{first_property_name}\": \"#{first_property_value}\", \"#{second_property_name}\": \"#{second_property_value}\"}",
+				headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		id = resp["id"]
+		notification = Notification.find_by_id(id)
+
+		assert_response 201
+		assert_not_nil(notification)
+		assert_same(interval, resp["interval"])
+
+		first_property = notification.notification_properties.first
+		second_property = notification.notification_properties.second
+
+		assert_equal(first_property_name, first_property.name)
+		assert_equal(first_property_value, first_property.value)
+		assert_equal(second_property_name, second_property.name)
+		assert_equal(second_property_value, second_property.value)
+	end
+	# End create_notification tests
+
+	# delete_notification tests
+	test "Can't delete the notification of the app of another dev" do
+		sherlock = users(:sherlock)
+		notification = notifications(:TestNotification)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+
+		delete "/v1/apps/notification/#{notification.id}?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can delete a notification" do
+		matt = users(:matt)
+		notification = notifications(:TestNotification)
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		
+		delete "/v1/apps/notification/#{notification.id}?jwt=#{matts_jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+	end
+	# End delete_notification tests
 end
