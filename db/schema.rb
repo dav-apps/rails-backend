@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20180809133221) do
+ActiveRecord::Schema.define(version: 20181022181244) do
 
   create_table "access_tokens", id: :integer, force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
     t.string "token"
@@ -68,6 +68,19 @@ ActiveRecord::Schema.define(version: 20180809133221) do
     t.integer "app_id"
     t.datetime "created_at"
     t.datetime "updated_at"
+  end
+
+  create_table "notification_properties", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
+    t.integer "notification_id"
+    t.string "name"
+    t.text "value"
+  end
+
+  create_table "notifications", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
+    t.integer "app_id"
+    t.integer "user_id"
+    t.datetime "time"
+    t.integer "interval"
   end
 
   create_table "properties", id: :integer, force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
