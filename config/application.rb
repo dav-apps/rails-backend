@@ -30,6 +30,11 @@ module Workspace
 		# Skip views, helpers and assets when generating a new resource.
 		config.api_only = true
 
+		config.action_cable.allowed_request_origins = [
+			"http://localhost:3001",
+			"https://calendo.dav-apps.tech"
+		]
+
     	Rails.application.config.middleware.insert_before 0, Rack::Cors do
 			allow do
 				origins 	ENV['BASE_URL'],
@@ -44,6 +49,6 @@ module Workspace
 				headers: :any,
           	methods: %i(get post put patch delete options head)
 			end
-    	end
+		end
   	end
 end
