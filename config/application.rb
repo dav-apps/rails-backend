@@ -32,7 +32,8 @@ module Workspace
 
 		config.action_cable.allowed_request_origins = [
 			"http://localhost:3001",
-			"https://calendo.dav-apps.tech"
+			"https://calendo.dav-apps.tech",
+			nil
 		]
 
     	Rails.application.config.middleware.insert_before 0, Rack::Cors do
