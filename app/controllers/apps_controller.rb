@@ -478,6 +478,9 @@ class AppsController < ApplicationController
 					users_app.save
 				end
 
+				# Save that the user was active
+				user.update_column(:last_active, Time.now)
+
 				# Notify connected clients of the new object
 				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 0)
 
@@ -529,6 +532,9 @@ class AppsController < ApplicationController
 					obj.properties.each do |prop|
 						properties[prop.name] = prop.value
 					end
+
+					# Save that the user was active
+					user.update_column(:last_active, Time.now)
 
 					# Notify connected clients of the new object
 					TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 0)
@@ -609,6 +615,9 @@ class AppsController < ApplicationController
 					if obj.visibility != 1
 						ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
 					end
+
+					# Save that the user was active
+					user.update_column(:last_active, Time.now)
 				end
 			end
 
@@ -762,6 +771,9 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
 
+				# Save that the user was active
+				user.update_column(:last_active, Time.now)
+
 				# Notify connected clients of the updated object
 				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 1)
 
@@ -822,6 +834,9 @@ class AppsController < ApplicationController
 						end
 					end
 				end
+
+				# Save that the user was active
+				user.update_column(:last_active, Time.now)
 
 				# Notify connected clients of the updated object
 				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 1)
@@ -894,6 +909,9 @@ class AppsController < ApplicationController
 					update_used_storage(user.id, app.id, -size_prop.value.to_i)
 				end
 			end
+
+			# Save that the user was active
+			user.update_column(:last_active, Time.now)
 
 			# Notify connected clients of the deleted object
 			TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 2)
@@ -1024,6 +1042,9 @@ class AppsController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app))
 
+			# Save that the user was active
+			user.update_column(:last_active, Time.now)
+
 			# Return the data
 			result = table.attributes
 			array = Array.new
@@ -1108,6 +1129,9 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app))
+
+			# Save that the user was active
+			user.update_column(:last_active, Time.now)
 
 			# Return the data
 			result = table.attributes
