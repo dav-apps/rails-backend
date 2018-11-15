@@ -799,6 +799,18 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(second_property_name, obj.properties.first.name)
 		assert_equal(second_property_value, obj.properties.first.value)
 	end
+
+	test "Can't create object for table that does not belong to the app" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		post "/v1/apps/object?jwt=#{jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:TestApp).id}",
+				headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+		
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
    # End create_object tests
    
    # get_object tests

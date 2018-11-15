@@ -380,8 +380,8 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
 			if table_id
-				table = Table.find_by(id: table_id, app_id: app_id)
-			else
+				table = Table.find_by(id: table_id)
+			elsif table_name
 				table = Table.find_by(name: table_name, app_id: app_id)
 
 				if !table
@@ -407,6 +407,9 @@ class AppsController < ApplicationController
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(table.save))
 				end
 			end
+
+			# Check if the table belongs to the app of the dev
+			ValidationService.raise_validation_error(ValidationService.validate_table_belongs_to_app(table, app))
 
 			if uuid
 				# Check if the uuid is already in use

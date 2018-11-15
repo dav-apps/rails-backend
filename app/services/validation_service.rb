@@ -53,6 +53,11 @@ class ValidationService
 		app.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
+	def self.validate_table_belongs_to_app(table, app)
+		error_code = 1102
+		table.app != app ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
 	def self.validate_dev_is_first_dev(dev)
 		error_code = 1102
 		dev != Dev.first ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
