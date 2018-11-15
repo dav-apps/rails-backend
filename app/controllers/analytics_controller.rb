@@ -507,4 +507,88 @@ class AnalyticsController < ApplicationController
 			render json: result, status: validations.last["status"]
 		end
 	end
+
+	def get_active_users
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		timeframe = params["timeframe"]
+
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_users_dev_is_dev(user, dev))
+
+			users = Array.new
+
+			# Check the timeframe
+			if timeframe == "0"
+				# Daily
+				User.all.each do |u|
+					if user_was_active(u, 1.day)
+						user_hash = Hash.new
+						user_hash["id"] = u.id
+						user_hash["last_active"] = u.last_active
+						users.push(user_hash)
+					end
+				end
+			elsif timeframe == "2"
+				# Yearly
+				User.all.each do |u|
+					if user_was_active(u, 1.year)
+						user_hash = Hash.new
+						user_hash["id"] = u.id
+						user_hash["last_active"] = u.last_active
+						users.push(user_hash)
+					end
+				end
+			else
+				# Monthly
+				User.all.each do |u|
+					if user_was_active(u, 1.month)
+						user_hash = Hash.new
+						user_hash["id"] = u.id
+						user_hash["last_active"] = u.last_active
+						users.push(user_hash)
+					end
+				end
+			end
+
+			result = Hash.new
+			result["users"] = users
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
+	private
+	def user_was_active(user, timeframe)
+		if user.last_active == nil
+			return false
+		end
+
+		return Time.now - user.last_active < timeframe
+	end
 end

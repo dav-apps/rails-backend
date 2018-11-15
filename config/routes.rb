@@ -66,6 +66,7 @@ Rails.application.routes.draw do
   match '/v1/analytics/event/:id', to: 'analytics#delete_event', via: 'delete'
   match '/v1/analytics/app/:id', to: 'analytics#get_app', via: 'get'
   match '/v1/analytics/users', to: 'analytics#get_users', via: 'get'
+  match '/v1/analytics/active_users', to: 'analytics#get_active_users', via: 'get'
 
   # Stripe Webhooks
   mount StripeEvent::Engine, at: '/v1/payments/stripe'

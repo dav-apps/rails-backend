@@ -546,5 +546,105 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 
       assert_response 200
    end
-   # End get_users tests
+	# End get_users tests
+	
+	# get_active_users tests
+	test "Missing fields in get_active_users" do
+		get "/v1/analytics/active_users"
+		resp = JSON.parse response.body
+
+		assert_response 401
+      assert_same(2102, resp["errors"][0][0])
+	end
+
+	test "Can't get active users from outside the website" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		
+		get "/v1/analytics/active_users?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can't get active users as another user but the first one" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		
+		get "/v1/analytics/active_users?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can get active users" do
+		matt = users(:matt)
+		matt.last_active = Time.now
+		matt.save
+		sherlock = users(:sherlock)
+		sherlock.last_active = Time.now - 2.months
+		sherlock.save
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		
+		get "/v1/analytics/active_users?jwt=#{jwt}&timeframe=0"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_same(1, resp["users"].count)
+		assert_same(matt.id, resp["users"][0]["id"])
+	end
+
+	test "Can get active users with invalid timeframe" do
+		matt = users(:matt)
+		matt.last_active = Time.now
+		matt.save
+		sherlock = users(:sherlock)
+		sherlock.last_active = Time.now - 2.months
+		sherlock.save
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		
+		get "/v1/analytics/active_users?jwt=#{jwt}&timeframe=helloworld"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_same(1, resp["users"].count)
+		assert_same(matt.id, resp["users"][0]["id"])
+	end
+
+	test "Can get daily active users" do
+		matt = users(:matt)
+		matt.last_active = Time.now
+		matt.save
+		sherlock = users(:sherlock)
+		sherlock.last_active = Time.now - 1.months
+		sherlock.save
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		
+		get "/v1/analytics/active_users?jwt=#{jwt}&timeframe=0"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_same(1, resp["users"].count)
+		assert_same(matt.id, resp["users"][0]["id"])
+	end
+
+	test "Can get yearly active users" do
+		matt = users(:matt)
+		matt.last_active = Time.now - 1.months
+		matt.save
+		sherlock = users(:sherlock)
+		sherlock.last_active = Time.now - 2.years
+		sherlock.save
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		
+		get "/v1/analytics/active_users?jwt=#{jwt}&timeframe=2"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_same(1, resp["users"].count)
+		assert_same(matt.id, resp["users"][0]["id"])
+	end
+	# End get_active_users tests
 end
