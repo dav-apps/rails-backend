@@ -74,7 +74,7 @@ class UsersController < ApplicationController
 														"confirmed",
 														"plan",
 														"used_storage")
-			result["total_storage"] = get_total_storage(user.plan)
+			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
 			result["jwt"] = jwt
 			render json: result, status: 201
 		rescue RuntimeError => e
@@ -229,7 +229,7 @@ class UsersController < ApplicationController
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
 			result["avatar"] = avatar_info[0]
 			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = get_total_storage(user.plan)
+			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
 
 			users_apps = Array.new
@@ -276,7 +276,7 @@ class UsersController < ApplicationController
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
 			result["avatar"] = avatar_info[0]
 			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = get_total_storage(user.plan)
+			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
 
 			users_apps = Array.new
@@ -474,7 +474,7 @@ class UsersController < ApplicationController
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
 			result["avatar"] = avatar_info[0]
 			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = get_total_storage(user.plan)
+			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
 			result["apps"] = user.apps
 			result["archives"] = user.archives
@@ -599,14 +599,19 @@ class UsersController < ApplicationController
 	def confirm_user
 		email_confirmation_token = params["email_confirmation_token"]
 		user_id = params["id"]
+		password = params["password"]
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			id_validation = ValidationService.validate_id_missing(user_id)
 			token_validation = ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
+			password_validation = ValidationService.validate_password_missing(password)
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
 			errors = Array.new
 
 			errors.push(id_validation) if !id_validation[:success]
 			errors.push(token_validation) if !token_validation[:success]
+			errors.push(jwt_validation) if !jwt_validation[:success] && !password_validation[:success]
 
 			if errors.length > 0
 				raise RuntimeError, errors.to_json
@@ -614,6 +619,22 @@ class UsersController < ApplicationController
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			if jwt_validation[:success]
+				# Check if the jwt has the same user id as the id
+				jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+				ValidationService.raise_validation_error(jwt_signature_validation[0])
+				jwt_user_id = jwt_signature_validation[1][0]["user_id"]
+				jwt_dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+				ValidationService.raise_validation_error(ValidationService.get_access_not_allowed_error) if jwt_user_id.to_s != user_id
+
+				dev = Dev.find_by_id(jwt_dev_id)
+				ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			elsif password_validation[:success]
+				# Check if the password is correct
+				ValidationService.raise_validation_error(ValidationService.authenticate_user(user, password))
+			end
 
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_not_confirmed(user))
 			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_of_user(user, email_confirmation_token))
