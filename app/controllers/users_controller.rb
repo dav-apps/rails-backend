@@ -1,6 +1,8 @@
 class UsersController < ApplicationController
-	
-	def signup
+	jwt_expiration_hours_prod = 7000
+	jwt_expiration_hours_dev = 10000000
+
+	define_method :signup do
 		email = params[:email]
       password = params[:password]
 		username = params[:username]
@@ -57,8 +59,24 @@ class UsersController < ApplicationController
 			user.email_confirmation_token = generate_token
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
+			# Create a jwt for login
+			expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
+         exp = Time.now.to_i + expHours * 3600
+         payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
+         jwt = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
+			
 			UserNotifier.send_verification_email(@user).deliver_later
-			render json: user, status: 201
+
+			result = Hash.new
+			result = user.attributes.extract!("id", 
+														"email", 
+														"username",
+														"confirmed",
+														"plan",
+														"used_storage")
+			result["total_storage"] = get_total_storage(user.plan)
+			result["jwt"] = jwt
+			render json: result, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			result = Hash.new
@@ -68,7 +86,7 @@ class UsersController < ApplicationController
 		end
 	end
 
-	def login
+	define_method :login do
 		email = params[:email]
       password = params[:password]
 		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
@@ -103,7 +121,7 @@ class UsersController < ApplicationController
 			# Return the data
 			# Create JWT and result
 			result = Hash.new
-         expHours = Rails.env.production? ? 7000 : 10000000
+         expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
          exp = Time.now.to_i + expHours * 3600
          payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
          token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
@@ -154,7 +172,7 @@ class UsersController < ApplicationController
 			# Return the data
 			# Create JWT and result
 			result = Hash.new
-         expHours = Rails.env.production? ? 7000 : 10000000
+         expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
          exp = Time.now.to_i + expHours * 3600
          payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev_api_key.id, :exp => exp}
          token = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']

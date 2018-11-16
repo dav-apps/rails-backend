@@ -208,12 +208,18 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can successfully sign up" do
-      matts_auth_token = generate_auth_token(devs(:sherlock))
+		matts_auth_token = generate_auth_token(devs(:sherlock))
+		email = "test@example.com"
+		password = "testtest"
+		username = "testuser"
       
-      post "/v1/auth/signup?auth=#{matts_auth_token}&email=test@example.com&password=testtest&username=testuser"
+      post "/v1/auth/signup?auth=#{matts_auth_token}&email=#{email}&password=#{password}&username=#{username}"
       resp = JSON.parse response.body
       
-      assert_response 201
+		assert_response 201
+		assert_not_nil(resp["jwt"])
+		assert_equal(email, resp["email"])
+		assert_equal(username, resp["username"])
    end
    # End signup tests
    
