@@ -37,7 +37,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
    end
    
-   test "can't login without being confirmed" do
+   test "can login without being confirmed" do
       matt = users(:matt)
       matt.confirmed = false
       matt.save
@@ -45,8 +45,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       get "/v1/auth/login?email=matt@test.de&password=schachmatt&auth=" + generate_auth_token(devs(:matt))
       resp = JSON.parse response.body
       
-      assert_response 400
-      assert_same(resp["errors"][0][0], 1202)
+		assert_response 200
+		assert_not_nil(resp["jwt"])
    end
    
    test "can't login with an incorrect password" do

@@ -116,7 +116,6 @@ class UsersController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 			ValidationService.raise_validation_error(ValidationService.authenticate_user(user, password))
-			ValidationService.raise_validation_error(ValidationService.validate_user_is_confirmed(user))
 
 			# Return the data
 			# Create JWT and result
@@ -137,7 +136,7 @@ class UsersController < ApplicationController
 		end
 	end
 
-	def login_by_jwt
+	define_method :login_by_jwt do
 		api_key = params[:api_key]
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
