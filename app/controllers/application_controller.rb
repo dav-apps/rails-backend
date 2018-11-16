@@ -66,11 +66,14 @@ class ApplicationController < ActionController::API
       return 0
    end
 
-   def get_total_storage(plan)
-      storage_on_free_plan = 5000000000 # 5 GB
-		storage_on_plus_plan = 50000000000 # 50 GB
+	def get_total_storage(plan, confirmed)
+		storage_unconfirmed = 1000000000 	# 1 GB
+      storage_on_free_plan = 5000000000 	# 5 GB
+		storage_on_plus_plan = 50000000000 	# 50 GB
 
-      if plan == 1 # User is on Plus plan
+		if !confirmed
+			return storage_unconfirmed
+      elsif plan == 1 # User is on Plus plan
 			return storage_on_plus_plan
 		else
 			return storage_on_free_plan
