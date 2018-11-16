@@ -745,37 +745,63 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # End remove_app tests
    
    # confirm_user tests
-   test "Can confirm new user" do
+   test "Can confirm user" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
       post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=testuser"
       resp = JSON.parse response.body
       
-      assert_response 201
+		assert_response 201
+		jwt = resp["jwt"]
       
       new_user = User.find_by_id(resp["id"])
       
       new_users_confirmation_token = User.find_by_id(resp["id"]).email_confirmation_token
-      post "/v1/auth/user/#{new_user.id}/confirm?email_confirmation_token=#{new_user.email_confirmation_token}"
+      post "/v1/auth/user/#{new_user.id}/confirm?email_confirmation_token=#{new_user.email_confirmation_token}&jwt=#{jwt}"
       
       assert_response 200
       assert(User.find_by_id(new_user.id).confirmed)
-   end
+	end
+	
+	test "Can confirm user with password" do
+		tester = users(:tester)
+		confirmation_token = "asdpasjdasdjasd"
+		password = "testpassword"
+		tester.email_confirmation_token = confirmation_token
+		tester.save
+
+		post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=#{confirmation_token}&password=#{password}"
+		resp = JSON.parse response.body
+		
+		assert_response 200
+	end
    
    test "Can't confirm user without email_confirmation_token" do
-      tester = users(:tester)
+		tester = users(:tester)
+		jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/user/#{tester.id}/confirm"
+      post "/v1/auth/user/#{tester.id}/confirm?jwt=#{jwt}"
       resp = JSON.parse response.body
       
       assert_response 400
       assert_same(2108, resp["errors"][0][0])
-   end
+	end
+	
+	test "Can't confirm user without jwt or password" do
+		tester = users(:tester)
+
+		post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=asdsadasd"
+		resp = JSON.parse response.body
+		
+		assert_response 401
+		assert_same(2102, resp["errors"][0][0])
+	end
    
    test "Can't confirm new user with incorrect email_confirmation_token" do
-      tester = users(:tester)
+		tester = users(:tester)
+		jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg"
+      post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg&jwt=#{jwt}"
       resp = JSON.parse response.body
       
       assert_response 400
@@ -784,9 +810,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    test "User is already confirmed" do
       matt = users(:matt)
-      matts_confirmation_token = "testconfirmationtoken"
+		matts_confirmation_token = "testconfirmationtoken"
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/user/#{matt.id}/confirm?email_confirmation_token=#{matts_confirmation_token}"
+      post "/v1/auth/user/#{matt.id}/confirm?email_confirmation_token=#{matts_confirmation_token}&jwt=#{jwt}"
       resp = JSON.parse response.body
       
       assert_response 400

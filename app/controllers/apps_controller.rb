@@ -497,7 +497,7 @@ class AppsController < ApplicationController
 				# Save the object as a file
 				# Check if the user has enough free storage
 				file_size = get_file_size(request.body)
-				free_storage = get_total_storage(user.plan) - user.used_storage
+				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
 				obj.file = true
 
 				ValidationService.raise_validation_error(ValidationService.validate_storage_space(free_storage, file_size))
@@ -739,7 +739,7 @@ class AppsController < ApplicationController
 				end
 
 				file_size = get_file_size(request.body)
-				free_storage = get_total_storage(user.plan) - user.used_storage
+				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
 				file_size_difference = file_size - old_file_size
 
 				ValidationService.raise_validation_error(ValidationService.validate_storage_space(free_storage, file_size_difference))
