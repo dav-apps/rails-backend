@@ -1694,7 +1694,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2303, resp["errors"][0][0])
+      assert_same(2305, resp["errors"][0][0])
    end
    
    test "Can't update a table with too short table name" do
@@ -1707,7 +1707,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2203, resp["errors"][0][0])
+      assert_same(2205, resp["errors"][0][0])
    end
    
    test "Can't update a table with invalid table name" do
