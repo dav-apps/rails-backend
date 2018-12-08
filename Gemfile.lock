@@ -209,6 +209,8 @@ GEM
       nokogiri (>= 1.6)
     rails-html-sanitizer (1.0.4)
       loofah (~> 2.2, >= 2.2.2)
+    rails_autoscale_agent (0.4.0)
+      activesupport (>= 3.2)
     railties (5.1.6)
       actionpack (= 5.1.6)
       activesupport (= 5.1.6)
@@ -319,6 +321,7 @@ DEPENDENCIES
   rack-cors
   rack-protection (~> 1.5.5)
   rails (= 5.1.6)
+  rails_autoscale_agent
   rubyzip
   sassc-rails
   sdoc (~> 0.4.0)
