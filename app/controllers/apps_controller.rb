@@ -646,6 +646,7 @@ class AppsController < ApplicationController
 					ValidationService.raise_validation_error(ValidationService.get_file_does_not_exist_error)
 				end
 
+				response.headers['Content-Length'] = result.size.to_s
 				send_data(result, status: 200, filename: filename)
 			else
 				# Return the object data
