@@ -65,7 +65,7 @@ class UsersController < ApplicationController
          payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
          jwt = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
 			
-			UserNotifier.send_verification_email(@user).deliver_later
+			UserNotifier.send_verification_email(user).deliver_later
 
 			result = Hash.new
 			result = user.attributes.extract!("id", 
