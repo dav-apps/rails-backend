@@ -316,9 +316,14 @@ class ValidationService
 		password.length < min_password_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	define_singleton_method :validate_name_too_short do |name|
+	define_singleton_method :validate_event_name_too_short do |name|
 		error_code = 2203
 		name.length < min_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_app_name_too_short do |name|
+		error_code = 2203
+		name.length < min_app_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_desc_too_short do |desc|
@@ -351,9 +356,14 @@ class ValidationService
 		password.length > max_password_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	define_singleton_method :validate_name_too_long do |name|
+	define_singleton_method :validate_event_name_too_long do |name|
 		error_code = 2303
 		name.length > max_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_app_name_too_long do |name|
+		error_code = 2303
+		name.length > max_app_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_desc_too_long do |desc|

@@ -38,8 +38,8 @@ class AppsController < ApplicationController
 
 			# Validate properties
 			errors = Array.new
-			name_too_short_validation = ValidationService.validate_name_too_short(name)
-			name_too_long_validation = ValidationService.validate_name_too_long(name)
+			name_too_short_validation = ValidationService.validate_app_name_too_short(name)
+			name_too_long_validation = ValidationService.validate_app_name_too_long(name)
 			desc_too_short_validation = ValidationService.validate_desc_too_short(desc)
 			desc_too_long_validation = ValidationService.validate_desc_too_long(desc)
 
@@ -234,8 +234,8 @@ class AppsController < ApplicationController
 
 			name = object["name"]
 			if name
-				name_too_short_validation = ValidationService.validate_name_too_short(name)
-				name_too_long_validation = ValidationService.validate_name_too_long(name)
+				name_too_short_validation = ValidationService.validate_app_name_too_short(name)
+				name_too_long_validation = ValidationService.validate_app_name_too_long(name)
 
 				errors.push(name_too_short_validation) if !name_too_short_validation[:success]
 				errors.push(name_too_long_validation) if !name_too_long_validation[:success]
@@ -1219,8 +1219,8 @@ class AppsController < ApplicationController
 			# Validate the properties
 			name = object["name"]
 			if name
-				name_too_short_validation = ValidationService.validate_name_too_short(name)
-				name_too_long_validation = ValidationService.validate_name_too_long(name)
+				name_too_short_validation = ValidationService.validate_table_name_too_short(name)
+				name_too_long_validation = ValidationService.validate_table_name_too_long(name)
 				name_invalid_validation = ValidationService.validate_table_name_contains_not_allowed_characters(name)
 				errors = Array.new
 
