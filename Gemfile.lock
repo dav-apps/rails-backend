@@ -143,6 +143,7 @@ GEM
       activesupport (>= 4.2.0)
     hashie (3.6.0)
     hitimes (1.3.0)
+    hkdf (0.3.0)
     htmlentities (4.3.4)
     i18n (1.1.0)
       concurrent-ruby (~> 1.0)
@@ -291,6 +292,9 @@ GEM
       binding_of_caller (>= 0.7.2)
       railties (>= 4.0)
       sprockets-rails (>= 2.0, < 4.0)
+    webpush (0.3.6)
+      hkdf (~> 0.2)
+      jwt (~> 2.0)
     websocket-driver (0.6.5)
       websocket-extensions (>= 0.1.0)
     websocket-extensions (0.1.3)
@@ -335,6 +339,7 @@ DEPENDENCIES
   turbolinks
   uglifier (>= 1.3.0)
   web-console (~> 2.0)
+  webpush
 
 RUBY VERSION
    ruby 2.5.1p57
