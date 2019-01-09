@@ -306,6 +306,16 @@ class ValidationService
 		!time ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_endpoint_missing(endpoint)
+		error_code = 2122
+		!endpoint || endpoint.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_p256dh_missing(p256dh)
+		error_code = 2123
+		!p256dh || p256dh.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
 		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -452,8 +462,13 @@ class ValidationService
 	end
 
 	def self.validate_table_object_uuid_taken(uuid)
-		error_code = 2704		
+		error_code = 2704
 		TableObject.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_subscription_uuid_taken(uuid)
+		error_code = 2704
+		WebPushSubscription.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_user_does_not_exist(user)
@@ -600,6 +615,10 @@ class ValidationService
 			"Missing field: payment_token"
 		when 2121
 			"Missing field: time"
+		when 2122
+			"Missing field: endpoint"
+		when 2123
+			"Missing field: p256dh"
 		when 2201
 			"Field too short: username"
 		when 2202

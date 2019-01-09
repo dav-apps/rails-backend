@@ -1686,6 +1686,87 @@ class AppsController < ApplicationController
 		end
 	end
 	# End Notification methods
+
+	# WebPushSubscription methods
+	def create_subscription
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		uuid = params["uuid"]
+
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			if !uuid || uuid.length < 1
+				uuid = SecureRandom.uuid
+			end
+
+			# Check if the uuid is already in use
+			ValidationService.raise_validation_error(ValidationService.validate_subscription_uuid_taken(uuid))
+
+			# Check if the Content-Type is application/json
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			# Validate the values
+			body = ValidationService.parse_json(request.body.string)
+
+			endpoint_key = "endpoint"
+			p256dh_key = "p256dh"
+			auth_key = "auth"
+
+			endpoint = body[endpoint_key]
+			p256dh = body[p256dh_key]
+			auth = body[auth_key]
+
+			errors = Array.new
+			endpoint_validation = ValidationService.validate_endpoint_missing(endpoint)
+			p256dh_validation = ValidationService.validate_p256dh_missing(p256dh)
+			auth_validation = ValidationService.validate_auth_missing(auth)
+
+			errors.push(endpoint_validation) if !endpoint_validation[:success]
+			errors.push(p256dh_validation) if !p256dh_validation[:success]
+			errors.push(auth_validation) if !auth_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			# Create the subscription
+			subscription = WebPushSubscription.new(user: user, uuid: uuid, endpoint: endpoint, p256dh: p256dh, auth: auth)
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(subscription.save))
+
+			# Return the data
+			result = subscription.attributes
+			render json: result, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			
+			render json: result, status: validations.last["status"]
+		end
+	end
+
+	def delete_subscription
+
+	end
+	# End WebPushSubscription methods
    
    
    private
