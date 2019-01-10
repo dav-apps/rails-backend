@@ -1,0 +1,6 @@
+MattsFirstSubscription:
+  user: matt
+  uuid: 39e64e96-c922-4339-a143-a27e6752bb1f
+  endpoint: https://example-endpoint.tech/
+  p256dh: somekey
+  auth: someauthtoken

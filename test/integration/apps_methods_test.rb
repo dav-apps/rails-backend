@@ -2140,5 +2140,141 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 200
 	end
-	# End delete_notification tests
+   # End delete_notification tests
+   
+   # create_subscription tests
+   test "Missing fields in create_subscription" do
+      post "/v1/apps/subscription"
+      resp = JSON.parse response.body
+
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't create a subscription when using another Content-Type than application/json" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/subscription?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 415
+      assert_same(1104, resp["errors"][0][0])
+   end
+
+   test "Can't create a subscription without endpoint" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/subscription?jwt=#{jwt}",
+            params: '{"p256dh": "blabla", "auth": "blabla"}',
+            headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2122, resp["errors"][0][0])
+   end
+
+   test "Can't create a subscription without p256dh" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/subscription?jwt=#{jwt}",
+            params: '{"endpoint": "blabla", "auth": "blabla"}',
+            headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2123, resp["errors"][0][0])
+   end
+
+   test "Can't create a subscription without auth" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/subscription?jwt=#{jwt}",
+            params: '{"endpoint": "blabla", "p256dh": "blabla"}',
+            headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2101, resp["errors"][0][0])
+   end
+
+   test "Can create a subscription" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      endpoint = "https://endpoint.tech/"
+      p256dh = "somekey"
+      auth = "someauthtoken"
+
+      post "/v1/apps/subscription?jwt=#{jwt}",
+            params: '{"endpoint": "' + endpoint + '", "p256dh": "' + p256dh + '", "auth": "' + auth + '"}',
+            headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      assert_equal(endpoint, resp["endpoint"])
+      assert_equal(p256dh, resp["p256dh"])
+      assert_equal(auth, resp["auth"])
+   end
+
+   test "Can create a subscription with uuid" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      uuid = SecureRandom.uuid
+      endpoint = "https://endpoint.tech/"
+      p256dh = "somekey"
+      auth = "someauthtoken"
+
+      post "/v1/apps/subscription?jwt=#{jwt}&uuid=#{uuid}",
+            params: '{"endpoint": "' + endpoint + '", "p256dh": "' + p256dh + '", "auth": "' + auth + '"}',
+            headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      assert_equal(uuid, resp["uuid"])
+      assert_equal(endpoint, resp["endpoint"])
+      assert_equal(p256dh, resp["p256dh"])
+      assert_equal(auth, resp["auth"])
+   end
+   # End create_subscription tests
+
+   # delete_subscription tests
+   test "Missing fields in delete_subscription" do
+      subscription = web_push_subscriptions(:MattsFirstSubscription)
+      uuid = subscription.uuid
+
+      delete "/v1/apps/subscription/#{uuid}"
+      resp = JSON.parse response.body
+
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't delete a subscription that does not exist" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      uuid = SecureRandom.uuid
+
+      delete "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 404
+      assert_same(2813, resp["errors"][0][0])
+   end
+
+   test "Can't delete the subscription of another user" do
+      sherlock = users(:sherlock)
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      subscription = web_push_subscriptions(:MattsFirstSubscription)
+      uuid = subscription.uuid
+
+      delete "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 403
+      assert_equal(1102, resp["errors"][0][0])
+   end
+   # End delete_subscription tests
 end
