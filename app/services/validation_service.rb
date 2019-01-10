@@ -101,6 +101,11 @@ class ValidationService
 		archive.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
+	def self.validate_web_push_subscription_belongs_to_user(subscription, user)
+		error_code = 1102
+		subscription.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
 	def self.validate_unknown_validation_error(saved)
 		error_code = 1103
 		!saved ? {success: false, error: [error_code, get_error_message(error_code)], status: 500} : {success: true}
@@ -316,6 +321,16 @@ class ValidationService
 		!p256dh || p256dh.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_subscription_auth_missing(auth)
+		error_code = 2101
+		!auth || auth.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_uuid_missing(uuid)
+		error_code = 2124
+		!uuid || uuid.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
 		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -521,6 +536,11 @@ class ValidationService
 		!notification ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
+	def self.validate_web_push_subscription_does_not_exist(subscription)
+		error_code = 2813
+		!subscription ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
 	def self.validate_dev_already_exists(dev)
 		error_code = 2902
 		dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
@@ -619,6 +639,8 @@ class ValidationService
 			"Missing field: endpoint"
 		when 2123
 			"Missing field: p256dh"
+		when 2124
+			"Missing field: uuid"
 		when 2201
 			"Field too short: username"
 		when 2202
@@ -697,6 +719,8 @@ class ValidationService
 			"Resource does not exist: ArchivePart"
 		when 2812
 			"Resource does not exist: Notification"
+		when 2813
+			"Resource does not exist: WebPushSubscription"
 		when 2901
 			"Resource already exists: User"
 		when 2902
