@@ -40,7 +40,7 @@ namespace :push_notification_sender do
 					private_key: ENV["WEBPUSH_PRIVATE_KEY"]
 				}
 			)
-		rescue InvalidSubscription, ExpiredSubscription => e
+		rescue Webpush::InvalidSubscription, Webpush::ExpiredSubscription => e
 			puts e
 			
 			# Delete the subscription
