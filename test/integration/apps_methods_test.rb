@@ -2100,11 +2100,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 				headers: {'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
-		id = resp["id"]
-		notification = Notification.find_by_id(id)
+      assert_response 201
 
-		assert_response 201
-		assert_not_nil(notification)
+		notification = Notification.find_by_id(resp["id"])
+      assert_not_nil(notification)
+      assert_not_nil(resp["uuid"])
 		assert_same(interval, resp["interval"])
 
 		first_property = notification.notification_properties.first
@@ -2114,7 +2114,39 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(first_property_value, first_property.value)
 		assert_equal(second_property_name, second_property.name)
 		assert_equal(second_property_value, second_property.value)
-	end
+   end
+   
+   test "Can create a notification with uuid" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      time = Time.now.to_i
+      uuid = SecureRandom.uuid
+
+      post "/v1/apps/notification?jwt=#{jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&uuid=#{uuid}",
+            headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      notification = Notification.find_by_id(resp["id"])
+      assert_not_nil(notification)
+      assert_same(0, notification.interval)
+      assert_same(time, notification.time.to_time.to_i)
+      assert_equal(uuid, notification.uuid)
+   end
+
+   test "Can't create a notification with uuid that is already in use" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      time = Time.now.to_i
+      uuid = notifications(:TestNotification).uuid
+
+      post "/v1/apps/notification?jwt=#{jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&uuid=#{uuid}",
+            headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 400
+      assert_same(2704, resp["errors"][0][0])
+   end
 	# End create_notification tests
 
 	# delete_notification tests
@@ -2123,7 +2155,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		notification = notifications(:TestNotification)
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 
-		delete "/v1/apps/notification/#{notification.id}?jwt=#{jwt}"
+		delete "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
 		resp = JSON.parse response.body
 
 		assert_response 403
@@ -2132,14 +2164,26 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 	test "Can delete a notification" do
 		matt = users(:matt)
-		notification = notifications(:TestNotification)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      notification = notifications(:TestNotification)
 		
-		delete "/v1/apps/notification/#{notification.id}?jwt=#{matts_jwt}"
+		delete "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
 		resp = JSON.parse response.body
 
 		assert_response 200
-	end
+   end
+   
+   test "Can't delete a notification that does not exist" do
+      uuid = SecureRandom.uuid
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      delete "/v1/apps/notification/#{uuid}?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 404
+      assert_same(2812, resp["errors"][0][0])
+   end
    # End delete_notification tests
    
    # create_subscription tests

@@ -1,5 +1,6 @@
 TestNotification:
   app: TestApp
   user: matt
+  uuid: f6a89723-f9af-47ea-b3ac-3689a2033186
   time: 1214234123
   interval: 0
