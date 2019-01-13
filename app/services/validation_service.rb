@@ -486,6 +486,11 @@ class ValidationService
 		WebPushSubscription.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_notification_uuid_taken(uuid)
+		error_code = 2704
+		Notification.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_user_does_not_exist(user)
 		error_code = 2801
 		!user ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}

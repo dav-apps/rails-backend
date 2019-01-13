@@ -1541,6 +1541,7 @@ class AppsController < ApplicationController
 	# Notification methods
 	def create_notification
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		uuid = params["uuid"]		# Optional
 		app_id = params["app_id"]
 		time = params["time"]		# The unix timestamp as integer
 		interval = params["interval"]
@@ -1576,6 +1577,13 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
+			if !uuid || uuid.length < 1
+				uuid = SecureRandom.uuid
+			end
+
+			# Check if the uuid is already in use
+			ValidationService.raise_validation_error(ValidationService.validate_notification_uuid_taken(uuid))
+
 			# Validate the properties
 			body = ValidationService.parse_json(request.body.string)
 
@@ -1601,8 +1609,8 @@ class AppsController < ApplicationController
 			end
 
 			# Create the notification
-			datetime = Time.at(time.to_i).to_s(:db)
-			notification = Notification.new(app_id: app.id, user_id: user.id, time: datetime, interval: 0)
+			datetime = Time.at(time.to_i)
+			notification = Notification.new(uuid: uuid, app_id: app.id, user_id: user.id, time: datetime, interval: 0)
 
 			if interval
 				notification.interval = interval
@@ -1610,9 +1618,8 @@ class AppsController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(notification.save))
 
-			properties = Hash.new
-
 			# Create the properties
+			properties = Hash.new
 			body.each do |key, value|
 				if value
 					if value.length > 0
@@ -1638,20 +1645,11 @@ class AppsController < ApplicationController
 	end
 
 	def delete_notification
-		id = params["id"]
+		uuid = params["uuid"]
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1664,7 +1662,7 @@ class AppsController < ApplicationController
 			dev = Dev.find_by_id(dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			notification = Notification.find_by_id(id)
+			notification = Notification.find_by(uuid: uuid)
 			ValidationService.raise_validation_error(ValidationService.validate_notification_does_not_exist(notification))
 
 			# Validate notification belongs to the app of the dev
