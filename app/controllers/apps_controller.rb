@@ -378,7 +378,6 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
-			update_utc_offset_of_user(user, request.headers["utc-offset"])
 
 			if table_id
 				table = Table.find_by(id: table_id)
@@ -615,7 +614,6 @@ class AppsController < ApplicationController
 					ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 					ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
-					update_utc_offset_of_user(user, request.headers["utc-offset"])
 
 					if obj.visibility != 1
 						ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
@@ -717,7 +715,6 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(request.headers["Content-Type"]))
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
-			update_utc_offset_of_user(user, request.headers["utc-offset"])
 
 			# If there is a new visibility, save it
 			begin
@@ -905,7 +902,6 @@ class AppsController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
-			update_utc_offset_of_user(user, request.headers["utc-offset"])
 
 			# Delete the file if it exists
 			if obj.file
@@ -1049,7 +1045,6 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app))
-			update_utc_offset_of_user(user, request.headers["utc-offset"])
 
 			# Save that the user was active
 			user.update_column(:last_active, Time.now)
@@ -1138,7 +1133,6 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app))
-			update_utc_offset_of_user(user, request.headers["utc-offset"])
 
 			# Save that the user was active
 			user.update_column(:last_active, Time.now)

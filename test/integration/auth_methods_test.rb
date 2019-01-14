@@ -78,21 +78,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 404
       assert_same(resp["errors"][0][0], 2802)
    end
-
-   test "Login should save the new offset of the user" do
-      matt = users(:matt)
-      utc_offset = 60
-
-      get "/v1/auth/login?email=#{matt.email}&password=schachmatt&auth=" + generate_auth_token(devs(:matt)),
-            headers: {"Utc-Offset" => utc_offset}
-      resp = JSON.parse response.body
-
-      assert_response 200
-
-      # Get the user
-      matt = User.find(matt.id)
-      assert_same(utc_offset, matt.utc_offset)
-   end
    # End login tests
    
    # login_by_jwt tests

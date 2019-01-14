@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190114174851) do
+ActiveRecord::Schema.define(version: 20190113142341) do
 
   create_table "access_tokens", id: :integer, force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
     t.string "token"
@@ -130,7 +130,6 @@ ActiveRecord::Schema.define(version: 20190114174851) do
     t.integer "subscription_status", default: 0
     t.bigint "used_storage", default: 0
     t.datetime "last_active"
-    t.integer "utc_offset", default: 0
   end
 
   create_table "users_apps", id: :integer, force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|

@@ -1,6 +1,6 @@
 namespace :push_notification_sender do
 	task send_notifications: :environment do
-		Notification.where("time <= ?", DateTime.now).each do |notification|
+		Notification.where("time <= ?", DateTime.now.utc).each do |notification|
 			# Get the properties
 			properties = Hash.new
 			notification.notification_properties.each do |property|
