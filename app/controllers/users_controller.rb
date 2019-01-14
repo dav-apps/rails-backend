@@ -90,7 +90,7 @@ class UsersController < ApplicationController
 		email = params[:email]
       password = params[:password]
 		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-		
+
 		begin
 			auth_validation = ValidationService.validate_auth_missing(auth)
 			email_validation = ValidationService.validate_email_missing(email)
@@ -116,6 +116,7 @@ class UsersController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 			ValidationService.raise_validation_error(ValidationService.authenticate_user(user, password))
+			update_utc_offset_of_user(user, request.headers["utc-offset"])
 
 			# Return the data
 			# Create JWT and result
@@ -167,6 +168,7 @@ class UsersController < ApplicationController
 
 			dev_api_key = Dev.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev_api_key))
+			update_utc_offset_of_user(user, request.headers["utc-offset"])
 
 			# Return the data
 			# Create JWT and result

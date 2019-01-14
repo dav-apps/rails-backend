@@ -126,5 +126,18 @@ class ApplicationController < ActionController::API
 			users_app.used_storage = users_app.used_storage += storage_change
 			users_app.save
 		end
-	end
+   end
+   
+   def update_utc_offset_of_user(user, utc_offset)
+      if !utc_offset
+         return
+      end
+
+      if utc_offset == user.utc_offset
+         return
+      end
+      
+      user.utc_offset = utc_offset
+      user.save
+   end
 end
