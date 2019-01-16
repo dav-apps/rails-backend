@@ -2163,10 +2163,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		notification1 = notifications(:TestNotification)
-		notification2 = notifications(:TestNotification2)
+      notification2 = notifications(:TestNotification2)
+      notification1FirstProperty = notification_properties(:TestNotificationFirstProperty)
+      notification1SecondProperty = notification_properties(:TestNotificationSecondProperty)
+      notification2FirstProperty = notification_properties(:TestNotification2FirstProperty)
+      notification2SecondProperty = notification_properties(:TestNotification2SecondProperty)
 
 		get "/v1/apps/notifications?jwt=#{jwt}&app_id=#{apps(:TestApp).id}"
-		resp = JSON.parse response.body
+      resp = JSON.parse response.body
 
 		assert_response 200
 		assert_same(notification1.id, resp["notifications"][1]["id"])
@@ -2174,10 +2178,16 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_same(notification1.time.to_i, resp["notifications"][1]["time"])
 		assert_same(notification1.interval, resp["notifications"][1]["interval"])
 
+      assert_equal(notification1FirstProperty.value, resp["notifications"][1]["properties"][notification1FirstProperty.name])
+      assert_equal(notification1SecondProperty.value, resp["notifications"][1]["properties"][notification1SecondProperty.name])
+
 		assert_same(notification2.id, resp["notifications"][0]["id"])
 		assert_equal(notification2.uuid, resp["notifications"][0]["uuid"])
 		assert_same(notification2.time.to_i, resp["notifications"][0]["time"])
 		assert_same(notification2.interval, resp["notifications"][0]["interval"])
+
+      assert_equal(notification2FirstProperty.value, resp["notifications"][0]["properties"][notification2FirstProperty.name])
+      assert_equal(notification2SecondProperty.value, resp["notifications"][0]["properties"][notification2SecondProperty.name])
 	end
 
 	test "Can't get the notifications of the app of another dev" do

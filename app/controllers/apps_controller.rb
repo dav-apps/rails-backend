@@ -1683,6 +1683,14 @@ class AppsController < ApplicationController
 			notifications.each do |notification|
 				hash = notification.attributes
 				hash["time"] = notification.time.to_i
+
+				# Get the properties
+				properties = Hash.new
+				notification.notification_properties.each do |property|
+					properties[property.name] = property.value
+				end
+				hash["properties"] = properties
+
 				notifications_array.push(hash)
 			end
 

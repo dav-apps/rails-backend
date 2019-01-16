@@ -1,0 +1,19 @@
+TestNotificationFirstProperty:
+  notification: TestNotification
+  name: title
+  value: Hello World
+
+TestNotificationSecondProperty:
+  notification: TestNotification
+  name: message
+  value: Thanks for using this app!
+
+TestNotification2FirstProperty:
+  notification: TestNotification2
+  name: title
+  value: Your daily summary
+
+TestNotification2SecondProperty:
+  notification: TestNotification2
+  name: message
+  value: You have 2 appointments and one Todo
