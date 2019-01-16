@@ -1644,6 +1644,58 @@ class AppsController < ApplicationController
 		end
 	end
 
+	def get_all_notifications
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		app_id = params["app_id"]
+
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			app_id_validation = ValidationService.validate_app_id_missing(app_id)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(app_id_validation) if !app_id_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+
+			# Return the notifications
+			notifications = Notification.where(user: user, app: app)
+			notifications_array = Array.new
+
+			notifications.each do |notification|
+				notifications_array.push(notification.attributes)
+			end
+
+			result = Hash.new
+			result["notifications"] = notifications_array
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
 	def delete_notification
 		uuid = params["uuid"]
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last

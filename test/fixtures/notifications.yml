@@ -2,5 +2,12 @@ TestNotification:
   app: TestApp
   user: matt
   uuid: f6a89723-f9af-47ea-b3ac-3689a2033186
-  time: 1214234123
+  time: <%= 4.days.ago.to_s(:db) %>
   interval: 0
+
+TestNotification2:
+  app: TestApp
+  user: matt
+  uuid: 14ca855c-bcde-43ed-b78a-8aa655738b06
+  time: <%= 2.months.ago.to_s(:db) %>
+  interval: 3600

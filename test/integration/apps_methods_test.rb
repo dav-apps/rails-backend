@@ -2147,7 +2147,50 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 400
       assert_same(2704, resp["errors"][0][0])
    end
-	# End create_notification tests
+   # End create_notification tests
+   
+   # get_all_notifications tests
+   test "Missing fields in get_all_notifications" do
+      get "/v1/apps/notifications"
+      resp = JSON.parse response.body
+
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2102, resp["errors"][0][0])
+      assert_same(2110, resp["errors"][1][0])
+	end
+	
+	test "get_all_notifications should return all notifications of the app and user" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		notification1 = notifications(:TestNotification)
+		notification2 = notifications(:TestNotification2)
+
+		get "/v1/apps/notifications?jwt=#{jwt}&app_id=#{apps(:TestApp).id}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_same(notification1.id, resp["notifications"][1]["id"])
+		assert_equal(notification1.uuid, resp["notifications"][1]["uuid"])
+		assert_same(notification1.time.to_i, DateTime.parse(resp["notifications"][1]["time"]).to_i)
+		assert_same(notification1.interval, resp["notifications"][1]["interval"])
+
+		assert_same(notification2.id, resp["notifications"][0]["id"])
+		assert_equal(notification2.uuid, resp["notifications"][0]["uuid"])
+		assert_same(notification2.time.to_i, DateTime.parse(resp["notifications"][0]["time"]).to_i)
+		assert_same(notification2.interval, resp["notifications"][0]["interval"])
+	end
+
+	test "Can't get the notifications of the app of another dev" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		
+		get "/v1/apps/notifications?jwt=#{jwt}&app_id=#{apps(:TestApp).id}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+   # End get_all_notifications tests
 
 	# delete_notification tests
 	test "Can't delete the notification of the app of another dev" do
