@@ -1681,7 +1681,9 @@ class AppsController < ApplicationController
 			notifications_array = Array.new
 
 			notifications.each do |notification|
-				notifications_array.push(notification.attributes)
+				hash = notification.attributes
+				hash["time"] = notification.time.to_i
+				notifications_array.push(hash)
 			end
 
 			result = Hash.new

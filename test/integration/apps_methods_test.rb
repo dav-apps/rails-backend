@@ -2171,12 +2171,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 		assert_same(notification1.id, resp["notifications"][1]["id"])
 		assert_equal(notification1.uuid, resp["notifications"][1]["uuid"])
-		assert_same(notification1.time.to_i, DateTime.parse(resp["notifications"][1]["time"]).to_i)
+		assert_same(notification1.time.to_i, resp["notifications"][1]["time"])
 		assert_same(notification1.interval, resp["notifications"][1]["interval"])
 
 		assert_same(notification2.id, resp["notifications"][0]["id"])
 		assert_equal(notification2.uuid, resp["notifications"][0]["uuid"])
-		assert_same(notification2.time.to_i, DateTime.parse(resp["notifications"][0]["time"]).to_i)
+		assert_same(notification2.time.to_i, resp["notifications"][0]["time"])
 		assert_same(notification2.interval, resp["notifications"][0]["interval"])
 	end
 
