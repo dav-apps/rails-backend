@@ -60,6 +60,7 @@ Rails.application.routes.draw do
   match '/v1/apps/notification/:uuid', to: 'apps#delete_notification', via: 'delete'
 
   match '/v1/apps/subscription', to: 'apps#create_subscription', via: 'post'
+  match '/v1/apps/subscription/:uuid', to: 'apps#get_subscription', via: 'get'
   match '/v1/apps/subscription/:uuid', to: 'apps#delete_subscription', via: 'delete'
 
   # Analytics routes

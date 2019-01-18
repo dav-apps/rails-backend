@@ -1816,6 +1816,49 @@ class AppsController < ApplicationController
 		end
 	end
 
+	def get_subscription
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		uuid = params["uuid"]
+
+		begin
+			jwt_validation = ValidationService.validate_jwt_missing(jwt)
+			uuid_validation = ValidationService.validate_uuid_missing(uuid)
+			errors = Array.new
+
+			errors.push(jwt_validation) if !jwt_validation[:success]
+			errors.push(uuid_validation) if !uuid_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			subscription = WebPushSubscription.find_by(uuid: uuid)
+			ValidationService.raise_validation_error(ValidationService.validate_web_push_subscription_does_not_exist(subscription))
+			ValidationService.raise_validation_error(ValidationService.validate_web_push_subscription_belongs_to_user(subscription, user))
+
+			# Return the subscription
+			result = subscription.attributes
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			
+			render json: result, status: validations.last["status"]
+		end
+	end
+
 	def delete_subscription
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		uuid = params["uuid"]
