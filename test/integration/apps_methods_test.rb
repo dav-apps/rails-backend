@@ -2148,6 +2148,55 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2704, resp["errors"][0][0])
    end
    # End create_notification tests
+
+   # get_notification tests
+   test "Missing fields in get_notification" do
+      get "/v1/apps/notification/bla"
+      resp = JSON.parse response.body
+
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't get a notification that does not exist" do
+      uuid = SecureRandom.uuid
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      get "/v1/apps/notification/#{uuid}?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 404
+      assert_same(2812, resp["errors"][0][0])
+	end
+	
+	test "Can't get the notification of another user" do
+		sherlock = users(:sherlock)
+		notification = notifications(:TestNotification)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can get a notification" do
+		matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      notification = notifications(:TestNotification)
+
+		get "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_same(notification.id, resp["id"])
+		assert_equal(notification.uuid, resp["uuid"])
+		assert_same(notification.time.to_i, resp["time"])
+		assert_same(notification.interval, resp["interval"])
+	end
+   # End get_notification tests
    
    # get_all_notifications tests
    test "Missing fields in get_all_notifications" do
@@ -2202,8 +2251,28 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 	end
    # End get_all_notifications tests
 
-	# delete_notification tests
-	test "Can't delete the notification of the app of another dev" do
+   # delete_notification tests
+   test "Missing fields in delete_notification" do
+      delete "/v1/apps/notification/bla"
+      resp = JSON.parse response.body
+
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "Can't delete a notification that does not exist" do
+      uuid = SecureRandom.uuid
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      delete "/v1/apps/notification/#{uuid}?jwt=#{jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 404
+      assert_same(2812, resp["errors"][0][0])
+   end
+
+	test "Can't delete the notification of another user" do
 		sherlock = users(:sherlock)
 		notification = notifications(:TestNotification)
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
@@ -2215,7 +2284,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_same(1102, resp["errors"][0][0])
 	end
 
-	test "Can delete a notification" do
+   test "Can delete a notification" do
 		matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       notification = notifications(:TestNotification)
@@ -2224,18 +2293,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert_response 200
-   end
-   
-   test "Can't delete a notification that does not exist" do
-      uuid = SecureRandom.uuid
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-
-      delete "/v1/apps/notification/#{uuid}?jwt=#{jwt}"
-      resp = JSON.parse response.body
-
-      assert_response 404
-      assert_same(2812, resp["errors"][0][0])
    end
    # End delete_notification tests
    
