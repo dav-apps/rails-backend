@@ -2186,6 +2186,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       notification = notifications(:TestNotification)
+      firstProperty = notification_properties(:TestNotificationFirstProperty)
+      secondProperty = notification_properties(:TestNotificationSecondProperty)
 
 		get "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
 		resp = JSON.parse response.body
@@ -2194,7 +2196,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_same(notification.id, resp["id"])
 		assert_equal(notification.uuid, resp["uuid"])
 		assert_same(notification.time.to_i, resp["time"])
-		assert_same(notification.interval, resp["interval"])
+      assert_same(notification.interval, resp["interval"])
+      
+      # Check the properties
+		assert_equal(firstProperty.value, resp["properties"][firstProperty.name])
+		assert_equal(secondProperty.value, resp["properties"][secondProperty.name])
 	end
    # End get_notification tests
    

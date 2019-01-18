@@ -1677,6 +1677,13 @@ class AppsController < ApplicationController
 			# Return the time as int
 			result["time"] = notification.time.to_i
 
+			# Get the properties
+			properties = Hash.new
+			notification.notification_properties.each do |property|
+				properties[property.name] = property.value
+			end
+			result["properties"] = properties
+
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
