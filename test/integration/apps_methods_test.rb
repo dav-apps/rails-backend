@@ -2337,6 +2337,58 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End create_subscription tests
 
+   # get_subscription tests
+   test "Missing fields in get_subscription" do
+		get "/v1/apps/subscription/bla"
+		resp = JSON.parse response.body
+
+		assert(response.status == 400 || response.status ==  401)
+      assert_same(2102, resp["errors"][0][0])
+	end
+	
+	test "Can't get a subscription that does not exist" do
+		uuid = SecureRandom.uuid
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		get "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_same(2813, resp["errors"][0][0])
+	end
+
+	test "Can't get the subscription of another user" do
+		sherlock = users(:sherlock)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		subscription = web_push_subscriptions(:MattsFirstSubscription)
+		uuid = subscription.uuid
+		
+		get "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can get a subscription" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		subscription = web_push_subscriptions(:MattsFirstSubscription)
+		uuid = subscription.uuid
+
+		get "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_same(subscription.id, resp["id"])
+		assert_equal(subscription.uuid, resp["uuid"])
+		assert_equal(subscription.endpoint, resp["endpoint"])
+		assert_equal(subscription.p256dh, resp["p256dh"])
+		assert_equal(subscription.auth, resp["auth"])
+	end
+   # End get_subscription tests
+
    # delete_subscription tests
    test "Missing fields in delete_subscription" do
       subscription = web_push_subscriptions(:MattsFirstSubscription)
@@ -2371,7 +2423,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
+      assert_same(1102, resp["errors"][0][0])
+	end
+	
+	test "Can delete a subscription" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		subscription = web_push_subscriptions(:MattsFirstSubscription)
+		uuid = subscription.uuid
+
+		delete "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+	end
    # End delete_subscription tests
 end
