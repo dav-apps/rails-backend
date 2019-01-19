@@ -43,3 +43,17 @@ properties = Property.create([
 	{table_object: table_objects.second, name: "page1", value: "Table"},
 	{table_object: table_objects.second, name: "page2", value: "Tabelle"}
 ])
+
+notifications = Notification.create([
+   # Time: 1547922131
+   {user: users[4], app: apps.third, time: DateTime.parse("2019-01-19 18:22:11 +0000"), interval: 3600, uuid: "0289e7ab-5497-45dc-a6ad-d5d49143b17b"},
+   # Time: 1491222843
+   {user: users[4], app: apps.third, time: DateTime.parse("2017-04-03 12:34:03 +0000"), interval: 864000, uuid: "4590db9d-f154-42bc-aaa9-c222e3b82487"}
+])
+
+notification_properties = NotificationProperty.create([
+	{notification: notifications.first, name: "title", value: "Hello World"},
+	{notification: notification.first, name: "message", value: "You have an appointment"},
+	{notification: notifications.second, name: "title", value: "Your daily summary"},
+	{notification: notifications.second, name: "message", value: "You have 2 appointments and one Todo for today"}
+])
