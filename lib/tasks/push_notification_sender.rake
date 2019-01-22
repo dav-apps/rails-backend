@@ -1,28 +1,38 @@
 namespace :push_notification_sender do
 	task send_notifications: :environment do
 		Notification.where("time <= ?", DateTime.now.utc).each do |notification|
-			# Get the properties
+			# Update the notification first
+			delete_notification = notification.interval == 0
+			if !delete_notification
+				# Update the notification
+				notification.time = Time.at(notification.time.to_i + notification.interval)
+				notification.save
+			end
+
+			# Generate the message
 			properties = Hash.new
 			notification.notification_properties.each do |property|
 				properties[property.name] = property.value
 			end
 
-			properties_json = JSON.generate(properties)
+			message = Hash.new
+			message["uuid"] = notification.uuid
+			message["time"] = notification.time.to_i
+			message["interval"] = notification.interval
+			message["delete"] = notification.interval == 0
+			message["properties"] = properties
+			messageJson = JSON.generate(message)
 
 			# Send the notification
-			PushNotificationChannel.broadcast_to("#{notification.user.id},#{notification.app.id}", properties)
+			PushNotificationChannel.broadcast_to("#{notification.user.id},#{notification.app.id}", messageJson)
 
 			WebPushSubscription.where(user_id: notification.user_id).each do |subscription|
-				send_web_push_notification(subscription, properties_json)
+				send_web_push_notification(subscription, messageJson)
 			end
 
-			if notification.interval == 0
+			if delete_notification
 				# Delete the notification
 				notification.destroy!
-			else
-				# Update the notification
-				notification.time = Time.at(notification.time.to_i + notification.interval)
-				notification.save
 			end
 		end
 	end
