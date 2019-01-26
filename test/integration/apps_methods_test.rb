@@ -1084,19 +1084,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2307, resp["errors"][1][0])
    end
    
-   test "Can get all properties of an object after updating one" do
+   test "update_object returns all properties of the object" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		table_object = table_objects(:first)
+		first_property_name = properties(:first1).name
+		first_property_value = "updated property value"
+		second_property_name = properties(:second1).name
+		second_property_value = properties(:second1).value
       
-		put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", 
-				params: "{\"#{"test"}\":\"#{"test"}\"}", 
+		put "/v1/apps/object/#{table_object.id}?jwt=#{jwt}", 
+				params: "{\"#{first_property_name}\":\"#{first_property_value}\"}", 
 				headers: {'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
-		assert_same(table_objects(:first).id, resp["id"])
-		assert_equal(generate_table_object_etag(table_objects(:first)), resp["etag"])
-      assert_not_nil(resp["properties"]["test"])
+		assert_equal(first_property_value, resp["properties"][first_property_name])
+		assert_equal(second_property_value, resp["properties"][second_property_name])
    end
    
    test "Can update object with new visibility" do
@@ -2147,6 +2151,38 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 400
       assert_same(2704, resp["errors"][0][0])
    end
+
+   test "Can't create a notification with too long property name" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      uuid = SecureRandom.uuid
+      time = Time.now.to_i
+      interval = 20000
+
+      post "/v1/apps/notification?jwt=#{jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}&uuid=#{uuid}",
+            headers: {'Content-Type' => 'application/json'},
+            params: "{\"#{ "hello" * 100 }\": \"testtest\"}"
+      resp = JSON.parse response.body
+      
+		assert_response 400
+		assert_equal(2306, resp["errors"][0][0])
+   end
+
+   test "Can't create a notification with too long property value" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      uuid = SecureRandom.uuid
+      time = Time.now.to_i
+      interval = 20000
+
+      post "/v1/apps/notification?jwt=#{jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}&uuid=#{uuid}",
+            headers: {'Content-Type' => 'application/json'},
+            params: "{\"testkey\": \"#{ "a" * 65100 }\"}"
+      resp = JSON.parse response.body
+      
+      assert_response 400
+		assert_equal(2307, resp["errors"][0][0])
+   end
    # End create_notification tests
 
    # get_notification tests
@@ -2255,7 +2291,167 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 403
 		assert_same(1102, resp["errors"][0][0])
 	end
-   # End get_all_notifications tests
+	# End get_all_notifications tests
+	
+	# update_notification tests
+	test "Missing fields in update_notification" do
+		notification = notifications(:TestNotification)
+
+		put "/v1/apps/notification/#{notification.uuid}"
+		resp = JSON.parse response.body
+
+		assert(response.status == 400 || response.status ==  401)
+		assert_equal(2102, resp["errors"][0][0])
+	end
+
+	test "Can update a notification" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		notification = notifications(:TestNotification)
+		new_time = Time.now.to_i
+		new_interval = 123123
+
+		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}&time=#{new_time}&interval=#{new_interval}",
+				headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(new_time, resp["time"])
+		assert_equal(new_interval, resp["interval"])
+	end
+
+	test "Can update the properties of a notification" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		notification = notifications(:TestNotification)
+		first_property_name = notification_properties(:TestNotificationFirstProperty).name
+		first_property_value = "updated title"
+		second_property_name = notification_properties(:TestNotificationSecondProperty).name
+		second_property_value = "updated message"
+		third_property_name = "new_key"
+		third_property_value = "Hello World!"
+
+		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
+				headers: {'Content-Type' => 'application/json'},
+				params: "{\"#{first_property_name}\": \"#{first_property_value}\", \"#{second_property_name}\": \"#{second_property_value}\", \"#{third_property_name}\": \"#{third_property_value}\"}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(first_property_value, resp["properties"][first_property_name])
+		assert_equal(second_property_value, resp["properties"][second_property_name])
+		assert_equal(third_property_value, resp["properties"][third_property_name])
+	end
+
+	test "update_notification returns all properties of the notification" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		notification = notifications(:TestNotification)
+		first_property_name = notification_properties(:TestNotificationFirstProperty).name
+		first_property_value = "updated title"
+		second_property_name = notification_properties(:TestNotificationSecondProperty).name
+		second_property_value = notification_properties(:TestNotificationSecondProperty).value
+
+		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
+				headers: {'Content-Type' => 'application/json'},
+				params: "{\"#{first_property_name}\": \"#{first_property_value}\"}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(first_property_value, resp["properties"][first_property_name])
+		assert_equal(second_property_value, resp["properties"][second_property_name])
+	end
+
+	test "update_notification removes existing property when the value is empty" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		notification = notifications(:TestNotification)
+		first_property_name = "title"
+		second_property_name = notification_properties(:TestNotificationSecondProperty).name
+		second_property_value = notification_properties(:TestNotificationSecondProperty).value
+		
+		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
+				headers: {'Content-Type' => 'application/json'},
+				params: "{\"#{first_property_name}\": \"\"}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_nil(resp["properties"][first_property_name])
+	end
+
+	test "Can't update the property of a notification with too long property value" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		notification = notifications(:TestNotification)
+		first_property_name = notification_properties(:TestNotificationFirstProperty).name
+
+		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
+				headers: {'Content-Type' => 'application/json'},
+				params: "{\"#{first_property_name}\": \"#{ "a" * 65100 }\"}"
+		resp = JSON.parse response.body
+
+		assert_response 400
+		assert_equal(2307, resp["errors"][0][0])
+	end
+
+	test "Can't update a notification with too long property name" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		notification = notifications(:TestNotification)
+		first_property_name = notification_properties(:TestNotificationFirstProperty).name
+
+		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
+				headers: {'Content-Type' => 'application/json'},
+				params: "{\"#{ "test" * 100 }\": \"blabla\"}"
+		resp = JSON.parse response.body
+
+		assert_response 400
+		assert_equal(2306, resp["errors"][0][0])
+	end
+
+	test "Can't update a notification when using another Content-Type than application/json" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		notification = notifications(:TestNotification)
+		first_property_name = notification_properties(:TestNotificationFirstProperty).name
+
+		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
+				params: "{\"#{first_property_name}\": \"blabla\"}"
+		resp = JSON.parse response.body
+
+		assert_response 415
+		assert_same(1104, resp["errors"][0][0])
+	end
+
+	test "Can't update a notification that does not exist" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		uuid = SecureRandom.uuid
+		property_name = "title"
+		property_value ="Test"
+
+		put "/v1/apps/notification/#{uuid}?jwt=#{jwt}",
+				params: "{\"#{property_name}\": \"#{property_value}\"}"
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2812, resp["errors"][0][0])
+	end
+
+	test "Can't update the notification of another user" do
+		sherlock = users(:sherlock)
+		notification = notifications(:TestNotification)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		property_name = "title"
+		property_value ="Test"
+
+		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
+				params: "{\"#{property_name}\": \"#{property_value}\"}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+	# End update_notification tests
 
    # delete_notification tests
    test "Missing fields in delete_notification" do

@@ -818,7 +818,6 @@ class AppsController < ApplicationController
 					end
 				end
 
-				properties = Hash.new
 				object.each do |key, value|
 					prop = Property.find_by(name: key, table_object_id: obj.id)
 
@@ -826,13 +825,11 @@ class AppsController < ApplicationController
 						if !prop && value.length > 0		# If the property does not exist and there is a value, create the property
 							new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
-							properties[key] = value
 						elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
 							prop.destroy!
 						elsif value.length > 0		# There is a new value for the property, update the property
 							prop.value = value
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
-							properties[key] = value
 						end
 					end
 				end
@@ -842,6 +839,12 @@ class AppsController < ApplicationController
 
 				# Notify connected clients of the updated object
 				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 1)
+
+				# Get the properties
+				properties = Hash.new
+				obj.properties.each do |property|
+					properties[property.name] = property.value
+				end
 
 				result = obj.attributes
 				result["properties"] = properties
@@ -1813,7 +1816,6 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(notification.save))
 
 			# Update the properties
-			properties = Hash.new
 			body.each do |key, value|
 				prop = NotificationProperty.find_by(name: key, notification_id: notification.id)
 
@@ -1821,18 +1823,21 @@ class AppsController < ApplicationController
 					if !prop && value.length > 0			# If the property does not exist and there is a value, create the property
 						new_prop = NotificationProperty.new(notification_id: notification.id, name: key, value: value)
 						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
-						properties[key] = value
 					elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
 						prop.destroy!
 					elsif value.length > 0					# There is a new value for the property, update the property
 						prop.value = value
 						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
-						properties[key] = value
 					end
 				end
 			end
 
 			# Return the data
+			properties = Hash.new
+			notification.notification_properties.each do |property|
+				properties[property.name] = property.value
+			end
+
 			result = notification.attributes
 			result["time"] = notification.time.to_i
 			result["properties"] = properties
