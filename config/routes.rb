@@ -58,6 +58,7 @@ Rails.application.routes.draw do
   match '/v1/apps/notification', to: 'apps#create_notification', via: 'post'
   match '/v1/apps/notification/:uuid', to: 'apps#get_notification', via: 'get'
   match '/v1/apps/notifications', to: 'apps#get_all_notifications', via: 'get'
+  match '/v1/apps/notification/:uuid', to: 'apps#update_notification', via: 'put'
   match '/v1/apps/notification/:uuid', to: 'apps#delete_notification', via: 'delete'
 
   match '/v1/apps/subscription', to: 'apps#create_subscription', via: 'post'
@@ -76,6 +77,7 @@ Rails.application.routes.draw do
 
   # Stripe Webhooks
   mount StripeEvent::Engine, at: '/v1/payments/stripe'
+
   # Websockets
   mount ActionCable.server => '/v1/cable'
 end

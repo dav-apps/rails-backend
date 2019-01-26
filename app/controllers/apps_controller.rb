@@ -800,22 +800,20 @@ class AppsController < ApplicationController
 				object = ValidationService.parse_json(request.body.string)
 
 				object.each do |key, value|
-					if value
-						if value.length > 0
-							name_too_short_validation = ValidationService.validate_property_name_too_short(key)
-							name_too_long_validation = ValidationService.validate_property_name_too_long(key)
-							value_too_short_validation = ValidationService.validate_property_value_too_short(value)
-							value_too_long_validation = ValidationService.validate_property_value_too_long(value)
-							errors = Array.new
+					if value && value.length > 0
+						name_too_short_validation = ValidationService.validate_property_name_too_short(key)
+						name_too_long_validation = ValidationService.validate_property_name_too_long(key)
+						value_too_short_validation = ValidationService.validate_property_value_too_short(value)
+						value_too_long_validation = ValidationService.validate_property_value_too_long(value)
+						errors = Array.new
 
-							errors.push(name_too_short_validation) if !name_too_short_validation[:success]
-							errors.push(name_too_long_validation) if !name_too_long_validation[:success]
-							errors.push(value_too_short_validation) if !value_too_short_validation[:success]
-							errors.push(value_too_long_validation) if !value_too_long_validation[:success]
+						errors.push(name_too_short_validation) if !name_too_short_validation[:success]
+						errors.push(name_too_long_validation) if !name_too_long_validation[:success]
+						errors.push(value_too_short_validation) if !value_too_short_validation[:success]
+						errors.push(value_too_long_validation) if !value_too_long_validation[:success]
 
-							if errors.length > 0
-								raise RuntimeError, errors.to_json
-							end
+						if errors.length > 0
+							raise RuntimeError, errors.to_json
 						end
 					end
 				end
@@ -831,7 +829,7 @@ class AppsController < ApplicationController
 							properties[key] = value
 						elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
 							prop.destroy!
-						elsif value.length > 0		# There is a new value for the property
+						elsif value.length > 0		# There is a new value for the property, update the property
 							prop.value = value
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
 							properties[key] = value
@@ -1586,24 +1584,21 @@ class AppsController < ApplicationController
 
 			# Validate the properties
 			body = ValidationService.parse_json(request.body.string)
-
 			body.each do |key, value|
-				if value
-					if value.length > 0
-						property_name_too_short_validation = ValidationService.validate_property_name_too_short(key)
-						property_name_too_long_validation = ValidationService.validate_property_name_too_long(key)
-						property_value_too_short_validation = ValidationService.validate_property_value_too_short(value)
-						property_value_too_long_validation = ValidationService.validate_property_value_too_long(value)
-						errors = Array.new
-						
-						errors.push(property_name_too_short_validation) if !property_name_too_short_validation[:success]
-						errors.push(property_name_too_long_validation) if !property_name_too_long_validation[:success]
-						errors.push(property_value_too_short_validation) if !property_value_too_short_validation[:success]
-						errors.push(property_value_too_long_validation) if !property_value_too_long_validation[:success]
+				if value && value.length > 0
+					property_name_too_short_validation = ValidationService.validate_property_name_too_short(key)
+					property_name_too_long_validation = ValidationService.validate_property_name_too_long(key)
+					property_value_too_short_validation = ValidationService.validate_property_value_too_short(value)
+					property_value_too_long_validation = ValidationService.validate_property_value_too_long(value)
+					errors = Array.new
+					
+					errors.push(property_name_too_short_validation) if !property_name_too_short_validation[:success]
+					errors.push(property_name_too_long_validation) if !property_name_too_long_validation[:success]
+					errors.push(property_value_too_short_validation) if !property_value_too_short_validation[:success]
+					errors.push(property_value_too_long_validation) if !property_value_too_long_validation[:success]
 
-						if errors.length > 0
-							raise RuntimeError, errors.to_json
-						end
+					if errors.length > 0
+						raise RuntimeError, errors.to_json
 					end
 				end
 			end
@@ -1621,12 +1616,10 @@ class AppsController < ApplicationController
 			# Create the properties
 			properties = Hash.new
 			body.each do |key, value|
-				if value
-					if value.length > 0
-						property = NotificationProperty.new(notification_id: notification.id, name: key, value: value)
-						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(property.save))
-						properties[key] = value
-					end
+				if value && value.length > 0
+					property = NotificationProperty.new(notification_id: notification.id, name: key, value: value)
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(property.save))
+					properties[key] = value
 				end
 			end
 
@@ -1746,6 +1739,104 @@ class AppsController < ApplicationController
 
 			result = Hash.new
 			result["notifications"] = notifications_array
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
+	def update_notification
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		uuid = params["uuid"]
+		time = params["time"]
+		interval = params["interval"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			notification = Notification.find_by(uuid: uuid)
+			ValidationService.raise_validation_error(ValidationService.validate_notification_does_not_exist(notification))
+
+			# Validate notification belongs to the app of the dev
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(notification.app, dev))
+
+			# Validate the content type
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			# Validate notification belongs to the user
+			ValidationService.raise_validation_error(ValidationService.validate_user_is_user(notification.user, user))
+
+			# Validate the properties
+			body = ValidationService.parse_json(request.body.string)
+			body.each do |key, value|
+				if value && value.length > 0
+					property_name_too_short_validation = ValidationService.validate_property_name_too_short(key)
+					property_name_too_long_validation = ValidationService.validate_property_name_too_long(key)
+					property_value_too_short_validation = ValidationService.validate_property_value_too_short(value)
+					property_value_too_long_validation = ValidationService.validate_property_value_too_long(value)
+					errors = Array.new
+					
+					errors.push(property_name_too_short_validation) if !property_name_too_short_validation[:success]
+					errors.push(property_name_too_long_validation) if !property_name_too_long_validation[:success]
+					errors.push(property_value_too_short_validation) if !property_value_too_short_validation[:success]
+					errors.push(property_value_too_long_validation) if !property_value_too_long_validation[:success]
+
+					if errors.length > 0
+						raise RuntimeError, errors.to_json
+					end
+				end
+			end
+
+			# Save the new time and interval values
+			if time
+				notification.time = Time.at(time.to_i)
+			end
+
+			if interval
+				notification.interval = interval
+			end
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(notification.save))
+
+			# Update the properties
+			properties = Hash.new
+			body.each do |key, value|
+				prop = NotificationProperty.find_by(name: key, notification_id: notification.id)
+
+				if value
+					if !prop && value.length > 0			# If the property does not exist and there is a value, create the property
+						new_prop = NotificationProperty.new(notification_id: notification.id, name: key, value: value)
+						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
+						properties[key] = value
+					elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
+						prop.destroy!
+					elsif value.length > 0					# There is a new value for the property, update the property
+						prop.value = value
+						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
+						properties[key] = value
+					end
+				end
+			end
+
+			# Return the data
+			result = notification.attributes
+			result["time"] = notification.time.to_i
+			result["properties"] = properties
+
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
