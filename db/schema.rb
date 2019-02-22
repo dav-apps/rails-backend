@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190113142341) do
+ActiveRecord::Schema.define(version: 20190222195442) do
 
   create_table "access_tokens", id: :integer, force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
     t.string "token"
@@ -61,6 +61,21 @@ ActiveRecord::Schema.define(version: 20190113142341) do
   create_table "event_logs", id: :integer, force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
     t.integer "event_id"
     t.datetime "created_at"
+    t.boolean "processed", default: false
+  end
+
+  create_table "event_summaries", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
+    t.integer "event_id"
+    t.integer "period"
+    t.datetime "time"
+    t.integer "total", default: 0
+  end
+
+  create_table "event_summary_property_counts", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
+    t.integer "event_summary_id"
+    t.string "name"
+    t.text "value"
+    t.integer "count", default: 0
   end
 
   create_table "events", id: :integer, force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci" do |t|
