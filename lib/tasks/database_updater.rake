@@ -1,4 +1,9 @@
 namespace :database_updater do
+	period_hour = 0
+	period_day = 1
+	period_month = 2
+	period_year = 3
+
   	desc "Update the used_storage field of users"
   	task update_used_storage_of_users: :environment do
 		User.all.each do |user|
@@ -51,6 +56,47 @@ namespace :database_updater do
 					end
 				end
 			end
+		end
+	end
+
+	desc "Create EventSummaries with the count of the values"
+	task create_event_summaries: :environment do
+		EventLog.where(processed: false).each do |log|
+			[period_hour, period_day, period_month, period_year].each do |period|
+				case period
+				when period_day
+					time = log.created_at.beginning_of_day
+				when period_month
+					time = log.created_at.beginning_of_month
+				when period_year
+					time = log.created_at.beginning_of_year
+				else
+					time = log.created_at.beginning_of_hour
+				end
+				
+				# Find the appropriate EventSummary or create it
+				summary = EventSummary.find_by(event_id: log.event_id, period: period, time: time)
+				if !summary
+					# Create the EventSummary
+					summary = EventSummary.create(event_id: log.event_id, period: period, time: time)
+				end
+				summary.total += 1
+				summary.save
+
+				log.event_log_properties.each do |log_prop|
+					sum_prop = summary.event_summary_property_counts.find_by(name: log_prop.name, value: log_prop.value)
+					if !sum_prop
+						# Create the EventSummaryPropertyCount
+						sum_prop = EventSummaryPropertyCount.create(event_summary_id: summary.id, name: log_prop.name, value: log_prop.value)
+					end
+					
+					sum_prop.count += 1
+					sum_prop.save
+				end
+			end
+
+			log.processed = true
+			log.save
 		end
 	end
 	
