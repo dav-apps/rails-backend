@@ -169,7 +169,15 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    # End create_event_log tests
    
    # get_event tests
-   test "Can get all logs and event_log_properties of an event" do
+   test "Missing fields in get_event" do
+      get "/v1/analytics/event/1"
+      resp = JSON.parse response.body
+
+      assert(response.status == 400 || response.status ==  401)
+      assert_same(2102, resp["errors"][0][0])
+   end
+
+   test "get_event returns all log summaries of an event" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -177,13 +185,78 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_equal(event_logs(:First).id, resp["logs"][0]["id"])
-      assert_equal(event_logs(:Second).id, resp["logs"][1]["id"])
-      assert_equal(event_log_properties(:LoginFirstEventLogProperty1).value, resp["logs"][0]["properties"][event_log_properties(:LoginFirstEventLogProperty1).name])
-      assert_equal(event_log_properties(:LoginFirstEventLogProperty2).value, resp["logs"][0]["properties"][event_log_properties(:LoginFirstEventLogProperty2).name])
-      assert_equal(event_log_properties(:LoginSecondEventLogProperty1).value, resp["logs"][1]["properties"][event_log_properties(:LoginSecondEventLogProperty1).name])
-      assert_equal(event_log_properties(:LoginSecondEventLogProperty2).value, resp["logs"][1]["properties"][event_log_properties(:LoginSecondEventLogProperty2).name])
+      assert_equal(event_summaries(:LoginSummaryDay1).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
+      assert_equal(event_summaries(:LoginSummaryDay1).total, resp["logs"][0]["total"])
+
+      # First event summary; first property count
+      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).name, resp["logs"][0]["properties"][0]["name"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).value, resp["logs"][0]["properties"][0]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).count, resp["logs"][0]["properties"][0]["count"])
+
+      # First event summary; second property count
+      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).name, resp["logs"][0]["properties"][1]["name"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).value, resp["logs"][0]["properties"][1]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).count, resp["logs"][0]["properties"][1]["count"])
+		
+		# Second event summary; first property count
+		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).name, resp["logs"][1]["properties"][0]["name"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).value, resp["logs"][1]["properties"][0]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).count, resp["logs"][1]["properties"][0]["count"])
    end
+
+   test "get_event returns the log summaries of the specified timeframe" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      start_timestamp = 1529020800  # 15.6.2018
+      end_timestamp = 1531612800    # 15.7.2018
+
+      get "/v1/analytics/event/#{events(:Login).id}?start=#{start_timestamp}&end=#{end_timestamp}&jwt=#{matts_jwt}"
+      resp = JSON.parse response.body
+
+      assert_response 200
+
+		# Only LoginSummaryDay2 should be returned
+      assert_equal(1, resp["logs"].length)
+		assert_equal(event_summaries(:LoginSummaryDay2).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
+      assert_equal(event_summaries(:LoginSummaryDay2).total, resp["logs"][0]["total"])
+
+		# First property count
+		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).name, resp["logs"][0]["properties"][0]["name"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).value, resp["logs"][0]["properties"][0]["value"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).count, resp["logs"][0]["properties"][0]["count"])
+	end
+	
+	test "get_event returns the log summaries of the given sort" do
+		matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&sort=month"
+		resp = JSON.parse response.body
+		
+		assert_response 200
+      assert_equal(event_summaries(:LoginSummaryMonth).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
+		assert_equal(event_summaries(:LoginSummaryMonth).total, resp["logs"][0]["total"])
+		
+		# Second property count
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).name, resp["logs"][0]["properties"][0]["name"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).value, resp["logs"][0]["properties"][0]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).count, resp["logs"][0]["properties"][0]["count"])
+
+		# First property count
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).name, resp["logs"][0]["properties"][1]["name"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).value, resp["logs"][0]["properties"][1]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).count, resp["logs"][0]["properties"][1]["count"])
+
+		# Fourth property count
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).name, resp["logs"][0]["properties"][2]["name"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).value, resp["logs"][0]["properties"][2]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).count, resp["logs"][0]["properties"][2]["count"])
+
+		# Third property count
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).name, resp["logs"][0]["properties"][3]["name"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).value, resp["logs"][0]["properties"][3]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).count, resp["logs"][0]["properties"][3]["count"])
+	end
    
    test "get_event can't be called from outside the website" do
       matt = users(:matt)
@@ -196,7 +269,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1102, resp["errors"][0][0])
    end
    
-   test "Can't get the event of the app of another dev" do
+   test "get_event can't return the event of the app of another dev" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -205,20 +278,6 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
-   end
-
-   test "get_event returns the event logs of the specified timeframe" do
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      start_timestamp = 1529020800  # 15.6.2018
-      end_timestamp = 1531612800    # 15.7.2018
-
-      get "/v1/analytics/event/#{events(:Login).id}?start=#{start_timestamp}&end=#{end_timestamp}&jwt=#{matts_jwt}"
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(1, resp["logs"].length)
-      assert_equal(event_logs(:Second).id, resp["logs"][0]["id"])
    end
    # End get_event tests
 
@@ -233,7 +292,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2111, resp["errors"][2][0])
    end
 
-   test "get_event_by_name can get all logs of an event by name" do
+   test "get_event_by_name returns all log summaries of an event by name" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
@@ -241,34 +300,23 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_equal(event_logs(:First).id, resp["logs"][0]["id"])
-      assert_equal(event_logs(:Second).id, resp["logs"][1]["id"])
-      assert_equal(event_log_properties(:LoginFirstEventLogProperty1).value, resp["logs"][0]["properties"][event_log_properties(:LoginFirstEventLogProperty1).name])
-      assert_equal(event_log_properties(:LoginFirstEventLogProperty2).value, resp["logs"][0]["properties"][event_log_properties(:LoginFirstEventLogProperty2).name])
-      assert_equal(event_log_properties(:LoginSecondEventLogProperty1).value, resp["logs"][1]["properties"][event_log_properties(:LoginSecondEventLogProperty1).name])
-      assert_equal(event_log_properties(:LoginSecondEventLogProperty2).value, resp["logs"][1]["properties"][event_log_properties(:LoginSecondEventLogProperty2).name])
-   end
+      assert_equal(event_summaries(:LoginSummaryDay1).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
+      assert_equal(event_summaries(:LoginSummaryDay1).total, resp["logs"][0]["total"])
 
-   test "get_event_by_name can't be called from outside the website" do
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_same(1102, resp["errors"][0][0])
-   end
+      # First event summary; first property count
+      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).name, resp["logs"][0]["properties"][0]["name"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).value, resp["logs"][0]["properties"][0]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).count, resp["logs"][0]["properties"][0]["count"])
 
-   test "Can't get the event by name of the app of another dev" do
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:CreateCard).name}&app_id=#{events(:CreateCard).app_id}"
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      # First event summary; second property count
+      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).name, resp["logs"][0]["properties"][1]["name"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).value, resp["logs"][0]["properties"][1]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).count, resp["logs"][0]["properties"][1]["count"])
+		
+		# Second event summary; first property count
+		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).name, resp["logs"][1]["properties"][0]["name"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).value, resp["logs"][1]["properties"][0]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).count, resp["logs"][1]["properties"][0]["count"])
    end
 
    test "get_event_by_name returns the event logs of the specified timeframe" do
@@ -282,8 +330,71 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
+
+		# Only LoginSummaryDay2 should be returned
       assert_equal(1, resp["logs"].length)
-      assert_equal(event_logs(:Second).id, resp["logs"][0]["id"])
+		assert_equal(event_summaries(:LoginSummaryDay2).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
+      assert_equal(event_summaries(:LoginSummaryDay2).total, resp["logs"][0]["total"])
+
+		# First property count
+		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).name, resp["logs"][0]["properties"][0]["name"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).value, resp["logs"][0]["properties"][0]["value"])
+      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).count, resp["logs"][0]["properties"][0]["count"])
+	end
+	
+	test "get_event_by_name returns the log summaries of the given sort" do
+		matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		login_event = events(:Login)
+      
+      get "/v1/analytics/event?app_id=#{login_event.app_id}&name=#{login_event.name}&jwt=#{matts_jwt}&sort=month"
+		resp = JSON.parse response.body
+		
+		assert_response 200
+      assert_equal(event_summaries(:LoginSummaryMonth).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
+		assert_equal(event_summaries(:LoginSummaryMonth).total, resp["logs"][0]["total"])
+		
+		# Second property count
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).name, resp["logs"][0]["properties"][0]["name"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).value, resp["logs"][0]["properties"][0]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).count, resp["logs"][0]["properties"][0]["count"])
+
+		# First property count
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).name, resp["logs"][0]["properties"][1]["name"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).value, resp["logs"][0]["properties"][1]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).count, resp["logs"][0]["properties"][1]["count"])
+
+		# Fourth property count
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).name, resp["logs"][0]["properties"][2]["name"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).value, resp["logs"][0]["properties"][2]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).count, resp["logs"][0]["properties"][2]["count"])
+
+		# Third property count
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).name, resp["logs"][0]["properties"][3]["name"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).value, resp["logs"][0]["properties"][3]["value"])
+		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).count, resp["logs"][0]["properties"][3]["count"])
+	end
+
+   test "get_event_by_name can't be called from outside the website" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
+   end
+
+   test "get_event_by_name can't return the event of the app of another dev" do
+      matt = users(:matt)
+      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      
+      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:CreateCard).name}&app_id=#{events(:CreateCard).app_id}"
+      resp = JSON.parse response.body
+      
+      assert_response 403
+      assert_same(1102, resp["errors"][0][0])
    end
    # End get_event_by_name tests
    
