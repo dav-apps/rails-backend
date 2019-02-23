@@ -1,0 +1,17 @@
+LoginSummaryDay1:
+  event: Login
+  period: 1
+  time: <%= DateTime.parse("2018-06-10T00:00:00.000Z").beginning_of_day.to_s(:db) %>
+  total: 3
+
+LoginSummaryDay2:
+  event: Login
+  period: 1
+  time: <%= DateTime.parse("2018-06-17T00:00:00.000Z").beginning_of_day.to_s(:db) %>
+  total: 1
+
+LoginSummaryMonth:
+  event: Login
+  period: 2
+  time: <%= DateTime.parse("2018-06-01T00:00:00.000Z").beginning_of_month.to_s(:db) %>
+  total: 5

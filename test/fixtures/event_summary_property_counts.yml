@@ -1,0 +1,41 @@
+LoginSummaryDay1PropertyCount1:
+  event_summary: LoginSummaryDay1
+  name: "Test"
+  value: "Hello World"
+  count: 2
+
+LoginSummaryDay1PropertyCount2:
+  event_summary: LoginSummaryDay1
+  name: "Bla"
+  value: "Test test"
+  count: 1
+
+LoginSummaryDay2PropertyCount1:
+  event_summary: LoginSummaryDay2
+  name: "testbla"
+  value: "Hallo Welt"
+  count: 1
+
+LoginSummaryMonthPropertyCount1:
+  event_summary: LoginSummaryMonth
+  name: "Test"
+  value: "Hello World"
+  count: 2
+
+LoginSummaryMonthPropertyCount2:
+  event_summary: LoginSummaryMonth
+  name: "Bla"
+  value: "Test test"
+  count: 1
+
+LoginSummaryMonthPropertyCount3:
+  event_summary: LoginSummaryMonth
+  name: "Test 2"
+  value: "Test test 1"
+  count: 1
+
+LoginSummaryMonthPropertyCount4:
+  event_summary: LoginSummaryMonth
+  name: "Test 3"
+  value: "Test test 2"
+  count: 1
