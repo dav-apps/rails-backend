@@ -115,6 +115,7 @@ class AnalyticsController < ApplicationController
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		start_timestamp = params["start"]
 		end_timestamp = params["end"]
+		sort = params["sort"]
 
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
@@ -150,35 +151,42 @@ class AnalyticsController < ApplicationController
 
 			# Return the data
 			result = event.attributes
-									
 			logs = Array.new
-			event.event_logs.each do |log|
+
+			case sort
+			when "hour"
+				period = 0
+			when "month"
+				period = 2
+			when "year"
+				period = 3
+			else # day
+				period = 1
+			end
+
+			# Go through each EventSummary with the given period
+			event.event_summaries.where(period: period).each do |summary|
 				# Check if the log was created within the specified timeframe
-				unix_time = DateTime.parse(log.created_at.to_s).strftime("%s")
+				unix_time = DateTime.parse(summary.time.to_s).strftime("%s")
+				next if (start_timestamp && unix_time < start_timestamp) || (end_timestamp && unix_time > end_timestamp)
 
-				if start_timestamp
-					if unix_time < start_timestamp
-						next
-					end
+				# Add the EventSummary to the array
+				log = Hash.new
+				properties = Array.new
+
+				log["time"] = summary.time
+				log["total"] = summary.total
+
+				summary.event_summary_property_counts.each do |sum_prop|
+					property = Hash.new
+					property["name"] = sum_prop.name
+					property["value"] = sum_prop.value
+					property["count"] = sum_prop.count
+					properties.push(property)
 				end
 
-				if end_timestamp
-					if unix_time > end_timestamp
-						next
-					end
-				end
-
-				log_hash = Hash.new
-				properties = Hash.new
-
-				log.event_log_properties.each do |property|
-					properties[property.name] = property.value
-				end
-
-				log_hash["id"] = log.id
-				log_hash["created_at"] = log.created_at
-				log_hash["properties"] = properties
-				logs.push(log_hash)
+				log["properties"] = properties
+				logs.push(log)
 			end
 
 			result["logs"] = logs
@@ -198,6 +206,7 @@ class AnalyticsController < ApplicationController
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		start_timestamp = params["start"]
 		end_timestamp = params["end"]
+		sort = params["sort"]
 
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
@@ -235,35 +244,42 @@ class AnalyticsController < ApplicationController
 
 			# Return the data
 			result = event.attributes
-			
 			logs = Array.new
-			event.event_logs.each do |log|
-				# Check if the log was created within the specified timestamp
-				unix_time = DateTime.parse(log.created_at.to_s).strftime("%s")
 
-				if start_timestamp
-					if unix_time < start_timestamp
-						next
-					end
+			case sort
+			when "hour"
+				period = 0
+			when "month"
+				period = 2
+			when "year"
+				period = 3
+			else # day
+				period = 1
+			end
+
+			# Go through each EventSummary with the given period
+			event.event_summaries.where(period: period).each do |summary|
+				# Check if the log was created within the specified timeframe
+				unix_time = DateTime.parse(summary.time.to_s).strftime("%s")
+				next if (start_timestamp && unix_time < start_timestamp) || (end_timestamp && unix_time > end_timestamp)
+
+				# Add the EventSummary to the array
+				log = Hash.new
+				properties = Array.new
+
+				log["time"] = summary.time
+				log["total"] = summary.total
+
+				summary.event_summary_property_counts.each do |sum_prop|
+					property = Hash.new
+					property["name"] = sum_prop.name
+					property["value"] = sum_prop.value
+					property["count"] = sum_prop.count
+					properties.push(property)
 				end
 
-				if end_timestamp
-					if unix_time > end_timestamp
-						next
-					end
-				end
-
-				log_hash = Hash.new
-				properties = Hash.new
-
-				log.event_log_properties.each do |property|
-					properties[property.name] = property.value
-				end
-
-				log_hash["id"] = log.id
-				log_hash["created_at"] = log.created_at
-				log_hash["properties"] = properties
-				logs.push(log_hash)
+				log["properties"] = properties
+				logs.push(log)
 			end
 
 			result["logs"] = logs
