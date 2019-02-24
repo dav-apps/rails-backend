@@ -61,7 +61,7 @@ namespace :database_updater do
 
 	desc "Create EventSummaries with the count of the values"
 	task create_event_summaries: :environment do
-		EventLog.where(processed: false).each do |log|
+		EventLog.where(processed: false).limit(100).each do |log|
 			[period_hour, period_day, period_month, period_year].each do |period|
 				case period
 				when period_day
