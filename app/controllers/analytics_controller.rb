@@ -189,6 +189,7 @@ class AnalyticsController < ApplicationController
 				logs.push(log)
 			end
 
+			result["period"] = period
 			result["logs"] = logs
 			render json: result, status: 200
 		rescue RuntimeError => e
@@ -282,6 +283,7 @@ class AnalyticsController < ApplicationController
 				logs.push(log)
 			end
 
+			result["period"] = period
 			result["logs"] = logs
 			render json: result, status: 200
 		rescue RuntimeError => e
