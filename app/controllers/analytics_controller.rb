@@ -557,35 +557,21 @@ class AnalyticsController < ApplicationController
 			users = Array.new
 
 			# Check the timeframe
-			if timeframe == "0"
-				# Daily
-				User.all.each do |u|
-					if user_was_active(u, 1.day)
-						user_hash = Hash.new
-						user_hash["id"] = u.id
-						user_hash["last_active"] = u.last_active
-						users.push(user_hash)
-					end
-				end
-			elsif timeframe == "2"
-				# Yearly
-				User.all.each do |u|
-					if user_was_active(u, 1.year)
-						user_hash = Hash.new
-						user_hash["id"] = u.id
-						user_hash["last_active"] = u.last_active
-						users.push(user_hash)
-					end
-				end
-			else
-				# Monthly
-				User.all.each do |u|
-					if user_was_active(u, 1.month)
-						user_hash = Hash.new
-						user_hash["id"] = u.id
-						user_hash["last_active"] = u.last_active
-						users.push(user_hash)
-					end
+			case timeframe
+			when "0"	# Daily
+				time = 1.day
+			when "2"	# Yearly
+				time = 1.year
+			else		# Monthly
+				time = 1.month
+			end
+
+			User.all.each do |u|
+				if user_was_active(u, time)
+					user_hash = Hash.new
+					user_hash["id"] = u.id
+					user_hash["last_active"] = u.last_active
+					users.push(user_hash)
 				end
 			end
 
