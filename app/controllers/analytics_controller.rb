@@ -589,10 +589,6 @@ class AnalyticsController < ApplicationController
 
 	private
 	def user_was_active(user, timeframe)
-		if user.last_active == nil
-			return false
-		end
-
-		return Time.now - user.last_active < timeframe
+		return !user.last_active ? false : Time.now - user.last_active < timeframe
 	end
 end
