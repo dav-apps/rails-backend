@@ -1066,6 +1066,9 @@ class AppsController < ApplicationController
 			# Save that the user was active
 			user.update_column(:last_active, Time.now)
 
+			users_app = UsersApp.find_by(app_id: app.id, user_id: user.id)
+			users_app.update_column(:last_active, Time.now) if users_app
+
 			# Return the data
 			result = table.attributes
 			array = Array.new
@@ -1153,6 +1156,9 @@ class AppsController < ApplicationController
 
 			# Save that the user was active
 			user.update_column(:last_active, Time.now)
+
+			users_app = UsersApp.find_by(app_id: app.id, user_id: user.id)
+			users_app.update_column(:last_active, Time.now) if users_app
 
 			# Return the data
 			result = table.attributes

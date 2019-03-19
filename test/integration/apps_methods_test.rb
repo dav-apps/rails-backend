@@ -1,7 +1,6 @@
 require 'test_helper'
 
 class AppsMethodsTest < ActionDispatch::IntegrationTest
-
    setup do
       save_users_and_devs
    end
@@ -81,7 +80,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(testapp_name, resp["name"])
       assert_equal(testapp_desc, resp["description"])
       
-      
       delete "/v1/apps/app/#{resp["id"]}?jwt=#{matts_jwt}"
       resp2 = JSON.parse response.body
       
@@ -105,7 +103,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(testapp_desc, resp["description"])
       assert_equal(link_web, resp["link_web"])
       assert_equal(link_play, resp["link_play"])
-
 
       delete "/v1/apps/app/#{resp["id"]}?jwt=#{matts_jwt}"
       resp2 = JSON.parse response.body
@@ -391,7 +388,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End update_app tests
    
-   
    # delete_app tests
    test "Missing fields in delete_app" do
       matt = users(:matt)
@@ -426,7 +422,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(resp["errors"][0][0], 1102)
    end
    # End delete_app tests
-   
    
    # create_object tests
    test "Missing fields in create_object" do
@@ -800,10 +795,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(second_property_value, obj.properties.first.value)
 	end
 
-	test "create_object should update the last_active field of the user" do
+	test "create_object should update the last_active fields of the user and the users_app" do
 		matt = users(:matt)
+      matt_cards = users_apps(:mattCards)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		old_last_active = matt.last_active
+      old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 		
 		post "/v1/apps/object?jwt=#{jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
@@ -813,7 +810,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 201
 		matt = User.find_by_id(matt.id)
+      matt_cards = UsersApp.find_by_id(matt_cards.id)
+
 		assert_not_equal(old_last_active, matt.last_active)
+      assert_not_equal(old_users_app_last_active, matt_cards.last_active)
 		assert_equal(old_updated_at, matt.updated_at)
 	end
 
@@ -1027,10 +1027,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
 	end
 	
-	test "get_object should update the last_active field of the user" do
-		matt = users(:matt)
+	test "get_object should update the last_active fields of the user and the users_app" do
+      matt = users(:matt)
+      matt_cards = users_apps(:mattCards)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-		old_last_active = matt.last_active
+      old_last_active = matt.last_active
+      old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 		
 		get "/v1/apps/object/#{table_objects(:third).id}?jwt=#{jwt}"
@@ -1039,7 +1041,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		# Check the last_active field of the user
 		assert_response 200
 		matt = User.find_by_id(matt.id)
+      matt_cards = UsersApp.find_by_id(matt_cards.id)
+
 		assert_not_equal(old_last_active, matt.last_active)
+      assert_not_equal(old_users_app_last_active, matt_cards.last_active)
 		assert_equal(old_updated_at, matt.updated_at)
 	end
    # End get_object tests
@@ -1268,12 +1273,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(old_properties_count-1, obj.properties.count)
 	end
 
-	test "update_object should update the last_active field of the user" do
-		matt = users(:matt)
+	test "update_object should update the last_active fields of the user and the users_app" do
+      matt = users(:matt)
+      matt_cards = users_apps(:mattCards)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		new_page1 = "Hallo Welt"
 		new_page2 = "Hello World"
-		old_last_active = matt.last_active
+      old_last_active = matt.last_active
+      old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 
 		put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{jwt}", 
@@ -1282,8 +1289,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
 		assert_response 200
-		matt = User.find_by_id(matt.id)
-		assert_not_equal(old_last_active, matt.last_active)
+      matt = User.find_by_id(matt.id)
+      matt_cards = UsersApp.find_by_id(matt_cards.id)
+
+      assert_not_equal(old_last_active, matt.last_active)
+      assert_not_equal(old_users_app_last_active, matt_cards.last_active)
 		assert_equal(old_updated_at, matt.updated_at)
 	end
    # End update_object tests
@@ -1331,18 +1341,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
 	end
 	
-	test "delete_object should update the last_active field of the user" do
-		matt = users(:matt)
+	test "delete_object should update the last_active fields of the user and the users_app" do
+      matt = users(:matt)
+      matt_cards = users_apps(:mattCards)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-		old_last_active = matt.last_active
+      old_last_active = matt.last_active
+      old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 
 		delete "/v1/apps/object/#{table_objects(:first).id}?jwt=#{jwt}"
 		resp = JSON.parse response.body
 		
 		assert_response 200
-		matt = User.find_by_id(matt.id)
-		assert_not_equal(old_last_active, matt.last_active)
+      matt = User.find_by_id(matt.id)
+      matt_cards = UsersApp.find_by_id(matt_cards.id)
+
+      assert_not_equal(old_last_active, matt.last_active)
+      assert_not_equal(old_users_app_last_active, matt_cards.last_active)
 		assert_equal(old_updated_at, matt.updated_at)
 	end
    # End delete_object tests
@@ -1524,18 +1539,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(table_objects(:third).uuid, resp["table_objects"][0]["uuid"])
 	end
 
-	test "get_table should update the last_active field of the user" do
-		matt = users(:matt)
+	test "get_table should update the last_active fields of the user and the users_app" do
+      matt = users(:matt)
+      matt_cards = users_apps(:mattCards)
 		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-		old_last_active = matt.last_active
+      old_last_active = matt.last_active
+      old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 
 		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}"
 		resp = JSON.parse response.body
 
 		assert_response 200
-		matt = User.find_by_id(matt.id)
-		assert_not_equal(old_last_active, matt.last_active)
+      matt = User.find_by_id(matt.id)
+      matt_cards = UsersApp.find_by_id(matt_cards.id)
+
+      assert_not_equal(old_last_active, matt.last_active)
+      assert_not_equal(old_users_app_last_active, matt_cards.last_active)
 		assert_equal(old_updated_at, matt.updated_at)
 	end
    # End get_table tests
@@ -1624,18 +1644,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(table_objects(:third).uuid, resp["table_objects"][0]["uuid"])
 	end
 
-	test "get_table_by_id should update the last_active field of the user" do
-		matt = users(:matt)
+	test "get_table_by_id should update the last_active fields of the user and the users_app" do
+      matt = users(:matt)
+      matt_cards = users_apps(:mattCards)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-		old_last_active = matt.last_active
+      old_last_active = matt.last_active
+      old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 
 		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&jwt=#{jwt}"
 		resp = JSON.parse response.body
 
 		assert_response 200
-		matt = User.find_by_id(matt.id)
-		assert_not_equal(old_last_active, matt.last_active)
+      matt = User.find_by_id(matt.id)
+      matt_cards = UsersApp.find_by_id(matt_cards.id)
+
+      assert_not_equal(old_last_active, matt.last_active)
+      assert_not_equal(old_users_app_last_active, matt_cards.last_active)
 		assert_equal(old_updated_at, matt.updated_at)
 	end
    # End get_table_by_id
