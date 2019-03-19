@@ -99,6 +99,11 @@ namespace :database_updater do
 			log.save
 		end
 	end
+
+	desc "Get the current active users and create the active user objects in the database"
+	task create_active_users: :environment do
+		
+	end
 	
 	def get_file_size_of_table_object(obj_id)
       obj = TableObject.find_by_id(obj_id)
