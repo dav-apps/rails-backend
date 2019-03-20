@@ -692,70 +692,61 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 
 	test "Can get active users" do
 		matt = users(:matt)
-		matt.last_active = Time.now
-		matt.save
 		sherlock = users(:sherlock)
-		sherlock.last_active = Time.now - 2.months
-		sherlock.save
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+
+		# Create active users
+		first_active_user = ActiveUser.create(time: (Time.now - 1.days).beginning_of_day, 
+										count_daily: 3, 
+										count_monthly: 9,
+										count_yearly: 14)
+		second_active_user = ActiveUser.create(time: (Time.now - 3.days).beginning_of_day,
+										count_daily: 5,
+										count_monthly: 8,
+										count_yearly: 21)
 		
-		get "/v1/analytics/active_users?jwt=#{jwt}&timeframe=0"
+		get "/v1/analytics/active_users?jwt=#{jwt}"
 		resp = JSON.parse response.body
 
 		assert_response 200
-		assert_same(1, resp["users"].count)
-		assert_same(matt.id, resp["users"][0]["id"])
+		assert_equal(2, resp["days"].count)
+
+		assert_equal(first_active_user.time, DateTime.parse(resp["days"][0]["time"]))
+		assert_equal(first_active_user.count_daily, resp["days"][0]["count_daily"])
+		assert_equal(first_active_user.count_monthly, resp["days"][0]["count_monthly"])
+		assert_equal(first_active_user.count_yearly, resp["days"][0]["count_yearly"])
+
+		assert_equal(second_active_user.time, DateTime.parse(resp["days"][1]["time"]))
+		assert_equal(second_active_user.count_daily, resp["days"][1]["count_daily"])
+		assert_equal(second_active_user.count_monthly, resp["days"][1]["count_monthly"])
+		assert_equal(second_active_user.count_yearly, resp["days"][1]["count_yearly"])
 	end
 
-	test "Can get active users with invalid timeframe" do
+	test "Can get active users in the specified timeframe" do
 		matt = users(:matt)
-		matt.last_active = Time.now
-		matt.save
 		sherlock = users(:sherlock)
-		sherlock.last_active = Time.now - 2.months
-		sherlock.save
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-		
-		get "/v1/analytics/active_users?jwt=#{jwt}&timeframe=helloworld"
+
+		start_timestamp = DateTime.parse("2019-06-09T00:00:00.000Z").to_i
+		end_timestamp = DateTime.parse("2019-06-12T00:00:00.000Z").to_i
+		first_active_user = active_users(:first_active_user)
+		second_active_user = active_users(:second_active_user)
+
+		get "/v1/analytics/active_users?jwt=#{jwt}&start=#{start_timestamp}&end=#{end_timestamp}"
 		resp = JSON.parse response.body
-
-		assert_response 200
-		assert_same(1, resp["users"].count)
-		assert_same(matt.id, resp["users"][0]["id"])
-	end
-
-	test "Can get daily active users" do
-		matt = users(:matt)
-		matt.last_active = Time.now
-		matt.save
-		sherlock = users(:sherlock)
-		sherlock.last_active = Time.now - 1.months
-		sherlock.save
-		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 		
-		get "/v1/analytics/active_users?jwt=#{jwt}&timeframe=0"
-		resp = JSON.parse response.body
-
 		assert_response 200
-		assert_same(1, resp["users"].count)
-		assert_same(matt.id, resp["users"][0]["id"])
-	end
+		assert_equal(2, resp["days"].count)
 
-	test "Can get yearly active users" do
-		matt = users(:matt)
-		matt.last_active = Time.now - 1.months
-		matt.save
-		sherlock = users(:sherlock)
-		sherlock.last_active = Time.now - 2.years
-		sherlock.save
-		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-		
-		get "/v1/analytics/active_users?jwt=#{jwt}&timeframe=2"
-		resp = JSON.parse response.body
+		assert_equal(second_active_user.time, DateTime.parse(resp["days"][0]["time"]))
+		assert_equal(second_active_user.count_daily, resp["days"][0]["count_daily"])
+		assert_equal(second_active_user.count_monthly, resp["days"][0]["count_monthly"])
+		assert_equal(second_active_user.count_yearly, resp["days"][0]["count_yearly"])
 
-		assert_response 200
-		assert_same(1, resp["users"].count)
-		assert_same(matt.id, resp["users"][0]["id"])
+		assert_equal(first_active_user.time, DateTime.parse(resp["days"][1]["time"]))
+		assert_equal(first_active_user.count_daily, resp["days"][1]["count_daily"])
+		assert_equal(first_active_user.count_monthly, resp["days"][1]["count_monthly"])
+		assert_equal(first_active_user.count_yearly, resp["days"][1]["count_yearly"])
 	end
 	# End get_active_users tests
 end
