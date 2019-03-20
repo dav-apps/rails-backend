@@ -113,8 +113,8 @@ class AnalyticsController < ApplicationController
 	def get_event
 		event_id = params["id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-		start_timestamp = params["start"]
-		end_timestamp = params["end"]
+		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s') : (Time.now - 1.month)
+		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s') : Time.now
 		sort = params["sort"]
 
 		begin
@@ -165,11 +165,7 @@ class AnalyticsController < ApplicationController
 			end
 
 			# Go through each EventSummary with the given period
-			event.event_summaries.where(period: period).each do |summary|
-				# Check if the log was created within the specified timeframe
-				unix_time = DateTime.parse(summary.time.to_s).strftime("%s")
-				next if (start_timestamp && unix_time < start_timestamp) || (end_timestamp && unix_time > end_timestamp)
-
+			event.event_summaries.where("period = ? && time > ? && time < ?", period, start_timestamp, end_timestamp).each do |summary|
 				# Add the EventSummary to the array
 				log = Hash.new
 				properties = Array.new
@@ -205,8 +201,8 @@ class AnalyticsController < ApplicationController
 		name = params["name"]
 		app_id = params["app_id"]
       jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-		start_timestamp = params["start"]
-		end_timestamp = params["end"]
+		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s') : (Time.now - 1.month)
+		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s') : Time.now
 		sort = params["sort"]
 
 		begin
@@ -259,11 +255,7 @@ class AnalyticsController < ApplicationController
 			end
 
 			# Go through each EventSummary with the given period
-			event.event_summaries.where(period: period).each do |summary|
-				# Check if the log was created within the specified timeframe
-				unix_time = DateTime.parse(summary.time.to_s).strftime("%s")
-				next if (start_timestamp && unix_time < start_timestamp) || (end_timestamp && unix_time > end_timestamp)
-
+			event.event_summaries.where("period = ? && time > ? && time < ?", period, start_timestamp, end_timestamp).each do |summary|
 				# Add the EventSummary to the array
 				log = Hash.new
 				properties = Array.new
