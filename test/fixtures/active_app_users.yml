@@ -1,0 +1,20 @@
+first_active_testapp_user:
+  app: TestApp
+  time: <%= DateTime.parse("2019-06-10T00:00:00.000Z").beginning_of_day.to_s(:db) %>
+  count_daily: 2
+  count_monthly: 5
+  count_yearly: 20
+
+second_active_testapp_user:
+  app: TestApp
+  time: <%= DateTime.parse("2019-06-11T00:00:00.000Z").beginning_of_day.to_s(:db) %>
+  count_daily: 3
+  count_monthly: 4
+  count_yearly: 17
+
+first_active_cards_user:
+  app: Cards
+  time: <%= DateTime.parse("2019-06-10T00:00:00.000Z").beginning_of_day.to_s(:db) %>
+  count_daily: 5
+  count_monthly: 20
+  count_yearly: 132

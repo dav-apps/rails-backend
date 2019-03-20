@@ -129,7 +129,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End create_app tests
    
-   
    # Tests for get_app
    test "Missing fields in get_app" do
       get "/v1/apps/app/#{apps(:Cards).id}"
@@ -192,13 +191,106 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End get_app tests
 
+   # get_active_users_of_app tests
+   test "Missing fields in get_active_users_of_app" do
+      get "/v1/apps/app/1/active_users"
+      resp = JSON.parse response.body
+
+      assert(response.status == 400 || response.status ==  401)
+      assert_equal(1, resp["errors"].length)
+	end
+	
+	test "Can't get active app users from outside the website" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		get "/v1/apps/app/#{apps(:TestApp).id}/active_users?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_same(1102, resp["errors"][0][0])
+	end
+
+	test "Can't get the active app users of the app of another dev" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/apps/app/#{apps(:Cards).id}/active_users?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get the active app users" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		app = apps(:TestApp)
+
+		# Create active app users
+		first_active_user = ActiveAppUser.create(app: app,
+										time: (Time.now - 1.days).beginning_of_day,
+										count_daily: 1, 
+										count_monthly: 5,
+										count_yearly: 17)
+		second_active_user = ActiveAppUser.create(app: app,
+									time: (Time.now - 3.days).beginning_of_day,
+									count_daily: 6, 
+									count_monthly: 9,
+									count_yearly: 20)
+
+		get "/v1/apps/app/#{app.id}/active_users?jwt=#{jwt}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(2, resp["days"].count)
+
+		assert_equal(first_active_user.time, DateTime.parse(resp["days"][0]["time"]))
+		assert_equal(first_active_user.count_daily, resp["days"][0]["count_daily"])
+		assert_equal(first_active_user.count_monthly, resp["days"][0]["count_monthly"])
+		assert_equal(first_active_user.count_yearly, resp["days"][0]["count_yearly"])
+
+		assert_equal(second_active_user.time, DateTime.parse(resp["days"][1]["time"]))
+		assert_equal(second_active_user.count_daily, resp["days"][1]["count_daily"])
+		assert_equal(second_active_user.count_monthly, resp["days"][1]["count_monthly"])
+		assert_equal(second_active_user.count_yearly, resp["days"][1]["count_yearly"])
+	end
+
+	test "Can get active app users in the specified timeframe" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		app = apps(:TestApp)
+
+		start_timestamp = DateTime.parse("2019-06-09T00:00:00.000Z").to_i
+		end_timestamp = DateTime.parse("2019-06-12T00:00:00.000Z").to_i
+		first_active_user = active_app_users(:first_active_testapp_user)
+		second_active_user = active_app_users(:second_active_testapp_user)
+
+		get "/v1/apps/app/#{app.id}/active_users?jwt=#{jwt}&start=#{start_timestamp}&end=#{end_timestamp}"
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(2, resp["days"].count)
+
+		assert_equal(second_active_user.time, DateTime.parse(resp["days"][0]["time"]))
+		assert_equal(second_active_user.count_daily, resp["days"][0]["count_daily"])
+		assert_equal(second_active_user.count_monthly, resp["days"][0]["count_monthly"])
+		assert_equal(second_active_user.count_yearly, resp["days"][0]["count_yearly"])
+
+		assert_equal(first_active_user.time, DateTime.parse(resp["days"][1]["time"]))
+		assert_equal(first_active_user.count_daily, resp["days"][1]["count_daily"])
+		assert_equal(first_active_user.count_monthly, resp["days"][1]["count_monthly"])
+		assert_equal(first_active_user.count_yearly, resp["days"][1]["count_yearly"])
+	end
+   # End get_active_users_of_app tests
+
    # Tests for get_all_apps
    test "Missing fields in get_all_apps" do
       get "/v1/apps/apps/all"
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(resp["errors"].length, 1)
+      assert_equal(1, resp["errors"].length)
    end
 
    test "Can get all apps from the website" do
