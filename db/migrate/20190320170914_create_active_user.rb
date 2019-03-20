@@ -1,7 +1,6 @@
 class CreateActiveUser < ActiveRecord::Migration[5.1]
   def change
     create_table :active_users do |t|
-      t.integer :app_id
       t.datetime :time
       t.integer :count_daily
       t.integer :count_monthly
