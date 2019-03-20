@@ -159,6 +159,54 @@ class AppsController < ApplicationController
 		end
 	end
 
+	def get_active_users_of_app
+		app_id = params["id"]
+		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s').beginning_of_day : (Time.now - 1.month).beginning_of_day
+		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s').beginning_of_day : Time.now.beginning_of_day
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+
+			# Make sure this is called from the website and by the dev of the app
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
+
+			days = Array.new
+			ActiveAppUser.where("app_id = ? && time >= ? && time <= ?", app.id, start_timestamp, end_timestamp).each do |active_user|
+				day = Hash.new
+				day["time"] = active_user.time.to_s
+				day["count_daily"] = active_user.count_daily
+				day["count_monthly"] = active_user.count_monthly
+				day["count_yearly"] = active_user.count_yearly
+				days.push(day)
+			end
+
+			result = Hash.new
+			result["days"] = days
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+
+			render json: result, status: validations.last["status"]
+		end
+	end
+
 	def get_all_apps
 		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
