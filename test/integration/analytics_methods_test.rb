@@ -177,9 +177,17 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2102, resp["errors"][0][0])
    end
 
-   test "get_event returns all log summaries of an event" do
+   test "get_event returns the log summaries of an event from within the last month" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+      # Update the event summaries with new dates
+		first_event_summary = event_summaries(:LoginSummaryDay1)
+		second_event_summary = event_summaries(:LoginSummaryDay2)
+		first_event_summary.time = Time.now - 2.days
+		second_event_summary.time = Time.now - 10.days
+		first_event_summary.save
+		second_event_summary.save
       
       get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
       resp = JSON.parse response.body
@@ -229,6 +237,11 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 	test "get_event returns the log summaries of the given sort" do
 		matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		# Update the event summary with a new date
+		event_summary = event_summaries(:LoginSummaryMonth)
+		event_summary.time = Time.now - 2.days
+		event_summary.save
       
       get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&sort=month"
 		resp = JSON.parse response.body
@@ -292,9 +305,17 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(2111, resp["errors"][2][0])
    end
 
-   test "get_event_by_name returns all log summaries of an event by name" do
+   test "get_event_by_name returns the log summaries of an event by name from within the last month" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		
+		# Update the event summaries with new dates
+		first_event_summary = event_summaries(:LoginSummaryDay1)
+		second_event_summary = event_summaries(:LoginSummaryDay2)
+		first_event_summary.time = Time.now - 2.days
+		second_event_summary.time = Time.now - 10.days
+		first_event_summary.save
+		second_event_summary.save
       
       get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
       resp = JSON.parse response.body
@@ -346,6 +367,11 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		login_event = events(:Login)
+
+		# Update the event summary with a new date
+		event_summary = event_summaries(:LoginSummaryMonth)
+		event_summary.time = Time.now - 2.days
+		event_summary.save
       
       get "/v1/analytics/event?app_id=#{login_event.app_id}&name=#{login_event.name}&jwt=#{matts_jwt}&sort=month"
 		resp = JSON.parse response.body
