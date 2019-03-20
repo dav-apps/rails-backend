@@ -466,14 +466,7 @@ class AnalyticsController < ApplicationController
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -501,6 +494,7 @@ class AnalyticsController < ApplicationController
 				hash["updated_at"] = user.updated_at
 				hash["confirmed"] = user.confirmed
 				hash["plan"] = user.plan
+				hash["last_active"] = user.last_active
 
 				apps = Array.new
 				user.apps.each do |app|
@@ -528,17 +522,11 @@ class AnalyticsController < ApplicationController
 
 	def get_active_users
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
-		timeframe = params["timeframe"]
+		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s').beginning_of_day : (Time.now - 1.month).beginning_of_day
+		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s').beginning_of_day : Time.now.beginning_of_day
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -553,30 +541,19 @@ class AnalyticsController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_users_dev_is_dev(user, dev))
-
-			users = Array.new
-
-			# Check the timeframe
-			case timeframe
-			when "0"	# Daily
-				time = 1.day
-			when "2"	# Yearly
-				time = 1.year
-			else		# Monthly
-				time = 1.month
-			end
-
-			User.all.each do |u|
-				if user_was_active(u, time)
-					user_hash = Hash.new
-					user_hash["id"] = u.id
-					user_hash["last_active"] = u.last_active
-					users.push(user_hash)
-				end
+			
+			days = Array.new
+			ActiveUser.where("time >= ? && time <= ?", start_timestamp, end_timestamp).each do |active_user|
+				day = Hash.new
+				day["time"] = active_user.time.to_s
+				day["count_daily"] = active_user.count_daily
+				day["count_monthly"] = active_user.count_monthly
+				day["count_yearly"] = active_user.count_yearly
+				days.push(day)
 			end
 
 			result = Hash.new
-			result["users"] = users
+			result["days"] = days
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
