@@ -102,7 +102,45 @@ namespace :database_updater do
 
 	desc "Get the current active users and create the active user objects in the database"
 	task create_active_users: :environment do
-		
+		# Create active users for each app
+		App.all.each do |app|
+			create_active_user(app.id, app.users_apps)
+		end
+
+		# Create active user for all users
+		create_active_user(-1, User.all)
+	end
+
+	def create_active_user(app_id, users)
+		# Count the active users of the app
+		count_daily = 0
+		count_monthly = 0
+		count_yearly = 0
+
+		users.each do |user|
+			# Check if the user was active
+			count_daily += 1 if user_was_active(user.last_active, 1.day)
+			count_monthly += 1 if user_was_active(user.last_active, 1.month)
+			count_yearly += 1 if user_was_active(user.last_active, 1.year)
+		end
+
+		# Create a ActiveUser object for the app for the current day
+		if app_id > 0
+			ActiveAppUser.create(app_id: app_id, 
+								time: Time.now.beginning_of_day,
+								count_daily: count_daily,
+								count_monthly: count_monthly,
+								count_yearly: count_yearly)
+		else
+			ActiveUser.create(time: Time.now.beginning_of_day,
+								count_daily: count_daily,
+								count_monthly: count_monthly,
+								count_yearly: count_yearly)
+		end
+	end
+
+	def user_was_active(last_active, timeframe)
+		return !last_active ? false : Time.now - last_active < timeframe
 	end
 	
 	def get_file_size_of_table_object(obj_id)
