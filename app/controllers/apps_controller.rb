@@ -186,7 +186,7 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
 			days = Array.new
-			ActiveAppUser.where("app_id = ? && time >= ? && time <= ?", app.id, start_timestamp, end_timestamp).each do |active_user|
+			ActiveAppUser.where("app_id = ? AND time >= ? AND time <= ?", app.id, start_timestamp, end_timestamp).each do |active_user|
 				day = Hash.new
 				day["time"] = active_user.time.to_s
 				day["count_daily"] = active_user.count_daily
