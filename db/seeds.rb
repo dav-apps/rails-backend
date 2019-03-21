@@ -53,7 +53,7 @@ notifications = Notification.create([
 
 notification_properties = NotificationProperty.create([
 	{notification: notifications.first, name: "title", value: "Hello World"},
-	{notification: notification.first, name: "message", value: "You have an appointment"},
+	{notification: notifications.first, name: "message", value: "You have an appointment"},
 	{notification: notifications.second, name: "title", value: "Your daily summary"},
 	{notification: notifications.second, name: "message", value: "You have 2 appointments and one Todo for today"}
 ])
