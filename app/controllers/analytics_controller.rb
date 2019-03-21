@@ -165,7 +165,7 @@ class AnalyticsController < ApplicationController
 			end
 
 			# Go through each EventSummary with the given period
-			event.event_summaries.where("period = ? && time > ? && time < ?", period, start_timestamp, end_timestamp).each do |summary|
+			event.event_summaries.where("period = ? AND time > ? AND time < ?", period, start_timestamp, end_timestamp).each do |summary|
 				# Add the EventSummary to the array
 				log = Hash.new
 				properties = Array.new
@@ -255,7 +255,7 @@ class AnalyticsController < ApplicationController
 			end
 
 			# Go through each EventSummary with the given period
-			event.event_summaries.where("period = ? && time > ? && time < ?", period, start_timestamp, end_timestamp).each do |summary|
+			event.event_summaries.where("period = ? AND time > ? AND time < ?", period, start_timestamp, end_timestamp).each do |summary|
 				# Add the EventSummary to the array
 				log = Hash.new
 				properties = Array.new
@@ -535,7 +535,7 @@ class AnalyticsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_users_dev_is_dev(user, dev))
 			
 			days = Array.new
-			ActiveUser.where("time >= ? && time <= ?", start_timestamp, end_timestamp).each do |active_user|
+			ActiveUser.where("time >= ? AND time <= ?", start_timestamp, end_timestamp).each do |active_user|
 				day = Hash.new
 				day["time"] = active_user.time.to_s
 				day["count_daily"] = active_user.count_daily
