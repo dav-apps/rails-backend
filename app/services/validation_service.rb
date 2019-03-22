@@ -145,7 +145,7 @@ class ValidationService
 
 	def self.validate_plan_exists(plan)
 		error_code = 1108
-		plan != 0 && plan != 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		plan != 0 && plan != 1 && plan != 2 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_file_extension_supported(format)

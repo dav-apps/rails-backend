@@ -428,6 +428,9 @@ class UsersController < ApplicationController
 				plus_plan_product = Stripe::Product.retrieve(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'])
 				plus_plan = Stripe::Plan.retrieve(ENV['STRIPE_DAV_PLUS_EUR_PLAN_ID'])
 
+				pro_plan_product = Stripe::Product.retrieve(ENV['STRIPE_DAV_PRO_PRODUCT_ID'])
+				pro_plan = Stripe::Plan.retrieve(ENV['STRIPE_DAV_PRO_EUR_PLAN_ID'])
+
 				# Update the current subscription or create a new one
 				subscription = Stripe::Subscription.list(customer: user.stripe_customer_id).data.first
 
@@ -444,19 +447,59 @@ class UsersController < ApplicationController
 						)
 						user.plan = 1
 						user.subscription_status = 0
+					elsif plan == 2
+						# Create new subscription
+						subscription = Stripe::Subscription.create(
+							:customer => user.stripe_customer_id,
+							:items => [
+								{
+									:plan => pro_plan.id,
+								},
+							]
+						)
+						user.plan = 2
+						user.subscription_status = 0
 					end
 				else
-					if plan == 0
+					if plan == 0		# 1 -> 0 || 2 -> 0
 						# Delete the subscription
 						subscription.delete(at_period_end: true)
 						user.subscription_status = 1
-					elsif plan == 1
+					elsif plan == 1	# 0 -> 1 || 2 -> 1
 						# If the user is on plan 2
 						if subscription.items.data[0].plan.product != plus_plan_product
-							# Change the subscription to the plus plan
-							subscription.items.data[0].plan = plus_plan.id
-							subscription.save
+							# Change the subscription to Plus
+							Stripe::Subscription.update(
+								subscription.id,
+								{
+									cancel_at_period_end: false,
+									items: [
+										{
+											id: subscription.items.data[0].id,
+											plan: plus_plan.id
+										}
+									]
+								}
+							)
 							user.plan = 1
+							user.subscription_status = 0
+						end
+					elsif plan == 2	# 0 -> 2 || 1 -> 2
+						if subscription.items.data[0].plan.product != pro_plan_product
+							# Change the subscription to Pro
+							Stripe::Subscription.update(
+								subscription.id,
+								{
+									cancel_at_period_end: false,
+									items: [
+										{
+											id: subscription.items.data[0].id,
+											plan: pro_plan.id
+										}
+									]
+								}
+							)
+							user.plan = 2
 							user.subscription_status = 0
 						end
 					end
