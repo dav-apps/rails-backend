@@ -12,9 +12,13 @@ class StripeWebhooksService
          product_id = event.data.object.lines.data[0].plan.product
 
          user.period_end = Time.at(period_end)
+         user.subscription_status = 0
          
-         if product_id == ENV['STRIPE_DAV_PLUS_PRODUCT_ID']
+         case product_id
+         when ENV['STRIPE_DAV_PLUS_PRODUCT_ID']
             user.plan = 1
+         when ENV['STRIPE_DAV_PRO_PRODUCT_ID']
+            user.plan = 2
          else
             user.plan = 0
          end
@@ -31,12 +35,14 @@ class StripeWebhooksService
       next_payment_attempt = event.data.object.next_payment_attempt
 
       if !paid && !next_payment_attempt
-         # Change plan to free
+         # Change the plan to free
          customer_id = event.data.object.customer
          user = User.find_by(stripe_customer_id: customer_id)
          
          if user
             user.plan = 0
+            user.subscription_status = 0
+            user.period_end = nil
             user.save
 
             # Send the email
