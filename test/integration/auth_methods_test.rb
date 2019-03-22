@@ -618,6 +618,93 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_not_equal(customer2.sources.data[0].id, source_id)
    end
 
+   test "Can upgrade plan from plus to pro and downgrade from pro to plus in update_user" do
+      torera = users(:torera)
+		jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
+		free_plan = 0
+      plus_plan = 1
+      pro_plan = 2
+
+      # Upgrade to Plus
+      put "/v1/auth/user?jwt=#{jwt}",
+            params: '{"plan": ' + plus_plan.to_s + '}',
+            headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 200
+
+      # Check if the subscription was updated
+      subscription = Stripe::Subscription.list(customer: torera.stripe_customer_id).data.first
+      assert_equal(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'], subscription.plan.product)
+
+      # Upgrade to Pro
+      put "/v1/auth/user?jwt=#{jwt}",
+            params: '{"plan": ' + pro_plan.to_s + '}',
+            headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 200
+
+		# Check if the subscription was updated
+		subscription = Stripe::Subscription.list(customer: torera.stripe_customer_id).data.first
+		assert_equal(ENV['STRIPE_DAV_PRO_PRODUCT_ID'], subscription.plan.product)
+
+		# Downgrade to Free
+		put "/v1/auth/user?jwt=#{jwt}",
+            params: '{"plan": ' + plus_plan.to_s + '}',
+            headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 200
+
+		# Check if the subscription was updated
+		subscription = Stripe::Subscription.list(customer: torera.stripe_customer_id).data.first
+		assert_equal(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'], subscription.plan.product)
+		
+		# Downgrade to Free
+		put "/v1/auth/user?jwt=#{jwt}",
+				params: '{"plan": ' + free_plan.to_s + '}',
+				headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 200
+
+		# Check if the subscription was deleted
+		subscription = Stripe::Subscription.list(customer: torera.stripe_customer_id).data.first
+		assert(subscription.cancel_at_period_end)
+	end
+	
+	test "Can upgrade plan from free to pro and downgrade from pro to free in update_user" do
+		torera = users(:torera)
+		jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
+		free_plan = 0
+		pro_plan = 2
+		
+		# Upgrade to Pro
+      put "/v1/auth/user?jwt=#{jwt}",
+            params: '{"plan": ' + pro_plan.to_s + '}',
+            headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 200
+
+		# Check if the subscription was updated
+		subscription = Stripe::Subscription.list(customer: torera.stripe_customer_id).data.first
+		assert_equal(ENV['STRIPE_DAV_PRO_PRODUCT_ID'], subscription.plan.product)
+
+		# Downgrade to Free
+		put "/v1/auth/user?jwt=#{jwt}",
+            params: '{"plan": ' + free_plan.to_s + '}',
+            headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 200
+
+		# Check if the subscription was deleted
+		subscription = Stripe::Subscription.list(customer: torera.stripe_customer_id).data.first
+		assert(subscription.cancel_at_period_end)
+	end
+
    test "Can upload an avatar and the etag updates in update_user" do
       avatarPath = "test/fixtures/files/test.png"
       matt = users(:matt)
