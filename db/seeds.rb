@@ -21,14 +21,26 @@ devs = Dev.create([
 apps = App.create([
    {dev: devs.first, name: "Cards", description: "This is a vocabulary app!", published: true, link_web: "http://cards.dav-apps.tech"},
    {dev: devs.second, name: "TestApp", description: "This is a test app.", published: false, link_play: "https://play.google.com"},
-   {dev: devs.second, name: "davClassLibraryTestApp", description: "This is the test app for davClassLibrary", published: false}
+   {dev: devs.second, name: "davClassLibraryTestApp", description: "This is the test app for davClassLibrary", published: false},
+	{dev: devs.first, name: "UniversalSoundboard", description: "UniversalSoundboard is a customizable soundboard and music player", published: true},
+	{dev: devs.first, name: "Calendo", description: "Manage your todos and appointments: Calendo is the best app to organize your life", published: true}
 ])
 
 tables = Table.create([
    {name: "Card", app: apps.first},
    {name: "TestTable", app: apps.second},
    {name: "TestData", app: apps.third},
-   {name: "TestFile", app: apps.third}
+	{name: "TestFile", app: apps.third},
+	# UniversalSoundboard Tables
+	{name: "Sound", app: apps[3]},
+	{name: "SoundFile", app: apps[3]},
+	{name: "ImageFile", app: apps[3]},
+	{name: "Category", app: apps[3]},
+	{name: "PlayingSound", app: apps[3]},
+	{name: "Order", app: apps[3]},
+	# Calendo Tables
+	{name: "Todo", app: apps[4]},
+	{name: "Appointment", app: apps[4]}
 ])
 
 table_objects = TableObject.create([
