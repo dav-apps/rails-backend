@@ -456,6 +456,9 @@ class AppsController < ApplicationController
 				end
 			end
 
+			# Check if the table exists
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
+
 			# Check if the table belongs to the app of the dev
 			ValidationService.raise_validation_error(ValidationService.validate_table_belongs_to_app(table, app))
 

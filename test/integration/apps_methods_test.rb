@@ -590,6 +590,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 400
       assert_same(2501, resp["errors"][0][0])
    end
+
+   test "Can't create an object with table id if the table does not exist" do
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      post "/v1/apps/object?jwt=#{jwt}&table_id=133&app_id=#{apps(:TestApp).id}", 
+				params: "{\"test\":\"test\"}", 
+				headers: {'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 404
+      assert_equal(2804, resp["errors"][0][0])
+   end
    
    test "Can't create an object for the app of another dev" do
       matt = users(:matt)
