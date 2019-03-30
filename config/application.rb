@@ -31,8 +31,10 @@ module Workspace
 		config.api_only = true
 
 		config.action_cable.allowed_request_origins = [
-			"http://localhost:3001",
-			"https://calendo.dav-apps.tech",
+			"localhost:3001",
+			"calendo.dav-apps.tech",
+			"calendo-dav.azurewebsites.net",
+			"calendo-dav-staging.azurewebsites.net",
 			nil
 		]
 
@@ -43,9 +45,9 @@ module Workspace
 							'cards-dav.azurewebsites.net',
 							'calendo-dav.azurewebsites.net',
 							'calendo.dav-apps.tech',
+							'calendo-dav-staging.azurewebsites.net',
 							'blog.dav-apps.tech'
 				
-
 				resource '*',
 				headers: :any,
           	methods: %i(get post put patch delete options head)
