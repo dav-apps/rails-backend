@@ -31,10 +31,10 @@ module Workspace
 		config.api_only = true
 
 		config.action_cable.allowed_request_origins = [
-			"localhost:3001",
-			"calendo.dav-apps.tech",
-			"calendo-dav.azurewebsites.net",
-			"calendo-dav-staging.azurewebsites.net",
+			"http://localhost:3001",
+			"https://calendo.dav-apps.tech",
+			"https://calendo-dav.azurewebsites.net",
+			"https://calendo-dav-staging.azurewebsites.net",
 			nil
 		]
 
