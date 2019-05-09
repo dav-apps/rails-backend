@@ -723,15 +723,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can create object and upload text file" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		content_type = 'text/plain'
+		ext = "txt"
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", 
+		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => 'text/plain'}
+				headers: {'Content-Type' => content_type}
       resp = JSON.parse response.body
 
       assert_response 201
       assert_not_nil(resp["id"])
+		
+		# Check if the properties were created
+		assert_equal(ext, resp["properties"]["ext"])
+		assert_equal(content_type, resp["properties"]["type"])
+		assert_not_nil(resp["properties"]["size"])
+		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
@@ -741,13 +749,21 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can create object and upload empty file" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		content_type = 'text/plain'
+		ext = "txt"
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", 
-				headers: {'Content-Type' => 'text/plain'}
+		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+				headers: {'Content-Type' => content_type}
       resp = JSON.parse response.body
 
-      assert_response 201
+		assert_response 201
+		
+		# Check if the properties were created
+		assert_equal(ext, resp["properties"]["ext"])
+		assert_equal(content_type, resp["properties"]["type"])
+		assert_equal("0", resp["properties"]["size"])
+		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
@@ -861,16 +877,24 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can create object with table_id and another visibility and upload text file" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      visibility = 1
+		visibility = 1
+		ext = "txt"
+		content_type = 'text/plain'
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:note).id}&visibility=#{visibility}&app_id=#{apps(:TestApp).id}&ext=txt", 
+		post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:note).id}&visibility=#{visibility}&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => 'text/plain'}
+				headers: {'Content-Type' => content_type}
       resp = JSON.parse response.body
 
       assert_response 201
       assert_not_nil(resp["id"])
-      assert_same(resp["visibility"], visibility)
+		assert_equal(resp["visibility"], visibility)
+		
+		# Check if the properties were created
+		assert_equal(ext, resp["properties"]["ext"])
+		assert_equal(content_type, resp["properties"]["type"])
+		assert_not_nil(resp["properties"]["size"])
+		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
@@ -1070,11 +1094,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can get object with uploaded file" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		ext = "txt"
+		content_type = 'text/plain'
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", 
+		# Create the object with file
+		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => 'text/plain'}
+				headers: {'Content-Type' => content_type}
       resp = JSON.parse response.body
 
 		assert_response 201
@@ -1086,8 +1113,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       get "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&file=true"
       resp2 = response.body
 
-      assert_response 200
-      assert(!resp2.include?("id"))
+		assert_response 200
+		assert_equal(content_type, response.headers["Content-Type"])
+		assert(!resp2.include?("id"))
+		
+		# Check if the properties were created
+		assert_equal(ext, resp["properties"]["ext"])
+		assert_equal(content_type, resp["properties"]["type"])
+		assert_not_nil(resp["properties"]["size"])
+		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
@@ -1107,11 +1141,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      uuid = SecureRandom.uuid
+		uuid = SecureRandom.uuid
+		ext = "txt"
+		content_type = 'text/plain'
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt&uuid=#{uuid}", 
+		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}&uuid=#{uuid}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => 'text/plain'}
+				headers: {'Content-Type' => content_type}
       resp = JSON.parse response.body
 
 		assert_response 201
@@ -1123,8 +1159,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       get "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}&file=true"
       resp2 = response.body
 
-      assert_response 200
-      assert(!resp2.include?("id"))
+		assert_response 200
+		assert_equal(content_type, response.headers["Content-Type"])
+		assert(!resp2.include?("id"))
+		
+		# Check if the properties were created
+		assert_equal(ext, resp["properties"]["ext"])
+		assert_equal(content_type, resp["properties"]["type"])
+		assert_not_nil(resp["properties"]["size"])
+		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
       delete "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}"
@@ -1256,12 +1299,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can update visibility and ext of object with file" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		old_ext = "txt"
+		old_content_type = 'text/plain'
 
       # Create object
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", 
+		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{old_ext}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => 'text/plain'}
+				headers: {'Content-Type' => old_content_type}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1269,18 +1314,22 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       etag = resp["properties"]["etag"]
       assert_not_nil(etag)
 
-      new_ext = "html"
+		new_ext = "html"
+		new_content_type = 'text/html'
       new_visibility = 2
 
       # Update object
 		put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&visibility=#{new_visibility}&ext=#{new_ext}", 
 				params: "<p>Hallo Welt! Dies ist eine HTML-Datei.</p>", 
-				headers: {'Content-Type' => 'text/html'}
+				headers: {'Content-Type' => new_content_type}
       resp = JSON.parse response.body
 
-      assert_response 200
-      assert_equal(new_ext, resp["properties"]["ext"])
-      assert_equal(new_visibility, resp["visibility"])
+		assert_response 200
+		assert_equal(new_visibility, resp["visibility"])
+		assert_equal(new_ext, resp["properties"]["ext"])
+		assert_equal(new_content_type, resp["properties"]["type"])
+		assert_not_nil(resp["properties"]["size"])
+		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
@@ -1308,14 +1357,17 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       file1Path = "test/fixtures/files/test.png"
-      file2Path = "test/fixtures/files/test2.mp3"
+		file2Path = "test/fixtures/files/test2.mp3"
+		old_ext = "png"
+		old_content_type = 'image/png'
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", 
+		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=#{old_ext}", 
 				params: File.open(file1Path, "rb").read, 
-				headers: {'Content-Type' => 'image/png'}
+				headers: {'Content-Type' => old_content_type}
       resp = JSON.parse response.body
       
 		assert_response 201
+
 		object1 = TableObject.find_by_id(resp["id"])
 		assert_not_nil(object1)
 		object_etag = resp["etag"]
@@ -1324,12 +1376,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(etag)
 		assert_equal(generate_table_object_etag(object1), object_etag)
 
-		put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&ext=mp3", 
+		assert_equal(old_ext, resp["properties"]["ext"])
+		assert_equal(old_content_type, resp["properties"]["type"])
+
+		new_ext = "mp3"
+		new_content_type = 'audio/mpeg'
+
+		put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&ext=#{new_ext}", 
 				params: File.open(file2Path, "rb").read, 
-				headers: {'Content-Type' => 'audio/mpeg'}
+				headers: {'Content-Type' => new_content_type}
       resp2 = JSON.parse response.body
       
 		assert_response 200
+
 		object2 = TableObject.find_by_id(resp2["id"])
 		assert_not_nil(object2)
 		object_etag2 = resp2["etag"]
@@ -1339,6 +1398,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_equal(etag, etag2)
 		assert_not_equal(object_etag, object_etag2)
 		assert_equal(generate_table_object_etag(object2), object_etag2)
+
+		assert_equal(new_ext, resp2["properties"]["ext"])
+		assert_equal(new_content_type, resp2["properties"]["type"])
 
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
       assert_response 200

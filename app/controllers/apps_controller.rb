@@ -779,7 +779,8 @@ class AppsController < ApplicationController
 			app = App.find_by_id(table.app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(request.headers["Content-Type"]))
+			type = request.headers["Content-Type"]
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(type))
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
 
@@ -794,10 +795,20 @@ class AppsController < ApplicationController
 			if obj.file
 				if ext && ext.length > 0
 					# Update the ext property
-					ext_prop = Property.find_by(name: "ext", table_object_id: obj.id)
+					ext_prop = Property.find_by(table_object_id: obj.id, name: "ext")
 					ext_prop.value = ext
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(ext_prop.save))
 				end
+
+				# Update the type property
+				type_prop = Property.find_by(table_object_id: obj.id, name: "type")
+				if type_prop
+					type_prop.value = type
+				else
+					# Create the type property
+					type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
+				end
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(type_prop.save))
 
 				# Check if the user has enough free storage
 				size_prop = Property.find_by(table_object_id: obj.id, name: "size")
