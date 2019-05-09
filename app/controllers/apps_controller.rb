@@ -467,7 +467,8 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_table_object_uuid_taken(uuid))
 			end
 
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(request.headers["Content-Type"]))
+         type = request.headers["Content-Type"]
+         ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(type))
 
 			obj = TableObject.new(table_id: table.id, user_id: user.id)
 
@@ -571,9 +572,14 @@ class AppsController < ApplicationController
 
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(ext_prop.save))
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
-					
+               
+               # Create a property for the file size
 					size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
-					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
+               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
+               
+               # Create a property for the content type
+               type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
+               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(type_prop.save))
 
 					# Save that user uses the app
 					users_app = UsersApp.find_by(app_id: app.id, user_id: user.id)
@@ -687,6 +693,7 @@ class AppsController < ApplicationController
 				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
 				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
 				filename = "#{app.id}/#{obj.id}"
+				type = "application/octet-stream"
 
 				begin
 					client = Azure::Blob::BlobService.new
@@ -694,10 +701,12 @@ class AppsController < ApplicationController
 
 					result = blob[1]
 
-					# Get the file extension
+					# Get the file extension and content type
 					obj.properties.each do |prop|
 						if prop.name == "ext"
 							filename += ".#{prop.value}"
+						elsif prop.name == "type"
+							type = prop.value
 						end
 					end
 				rescue Exception => e
@@ -705,7 +714,7 @@ class AppsController < ApplicationController
 				end
 
 				response.headers['Content-Length'] = result.size.to_s
-				send_data(result, status: 200, filename: filename)
+				send_data(result, status: 200, type: type, filename: filename)
 			else
 				# Return the object data
 				result = obj.attributes
