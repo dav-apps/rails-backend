@@ -23,7 +23,8 @@ apps = App.create([
    {dev: devs.second, name: "TestApp", description: "This is a test app.", published: false, link_play: "https://play.google.com"},
    {dev: devs.second, name: "davClassLibraryTestApp", description: "This is the test app for davClassLibrary", published: false},
 	{dev: devs.first, name: "UniversalSoundboard", description: "UniversalSoundboard is a customizable soundboard and music player", published: true},
-	{dev: devs.first, name: "Calendo", description: "Manage your todos and appointments: Calendo is the best app to organize your life", published: true}
+   {dev: devs.first, name: "Calendo", description: "Manage your todos and appointments: Calendo is the best app to organize your life", published: true},
+   {dev: devs.first, name: "PocketLib", description: "PocketLib is the library in your pocket", published: true}
 ])
 
 tables = Table.create([
@@ -40,7 +41,10 @@ tables = Table.create([
 	{name: "Order", app: apps[3]},
 	# Calendo Tables
 	{name: "Todo", app: apps[4]},
-	{name: "Appointment", app: apps[4]}
+   {name: "Appointment", app: apps[4]},
+   # PocketLib Tables
+   {name: "Book", app: apps[5]},
+   {name: "BookFile", app: apps[5]}
 ])
 
 table_objects = TableObject.create([
