@@ -39,8 +39,9 @@ tables = Table.create([
 	{name: "Category", app: apps[3]},
 	{name: "PlayingSound", app: apps[3]},
 	{name: "Order", app: apps[3]},
-	# Calendo Tables
-	{name: "Todo", app: apps[4]},
+   # Calendo Tables
+   {name: "TodoList", app: apps[4]},
+   {name: "Todo", app: apps[4]},
    {name: "Appointment", app: apps[4]},
    # PocketLib Tables
    {name: "Book", app: apps[5]},
