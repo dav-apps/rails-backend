@@ -329,7 +329,22 @@ class ValidationService
 	def self.validate_uuid_missing(uuid)
 		error_code = 2124
 		!uuid || uuid.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
-	end
+   end
+   
+   def self.validate_device_name_missing(device_name)
+      error_code = 2125
+      !device_name || device_name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+   end
+
+   def self.validate_device_type_missing(device_type)
+      error_code = 2126
+      !device_type || device_type.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+   end
+
+   def self.validate_device_os_missing(device_os)
+      error_code = 2127
+      !device_os || device_os.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+   end
 
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
@@ -645,7 +660,13 @@ class ValidationService
 		when 2123
 			"Missing field: p256dh"
 		when 2124
-			"Missing field: uuid"
+         "Missing field: uuid"
+      when 2125
+         "Missing field: device_name"
+      when 2126
+         "Missing field: device_type"
+      when 2127
+         "Missing field: device_os"
 		when 2201
 			"Field too short: username"
 		when 2202
@@ -756,16 +777,10 @@ class ValidationService
          false
       else
          if api_key == dev.api_key
-            
             new_sig = Base64.strict_encode64(OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid))
-            
-            if new_sig == signature
-               true
-            else
-               false
-            end
+            return new_sig == signature
          else
-            false
+            return false
          end
       end
 	end

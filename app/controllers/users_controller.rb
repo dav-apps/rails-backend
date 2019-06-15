@@ -187,6 +187,105 @@ class UsersController < ApplicationController
 		end
 	end
 
+	define_method :create_session do
+      auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		
+		begin
+			# Make sure the body is json
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			# Get necessary information from the body
+			body = ValidationService.parse_json(request.body.string)
+			email = body['email']
+			password = body['password']
+			app_id = body['app_id']
+         app_api_key = body['api_key']
+         device_name = body['device_name']
+         device_type = body['device_type']
+         device_os = body['device_os']
+
+			# Validate the params
+			auth_validation = ValidationService.validate_auth_missing(auth)
+			email_validation = ValidationService.validate_email_missing(email)
+			password_validation = ValidationService.validate_password_missing(password)
+			app_id_validation = ValidationService.validate_app_id_missing(app_id)
+         app_api_key_validation = ValidationService.validate_api_key_missing(app_api_key)
+         device_name_validation = ValidationService.validate_device_name_missing(device_name)
+         device_type_validation = ValidationService.validate_device_type_missing(device_type)
+         device_os_validation = ValidationService.validate_device_os_missing(device_os)
+			errors = Array.new
+
+			errors.push(email_validation) if !email_validation[:success]
+			errors.push(password_validation) if !password_validation[:success]
+			errors.push(app_id_validation) if !app_id_validation[:success]
+         errors.push(app_api_key_validation) if !app_api_key_validation[:success]
+         errors.push(device_name_validation) if !device_name_validation[:success]
+         errors.push(device_type_validation) if !device_type_validation[:success]
+         errors.push(device_os_validation) if !device_os_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			# Get the info from the auth
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+			website_api_key, signature = auth.split(",")
+
+			# Get & validate the website dev
+			website_dev = Dev.find_by(api_key: website_api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(website_dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(website_dev))
+
+			# Get & validate the app dev
+			app_dev = Dev.find_by(api_key: app_api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(app_dev))
+
+			# Get & validate the app
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, app_dev))
+
+			# Get & validate the user
+			user = User.find_by(email: email)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+			ValidationService.raise_validation_error(ValidationService.authenticate_user(user, password))
+
+			# Generate secret
+			secret = SecureRandom.urlsafe_base64(30)
+
+			# Create session
+			session = Session.new(user_id: user.id, app_id: app.id, secret: secret, device_name: device_name, device_type: device_type, device_os: device_os)
+
+			# Create JWT
+			expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
+			exp = Time.now.to_i + expHours * 3600
+			payload = {
+				email: user.email,
+				user_id: user.id,
+				dev_id: app_dev.id,
+				exp: exp
+			}
+			token = JWT.encode(payload, secret, ENV['JWT_ALGORITHM'])
+
+			# Set the expiration time of the session
+			session.exp = Time.at(exp).utc
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(session.save))
+
+			# Append the session id at the end of the jwt
+			token = token + ",#{session.id}"
+
+			result = session.attributes.except("secret")
+			result['exp'] = exp.to_i
+			result['jwt'] = token
+			render json: result, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			render json: result, status: validations.last["status"]
+		end
+	end
+
 	def get_user
 		requested_user_id = params["id"]
 		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
@@ -950,10 +1049,10 @@ class UsersController < ApplicationController
 
 			# Create the archive
 			archive = Archive.new(user: user)
-			archive.save
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(archive.save))
 
 			archive.name = "dav-export-#{archive.id}.zip"
-			archive.save
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(archive.save))
 
 			ExportDataWorker.perform_async(user.id, archive.id)
 			result = archive.attributes
