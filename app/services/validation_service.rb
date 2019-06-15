@@ -99,7 +99,12 @@ class ValidationService
 	def self.validate_archive_belongs_to_user(archive, user)
 		error_code = 1102
 		archive.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
-	end
+   end
+   
+   def self.validate_session_belongs_to_user(session, user)
+      error_code = 1102
+      session.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+   end
 
 	def self.validate_web_push_subscription_belongs_to_user(subscription, user)
 		error_code = 1102
@@ -559,7 +564,12 @@ class ValidationService
 	def self.validate_web_push_subscription_does_not_exist(subscription)
 		error_code = 2813
 		!subscription ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
-	end
+   end
+   
+   def self.validate_session_does_not_exist(session)
+		error_code = 2814
+		!session ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+   end
 
 	def self.validate_dev_already_exists(dev)
 		error_code = 2902
@@ -747,6 +757,8 @@ class ValidationService
 			"Resource does not exist: Notification"
 		when 2813
 			"Resource does not exist: WebPushSubscription"
+		when 2814
+			"Resource does not exist: Session"
 		when 2901
 			"Resource already exists: User"
 		when 2902

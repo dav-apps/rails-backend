@@ -284,7 +284,45 @@ class UsersController < ApplicationController
 			result["errors"] = ValidationService.get_errors_of_validations(validations)
 			render json: result, status: validations.last["status"]
 		end
-	end
+   end
+   
+   def get_session
+		jwt = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		id = params[:id]
+		
+		begin
+			# Validate the jwt
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			# Validate the user and dev from the jwt
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			# Get the session
+			session = Session.find_by_id(id)
+			ValidationService.raise_validation_error(ValidationService.validate_session_does_not_exist(session))
+			ValidationService.raise_validation_error(ValidationService.validate_session_belongs_to_user(session, user))
+
+			# Return the session
+			result = session.attributes.except("secret")
+			result["exp"] = session.exp.to_i
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			render json: result, status: validations.last["status"]
+		end
+   end
 
 	def get_user
 		requested_user_id = params["id"]
