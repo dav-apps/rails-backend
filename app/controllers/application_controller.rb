@@ -130,4 +130,9 @@ class ApplicationController < ActionController::API
 			users_app.save
 		end
    end
+
+   def get_jwt_from_header(auth_header)
+		jwt, session_id = auth_header ? auth_header.split(' ').last.split(',') : nil
+		return [jwt, session_id.to_i]
+   end
 end

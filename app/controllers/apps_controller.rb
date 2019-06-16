@@ -388,14 +388,14 @@ class AppsController < ApplicationController
 	end
    
 	# TableObject methods
-	def create_object
+   def create_object
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		table_name = params["table_name"]
 		table_id = params["table_id"]
       app_id = params["app_id"]
 		visibility = params["visibility"]
 		ext = params["ext"]
 		uuid = params["uuid"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)

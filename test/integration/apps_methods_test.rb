@@ -529,11 +529,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't save json when using another Content-Type than application/json in create_object" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\": \"test\"}", 
-				headers: {'Content-Type' => 'application/xml'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
@@ -542,11 +542,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Table does not exist and gets created when the user is the dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=NewTable&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert(Table.find_by(name: "NewTable"))
@@ -554,11 +554,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create a new table in create_object with too short table_name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=N&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=N&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -567,11 +567,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create a new table in create_object with too long table_name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{"n"*220}&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{"n"*220}&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -580,11 +580,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create a new table in create_object with an invalid table_name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=New Table name&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=New Table name&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -595,9 +595,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      post "/v1/apps/object?jwt=#{jwt}&table_id=133&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+      post "/v1/apps/object?table_id=133&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 404
@@ -606,11 +606,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create an object for the app of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -619,10 +619,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create an empty object" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -631,11 +631,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create an object with too short name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
-				params: "{\"\":\"a\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
+				params: {"": "a"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -644,11 +644,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create an object with too long name and value" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
-				params: "{\"#{"n"*220}\":\"#{"n"*65500}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
+				params: {"#{'n' * 220}": "#{'n' * 65500}"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -658,11 +658,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create object with visibility > 2" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=5&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=5&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 201
@@ -671,11 +671,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create object with visibility < 0" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=-4&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=-4&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 201
@@ -684,11 +684,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create object with visibility that is not an integer" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=hello&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=hello&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 201
@@ -697,11 +697,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can create object with another visibility" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", 
+				params: {"test": "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 201
@@ -710,11 +710,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can't create object and upload file without ext parameter" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", 
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => 'text/plain'}
+				headers: {'Authorization' => jwt, 'Content-Type' => 'text/plain'}
       resp = JSON.parse response.body
 
       assert_response 415
@@ -723,13 +723,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can create object and upload text file" do
       matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		content_type = 'text/plain'
 		ext = "txt"
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => content_type}
+				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -742,19 +742,18 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
-      
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
       assert_response 200
    end
 
    test "Can create object and upload empty file" do
       matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		content_type = 'text/plain'
 		ext = "txt"
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
-				headers: {'Content-Type' => content_type}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
 		assert_response 201
@@ -766,16 +765,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
-      
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
       assert_response 200
    end
 
    test "Can't create object and upload file with empty Content-Type header" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt"
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 415
@@ -784,12 +782,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can create object with uuid and get correct etag" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       uuid = SecureRandom.uuid
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&uuid=#{uuid}", 
-				params: '{"test": "test"}', 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&uuid=#{uuid}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -801,11 +799,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can't create object with uuid that is already in use" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&uuid=#{table_objects(:third).uuid}", 
-				params: '{"test": "test"}', 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&uuid=#{table_objects(:third).uuid}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -814,11 +812,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can create object with binary file and get correct etag" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", 
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", 
 				params: File.open('test/fixtures/files/test.png', 'rb').read,
-				headers: {"Content-Type": "image/png"}
+				headers: {'Authorization' => jwt, "Content-Type": "image/png"}
       resp = JSON.parse response.body
       
 		assert_response 201
@@ -831,17 +829,17 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(generate_table_object_etag(object), resp["etag"])
 
       # Delete the object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
       assert_response 200
    end
 
    test "Can create object with table_id" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
-				params: '{"test": "test"}', 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -849,12 +847,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can create object with uuid and table_id" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       uuid = SecureRandom.uuid
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}&uuid=#{uuid}", 
-				params: '{"test": "test"}', 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}&uuid=#{uuid}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -863,11 +861,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can't create an object for the app of another dev with table_id" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
-				params: '{"test":"test"}', 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -876,14 +874,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can create object with table_id and another visibility and upload text file" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		visibility = 1
 		ext = "txt"
 		content_type = 'text/plain'
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:note).id}&visibility=#{visibility}&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+		post "/v1/apps/object?table_id=#{tables(:note).id}&visibility=#{visibility}&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => content_type}
+				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -897,23 +895,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
       
       assert_response 200
 	end
 	
 	test "create_object should not create a property when the property has no value" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		first_property_name = "test1"
 		first_property_value = ""
 		second_property_name = "test2"
 		second_property_value = "blabla"
-		properties = '{"' + first_property_name + '": "' + first_property_value + '", "' + second_property_name + '": "' + second_property_value + '"}'
+		properties = {"#{first_property_name}": first_property_value, "#{second_property_name}": second_property_value}
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_id=#{tables(:note).id}&app_id=#{apps(:TestApp).id}", 
-				params: properties, 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_id=#{tables(:note).id}&app_id=#{apps(:TestApp).id}", 
+				params: properties.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 		
 		assert_response 201
@@ -932,9 +930,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 		
-		post "/v1/apps/object?jwt=#{jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
+		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
 				params: '{"test": "test"}', 
-				headers: {'Content-Type' => 'application/json'}
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
 		assert_response 201
@@ -950,8 +948,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		post "/v1/apps/object?jwt=#{jwt}&table_id=#{tables(:card).id}&app_id=#{apps(:TestApp).id}",
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:TestApp).id}",
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 		
 		assert_response 403
@@ -1053,9 +1051,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=1&app_id=#{apps(:TestApp).id}&ext=txt", 
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=1&app_id=#{apps(:TestApp).id}&ext=txt", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => 'text/plain'}
+				headers: {'Authorization' => matts_jwt, 'Content-Type' => 'text/plain'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1094,14 +1092,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can get object with uploaded file" do
       matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		ext = "txt"
 		content_type = 'text/plain'
 
 		# Create the object with file
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => content_type}
+				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
 		assert_response 201
@@ -1110,7 +1108,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["etag"])
 
-      get "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&file=true"
+      get "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}&file=true"
       resp2 = response.body
 
 		assert_response 200
@@ -1124,7 +1122,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
       
       assert_response 200
    end
@@ -1139,15 +1137,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can get object with uploaded file with uuid" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
 		uuid = SecureRandom.uuid
 		ext = "txt"
 		content_type = 'text/plain'
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}&uuid=#{uuid}", 
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}&uuid=#{uuid}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => content_type}
+				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
 		assert_response 201
@@ -1156,7 +1154,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(object)
 		assert_equal(generate_table_object_etag(object), resp["etag"])
 
-      get "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}&file=true"
+      get "/v1/apps/object/#{uuid}?jwt=#{jwt}&file=true"
       resp2 = response.body
 
 		assert_response 200
@@ -1170,7 +1168,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{uuid}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{uuid}?jwt=#{jwt}"
       
       assert_response 200
 	end
@@ -1299,14 +1297,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can update visibility and ext of object with file" do
       matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		old_ext = "txt"
 		old_content_type = 'text/plain'
 
       # Create object
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{old_ext}", 
+		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{old_ext}", 
 				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Content-Type' => old_content_type}
+				headers: {'Authorization' => jwt, 'Content-Type' => old_content_type}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1319,7 +1317,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       new_visibility = 2
 
       # Update object
-		put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&visibility=#{new_visibility}&ext=#{new_ext}", 
+		put "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}&visibility=#{new_visibility}&ext=#{new_ext}", 
 				params: "<p>Hallo Welt! Dies ist eine HTML-Datei.</p>", 
 				headers: {'Content-Type' => new_content_type}
       resp = JSON.parse response.body
@@ -1332,7 +1330,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
       
       assert_response 200
    end
@@ -1355,15 +1353,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can update object and replace uploaded file" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       file1Path = "test/fixtures/files/test.png"
 		file2Path = "test/fixtures/files/test2.mp3"
 		old_ext = "png"
 		old_content_type = 'image/png'
 
-		post "/v1/apps/object?jwt=#{matts_jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=#{old_ext}", 
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=#{old_ext}", 
 				params: File.open(file1Path, "rb").read, 
-				headers: {'Content-Type' => old_content_type}
+				headers: {'Authorization' => jwt, 'Content-Type' => old_content_type}
       resp = JSON.parse response.body
       
 		assert_response 201
@@ -1382,7 +1380,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		new_ext = "mp3"
 		new_content_type = 'audio/mpeg'
 
-		put "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}&ext=#{new_ext}", 
+		put "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}&ext=#{new_ext}", 
 				params: File.open(file2Path, "rb").read, 
 				headers: {'Content-Type' => new_content_type}
       resp2 = JSON.parse response.body
@@ -1402,7 +1400,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(new_ext, resp2["properties"]["ext"])
 		assert_equal(new_content_type, resp2["properties"]["type"])
 
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
       assert_response 200
 	end
 	
@@ -2234,9 +2232,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(tester2, "testpassword", devs(:sherlock)).body)["jwt"]
       
       assert_nil(UsersApp.find_by(user_id: tester2.id))
-		post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
-				params: "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}",  
+				params: {"page1": "Hello World", "page2": "Hallo Welt"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       object_id = resp["id"]
