@@ -366,6 +366,77 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(device_os, session.device_os)
 	end
    # End create_session tests
+
+   # get_session tests
+   test "Missing fields in get_session" do
+      session = sessions(:CatoTestAppSession)
+
+      get "/v1/auth/session/#{session.id}"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_equal(2102, resp["errors"][0][0])
+   end
+
+   test "Can't get session with invalid jwt" do
+      session = sessions(:CatoTestAppSession)
+
+      get "/v1/auth/session/#{session.id}", headers: {"Authorization" => "asdasdasd"}
+      resp = JSON.parse response.body
+
+		assert_response 401
+		assert_equal(1302, resp["errors"][0][0])
+	end
+	
+	test "Can't get session from outside the website" do
+		session = sessions(:CatoTestAppSession)
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
+
+		get "/v1/auth/session/#{session.id}", headers: {"Authorization" => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't get session that does not exist" do
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/auth/session/-12", headers: {"Authorization" => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2814, resp["errors"][0][0])
+	end
+
+	test "Can't get the session of another user" do
+		session = sessions(:CatoTestAppSession)
+		jwt = (JSON.parse login_user(users(:sherlock), "sherlocked", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/auth/session/#{session.id}", headers: {"Authorization" => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get session" do
+		session = sessions(:CatoTestAppSession)
+		jwt = (JSON.parse login_user(users(:cato), "123456", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/auth/session/#{session.id}", headers: {"Authorization" => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(session.id, resp["id"])
+		assert_equal(session.user_id, resp["user_id"])
+		assert_equal(session.app_id, resp["app_id"])
+		assert_equal(session.exp.to_i, resp["exp"])
+		assert_equal(session.device_name, resp["device_name"])
+		assert_equal(session.device_type, resp["device_type"])
+		assert_equal(session.device_os, resp["device_os"])
+	end
+   # End get_session tests
    
    # get_user tests
    test "Can't get user when the requested user is not the current user" do

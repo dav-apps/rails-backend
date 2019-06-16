@@ -1,0 +1,8 @@
+CatoTestAppSession:
+  user: cato
+  app: TestApp
+  secret: asdasdasdasdasd
+  exp: <%= DateTime.new(2060, 10, 02).to_s(:db) %>
+  device_name: Fairphone
+  device_type: Smartphone
+  device_os: Android
