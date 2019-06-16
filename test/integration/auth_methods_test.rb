@@ -217,6 +217,155 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(username, resp["username"])
    end
    # End signup tests
+
+   # create_session tests
+   test "Missing fields in create_session" do
+		post "/v1/auth/session", headers: {'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 400
+		assert_equal(2106, resp["errors"][0][0])
+		assert_equal(2107, resp["errors"][1][0])
+		assert_equal(2110, resp["errors"][2][0])
+		assert_equal(2118, resp["errors"][3][0])
+		assert_equal(2125, resp["errors"][4][0])
+		assert_equal(2126, resp["errors"][5][0])
+		assert_equal(2127, resp["errors"][6][0])
+	end
+	
+	test "Can't create a session when using another Content-Type than application/json" do
+		auth_token = generate_auth_token(devs(:matt))
+
+		post "/v1/auth/session", headers: {'Authorization' => auth_token, 'Content-Type' => 'application/xml'}
+		resp = JSON.parse response.body
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't create a session with invalid auth" do
+		auth_token = generate_auth_token(devs(:matt)) + "asd"
+		matt = users(:matt)
+		matt_dev = devs(:matt)
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 401
+		assert_equal(1101, resp["errors"][0][0])
+	end
+
+	test "Can't create a session from outside the website" do
+		auth_token = generate_auth_token(devs(:matt))
+		matt = users(:matt)
+		matt_dev = devs(:matt)
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create a session for a dev that does not exist" do
+		auth_token = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => "asdasdasd", "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2802, resp["errors"][0][0])
+	end
+
+	test "Can't create a session for an app that does not exist" do
+		auth_token = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt_dev = devs(:matt)
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => -20, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2803, resp["errors"][0][0])
+	end
+
+	test "Can't create a session for an app that does not belong to the dev" do
+		auth_token = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt_dev = devs(:matt)
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => apps(:Cards).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create a session for a user that does not exist" do
+		auth_token = generate_auth_token(devs(:sherlock))
+		matt_dev = devs(:matt)
+
+		post "/v1/auth/session", 
+				params: {"email" => "bla@example.com", "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
+
+	test "Can't create a session for a user with the wrong password" do
+		auth_token = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt_dev = devs(:matt)
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "asdasdasd", "api_key" => matt_dev.api_key, "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 401
+		assert_equal(1201, resp["errors"][0][0])
+	end
+
+	test "Can create a session" do
+		auth_token = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt_dev = devs(:matt)
+
+		user_id = matt.id
+		app_id = apps(:TestApp).id
+		device_name = "Surface Book"
+		device_type = "Laptop"
+		device_os = "Windows 10"
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => app_id, "device_name" => device_name, "device_type" => device_type, "device_os" => device_os}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 201
+
+		session = Session.find_by_id(resp["id"])
+		assert_not_nil(session)
+		assert_equal(user_id, session.user_id)
+		assert_equal(app_id, session.app_id)
+		assert_equal(device_name, session.device_name)
+		assert_equal(device_type, session.device_type)
+		assert_equal(device_os, session.device_os)
+	end
+   # End create_session tests
    
    # get_user tests
    test "Can't get user when the requested user is not the current user" do
@@ -543,7 +692,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_same(apps(:Cards).id, resp2["apps"][0]["id"])
    end
 
-   test "Can update plan with payment in update_user" do
+   test "Can update plan with payment token in update_user" do
       torera = users(:torera)
       jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
       payment_token = "tok_visa"
@@ -604,7 +753,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       payment_token = "tok_visa_debit"
       customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
-      source_id = customer.sources.data[0].id
+      source_id = customer.sources.data[0] ? customer.sources.data[0].id : nil
 
 		put "/v1/auth/user?jwt=#{jwt}", 
 				params: '{"payment_token": "' + payment_token + '"}', 
