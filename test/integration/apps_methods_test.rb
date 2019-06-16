@@ -309,7 +309,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    # End get_all_apps tests
    
@@ -319,72 +319,72 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(resp["errors"].length, 1)
+      assert_equal(resp["errors"].length, 1)
    end
    
    test "Can't use another content type but json in update_app" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/xml'}
+		put "/v1/apps/app/#{apps(:TestApp).id}", 
+				params: {test: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
-      assert_same(1104, resp["errors"][0][0])
+      assert_equal(1104, resp["errors"][0][0])
    end
    
    test "User does not exist in update_app" do
       matt_id = users(:matt).id
       test_app_id = apps(:TestApp).id
       
-      matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
       users(:matt).destroy!
       
-		put "/v1/apps/app/#{test_app_id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"TestApp12133\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/app/#{test_app_id}", 
+				params: {name: "TestApp12133"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 404
-      assert_same(2801, resp["errors"][0][0])
+      assert_equal(2801, resp["errors"][0][0])
    end
    
    test "update_app can't be called from outside the website" do
-      matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
       
-		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"TestApp121314\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/app/#{apps(:TestApp).id}", 
+				params: {name: "TestApp121314"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
-   test "can't update an app with too long name and description" do
+   test "Can't update an app with too long name and description" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"#{"o"*35}\", \"description\":\"#{"o"*510}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/app/#{apps(:TestApp).id}", 
+				params: {name: "#{'o' * 35}", description: "#{'o' * 510}"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(resp["errors"].length, 2)
-      assert_same(resp["errors"][0][0], 2303)
-      assert_same(resp["errors"][1][0], 2304)
+      assert_equal(resp["errors"].length, 2)
+      assert_equal(resp["errors"][0][0], 2303)
+      assert_equal(resp["errors"][1][0], 2304)
    end
    
-   test "can't update an app with too short name and description" do
+   test "Can't update an app with too short name and description" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"a\", \"description\":\"a\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/app/#{apps(:TestApp).id}", 
+				params: {name: "a", description: "a"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -395,9 +395,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't update the app of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/app/#{apps(:davApp).id}?jwt=#{matts_jwt}"
+      put "/v1/apps/app/#{apps(:davApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -406,25 +406,25 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't update the app of the first dev as another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/apps/app/#{apps(:Cards).id}?jwt=#{matts_jwt}"
+      put "/v1/apps/app/#{apps(:Cards).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
    
-   test "Can update name and description of app at once" do
+   test "Can update name and description of an app at once" do
       new_name = "Neuer Name"
       new_desc = "Neue Beschreibung"
       
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"#{new_name}\", \"description\": \"#{new_desc}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/app/#{apps(:TestApp).id}", 
+				params: {name: new_name, description: new_desc}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -437,11 +437,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       link_windows = "http://microsoft.com/blabla"
 
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"link_play\":\"#{link_play}\", \"link_windows\": \"#{link_windows}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/app/#{apps(:TestApp).id}", 
+				params: {link_play: link_play, link_windows: link_windows}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -451,11 +451,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can update app with blank links" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"link_play\":\"\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/app/#{apps(:TestApp).id}", 
+				params: {link_play: ""}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -467,11 +467,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       link_windows = "hellowor-ld124"
 
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		put "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}", 
-				params: "{\"link_play\":\"#{link_play}\", \"link_windows\": \"#{link_windows}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/app/#{apps(:TestApp).id}", 
+				params: {link_play: link_play, link_windows: link_windows}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
@@ -482,9 +482,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # delete_app tests
    test "Missing fields in delete_app" do
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
       delete "/v1/apps/app/#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
@@ -494,20 +491,20 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "delete_app can't be called from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      delete "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/app/#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
    
-   test "can't delete the app of another dev" do
+   test "Can't delete the app of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/apps/app/#{apps(:davApp).id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/app/#{apps(:davApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
