@@ -739,7 +739,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       assert_response 200
    end
 
@@ -762,7 +762,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       assert_response 200
    end
 
@@ -826,7 +826,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(generate_table_object_etag(object), resp["etag"])
 
       # Delete the object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       assert_response 200
    end
 
@@ -904,7 +904,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       
       assert_response 200
 	end
@@ -1074,7 +1074,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(1102, resp2["errors"][0][0])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => matts_jwt}
       
       assert_response 200
    end
@@ -1128,7 +1128,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       
       assert_response 200
    end
@@ -1174,7 +1174,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{uuid}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{uuid}", headers: {'Authorization' => jwt}
       
       assert_response 200
 	end
@@ -1337,7 +1337,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["properties"]["etag"])
 
       # Delete object
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       
       assert_response 200
    end
@@ -1407,7 +1407,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(new_ext, resp2["properties"]["ext"])
 		assert_equal(new_content_type, resp2["properties"]["type"])
 
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       assert_response 200
 	end
 	
@@ -1473,20 +1473,20 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    # delete_object tests
    test "Can't delete an object when the dev does not own the table" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/apps/object/#{table_objects(:seventh).id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{table_objects(:seventh).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't delete an object of another user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/apps/object/#{table_objects(:second).id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{table_objects(:second).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1495,9 +1495,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can delete an object that the user owns" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{table_objects(:first).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1505,9 +1505,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can delete object with uuid" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/apps/object/#{table_objects(:first).uuid}?jwt=#{matts_jwt}"
+      delete "/v1/apps/object/#{table_objects(:first).uuid}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1521,7 +1521,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 
-		delete "/v1/apps/object/#{table_objects(:first).id}?jwt=#{jwt}"
+		delete "/v1/apps/object/#{table_objects(:first).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 200
