@@ -620,10 +620,10 @@ class AppsController < ApplicationController
 	end
 
 	def get_object
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		object_id = params["id"]
 		token = params["access_token"]
 		file = params["file"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_id_missing(object_id))
@@ -663,7 +663,7 @@ class AppsController < ApplicationController
 					end
 				else
 					# There is a jwt
-					jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+					jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 					ValidationService.raise_validation_error(jwt_signature_validation[0])
 					user_id = jwt_signature_validation[1][0]["user_id"]
 					dev_id = jwt_signature_validation[1][0]["dev_id"]
@@ -737,10 +737,10 @@ class AppsController < ApplicationController
 	end
 	
 	def update_object
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		object_id = params["id"]
 		visibility = params["visibility"]
 		ext = params["ext"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
@@ -754,7 +754,7 @@ class AppsController < ApplicationController
 				raise RuntimeError, errors.to_json
 			end
 
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]

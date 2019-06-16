@@ -967,14 +967,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    # End create_object tests
    
    # get_object tests
-   test "TableObject does not exist" do
-      object_id = table_objects(:first).id
-      table_objects(:first).destroy!
-      
+   test "Can't get a table object that does not exist" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/apps/object/#{object_id}?jwt=#{matts_jwt}"
+      get "/v1/apps/object/-20", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 404
@@ -983,9 +980,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't get the objects of the tables of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/apps/object/#{table_objects(:sixth).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/object/#{table_objects(:sixth).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -994,15 +991,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can get own object and all properties" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/object/#{table_objects(:first).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
 		assert_response 200
 		object = TableObject.find_by_id(resp["id"])
 		assert_not_nil(object)
-		assert_same(table_objects(:first).id, resp["id"])
+		assert_equal(table_objects(:first).id, resp["id"])
 		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["page1"])
       assert_not_nil(resp["properties"]["page2"])
@@ -1010,9 +1007,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't access an object when the user does not own the object" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/object/#{table_objects(:second).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/object/#{table_objects(:second).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1030,10 +1027,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can get object with access token without logging in" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       object_id = table_objects(:third).id
       
-      post "/v1/apps/object/#{object_id}/access_token?jwt=#{matts_jwt}"
+      post "/v1/apps/object/#{object_id}/access_token", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 201
@@ -1048,9 +1045,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can get protected object as another user" do
       sherlock = users(:sherlock)
-      sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/object/#{table_objects(:first).id}?jwt=#{sherlocks_jwt}"
+      get "/v1/apps/object/#{table_objects(:first).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1070,11 +1067,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       sherlock = users(:sherlock)
       sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/object/#{resp["id"]}?jwt=#{sherlocks_jwt}"
+      get "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => sherlocks_jwt}
       resp2 = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp2["errors"][0][0])
+      assert_equal(1102, resp2["errors"][0][0])
 
       # Delete object
       delete "/v1/apps/object/#{resp["id"]}?jwt=#{matts_jwt}"
@@ -1084,9 +1081,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can get public object as logged in user" do
       sherlock = users(:sherlock)
-      sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/object/#{table_objects(:eight).id}?jwt=#{sherlocks_jwt}"
+      get "/v1/apps/object/#{table_objects(:eight).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1117,7 +1114,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["etag"])
 
-      get "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}&file=true"
+      get "/v1/apps/object/#{resp["id"]}?file=true", headers: {'Authorization' => jwt}
       resp2 = response.body
 
 		assert_response 200
@@ -1163,7 +1160,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(object)
 		assert_equal(generate_table_object_etag(object), resp["etag"])
 
-      get "/v1/apps/object/#{uuid}?jwt=#{jwt}&file=true"
+      get "/v1/apps/object/#{uuid}?file=true", headers: {'Authorization' => jwt}
       resp2 = response.body
 
 		assert_response 200
@@ -1190,7 +1187,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 		
-		get "/v1/apps/object/#{table_objects(:third).id}?jwt=#{jwt}"
+		get "/v1/apps/object/#{table_objects(:third).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		# Check the last_active field of the user
@@ -1207,10 +1204,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    # update_object tests
    test "Can't update an object when the user does not own the object" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:dav)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:dav)).body)["jwt"]
       
-		put "/v1/apps/object/#{table_objects(:second).id}?jwt=#{matts_jwt}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/object/#{table_objects(:second).id}", 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1219,11 +1216,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't update an object with too short name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", 
-				params: "{\"\":\"a\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/object/#{table_objects(:first).id}", 
+				params: {"": "a"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1232,11 +1229,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't update an object with too long name and value" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}", 
-				params: "{\"#{"n"*220}\":\"#{"n"*65500}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/object/#{table_objects(:first).id}", 
+				params: {"#{'n' * 220}": "#{'n' * 65500}"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1253,9 +1250,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_property_name = properties(:second1).name
 		second_property_value = properties(:second1).value
       
-		put "/v1/apps/object/#{table_object.id}?jwt=#{jwt}", 
-				params: "{\"#{first_property_name}\":\"#{first_property_value}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/object/#{table_object.id}", 
+				params: {"#{first_property_name}": first_property_value}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1265,11 +1262,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can update object with new visibility" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}&visibility=2", 
-				params: "{\"#{"test"}\":\"#{"test"}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/object/#{table_objects(:first).id}?visibility=2", 
+				params: {test: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
 		assert_response 200
@@ -1281,11 +1278,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't update an object with invalid visibility" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/object/#{table_objects(:first).id}?jwt=#{matts_jwt}&visibility=hello", 
-				params: "{\"#{"test"}\":\"#{"test"}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/object/#{table_objects(:first).id}?visibility=hello", 
+				params: {test: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1294,10 +1291,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 	test "Can't update object without content type header" do
 		matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{matts_jwt}", 
-				params: '{"page1": "test", "page2": "test2"}'
+		put "/v1/apps/object/#{table_objects(:third).uuid}", 
+				params: {page1: "test", page2: "test2"}.to_json,
+				headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 415
@@ -1326,9 +1324,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       new_visibility = 2
 
       # Update object
-		put "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}&visibility=#{new_visibility}&ext=#{new_ext}", 
+		put "/v1/apps/object/#{resp["id"]}?visibility=#{new_visibility}&ext=#{new_ext}", 
 				params: "<p>Hallo Welt! Dies ist eine HTML-Datei.</p>", 
-				headers: {'Content-Type' => new_content_type}
+				headers: {'Authorization' => jwt, 'Content-Type' => new_content_type}
       resp = JSON.parse response.body
 
 		assert_response 200
@@ -1346,13 +1344,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can update object with uuid" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		new_page1 = "Hallo Welt"
 		new_page2 = "Hello World"
       
-		put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{matts_jwt}", 
-				params: '{"page1": "' + new_page1 + '", "page2": "' + new_page2 + '"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/object/#{table_objects(:third).uuid}", 
+				params: {page1: new_page1, page2: new_page2}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -1389,9 +1387,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		new_ext = "mp3"
 		new_content_type = 'audio/mpeg'
 
-		put "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}&ext=#{new_ext}", 
+		put "/v1/apps/object/#{resp["id"]}?ext=#{new_ext}", 
 				params: File.open(file2Path, "rb").read, 
-				headers: {'Content-Type' => new_content_type}
+				headers: {'Authorization' => jwt, 'Content-Type' => new_content_type}
       resp2 = JSON.parse response.body
       
 		assert_response 200
@@ -1415,14 +1413,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 	
 	test "update_object does not create a new property when the value is empty" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		table_object = table_objects(:third)
 		old_properties_count = table_object.properties.count
 		properties = '{"page3": ""}'
 		
-		put "/v1/apps/object/#{table_object.id}?jwt=#{matts_jwt}", 
+		put "/v1/apps/object/#{table_object.id}", 
 				params: properties, 
-				headers: {"Content-Type" => "application/json"}
+				headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -1432,19 +1430,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 	test "update_object removes existing property when the value is empty" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		table_object = table_objects(:third)
 		old_properties_count = table_object.properties.count
-		properties = '{"page2": ""}'
+		properties = {page2: ""}
 
-		put "/v1/apps/object/#{table_object.id}?jwt=#{matts_jwt}", 
-				params: properties, 
-				headers: {"Content-Type" => "application/json"}
+		put "/v1/apps/object/#{table_object.id}", 
+				params: properties.to_json, 
+				headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
 		resp = JSON.parse response.body
 
 		assert_response 200
 		obj = TableObject.find_by_id(table_object.id)
-		assert_equal(old_properties_count-1, obj.properties.count)
+		assert_equal(old_properties_count - 1, obj.properties.count)
 	end
 
 	test "update_object should update the last_active fields of the user and the users_app" do
@@ -1457,9 +1455,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 
-		put "/v1/apps/object/#{table_objects(:third).uuid}?jwt=#{jwt}", 
-				params: '{"page1": "' + new_page1 + '", "page2": "' + new_page2 + '"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/object/#{table_objects(:third).uuid}", 
+				params: {page1: new_page1, page2: new_page2}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
 		assert_response 200
