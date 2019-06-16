@@ -2,6 +2,7 @@ class AppsController < ApplicationController
    
 	# App methods
 	def create_app
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		name = params["name"]
       desc = params["desc"]
       link_web = params["link_web"]

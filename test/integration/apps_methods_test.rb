@@ -1592,9 +1592,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create a table for the app of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:davApp).id}"
+      post "/v1/apps/table?table_name=NewTable&app_id=#{apps(:davApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1603,9 +1603,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can create a table for an app that the dev owns" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:TestApp).id}"
+      post "/v1/apps/table?table_name=NewTable&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 201
@@ -1616,9 +1616,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can create a table from the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:TestApp).id}"
+      post "/v1/apps/table?table_name=NewTable&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 201
@@ -1627,42 +1627,42 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't create a table for an app of the first dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=NewTable&app_id=#{apps(:Cards).id}"
+      post "/v1/apps/table?table_name=NewTable&app_id=#{apps(:Cards).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
       assert_same(1102, resp["errors"][0][0])
    end
    
-   test "Can't create a table with too long table_name" do
+   test "Can't create a table with too long name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=#{"n"*220}&app_id=#{apps(:TestApp).id}"
+      post "/v1/apps/table?table_name=#{"n"*220}&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 400
       assert_same(2305, resp["errors"][0][0])
    end
    
-   test "Can't a table with too short table_name" do
+   test "Can't create a table with too short name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=n&app_id=#{apps(:TestApp).id}"
+      post "/v1/apps/table?table_name=n&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 400
       assert_same(2205, resp["errors"][0][0])
    end
    
-   test "Can't create a table with invalid table_name" do
+   test "Can't create a table with invalid name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/table?jwt=#{matts_jwt}&table_name=Hello World&app_id=#{apps(:TestApp).id}"
+      post "/v1/apps/table?table_name=Hello World&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 400
