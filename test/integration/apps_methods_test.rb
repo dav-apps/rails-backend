@@ -1003,7 +1003,24 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["page1"])
       assert_not_nil(resp["properties"]["page2"])
-   end
+	end
+	
+	test "Can get object with session jwt" do
+		matt = users(:matt)
+		obj = table_objects(:first)
+		jwt = generate_session_jwt(matt, devs(:sherlock), obj.table.app_id, "schachmatt")
+		
+      get "/v1/apps/object/#{obj.id}", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+      
+		assert_response 200
+		object = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object)
+		assert_equal(table_objects(:first).id, resp["id"])
+		assert_equal(generate_table_object_etag(object), resp["etag"])
+      assert_not_nil(resp["properties"]["page1"])
+      assert_not_nil(resp["properties"]["page2"])
+	end
    
    test "Can't access an object when the user does not own the object" do
       matt = users(:matt)
@@ -1342,7 +1359,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
    end
 
-   test "Can update object with uuid" do
+   test "Can update object" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		new_page1 = "Hallo Welt"
@@ -1356,7 +1373,24 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
 		assert_equal(new_page1, resp["properties"]["page1"])
 		assert_equal(new_page2, resp["properties"]["page2"])
-   end
+	end
+	
+	test "Can update object with session jwt" do
+		matt = users(:matt)
+		obj = table_objects(:third)
+		jwt = generate_session_jwt(matt, devs(:sherlock), obj.table.app_id, "schachmatt")
+		new_page1 = "Hallo Welt"
+		new_page2 = "Hello World"
+      
+		put "/v1/apps/object/#{obj.uuid}", 
+				params: {page1: new_page1, page2: new_page2}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 200
+		assert_equal(new_page1, resp["properties"]["page1"])
+		assert_equal(new_page2, resp["properties"]["page2"])
+	end
 
    test "Can update object and replace uploaded file" do
       matt = users(:matt)
@@ -1493,11 +1527,22 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(1102, resp["errors"][0][0])
    end
    
-   test "Can delete an object that the user owns" do
+   test "Can delete an object" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
       delete "/v1/apps/object/#{table_objects(:first).id}", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+	end
+	
+	test "Can delete an object with session jwt" do
+		matt = users(:matt)
+		obj = table_objects(:first)
+		jwt = generate_session_jwt(matt, devs(:sherlock), obj.table.app_id, "schachmatt")
+      
+      delete "/v1/apps/object/#{obj.id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
