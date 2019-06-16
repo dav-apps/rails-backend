@@ -517,17 +517,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # create_object tests
    test "Missing fields in create_object" do
-      matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
       post "/v1/apps/object"
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(resp["errors"].length, 3)
+      assert_equal(resp["errors"].length, 3)
    end
    
-   test "Can't save json when using another Content-Type than application/json in create_object" do
+   test "Can't create object when using another Content-Type than application/json" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
@@ -537,8 +534,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 415
-      assert_same(1104, resp["errors"][0][0])
-   end
+      assert_equal(1104, resp["errors"][0][0])
+	end
    
    test "Table does not exist and gets created when the user is the dev" do
       matt = users(:matt)
@@ -843,7 +840,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 201
-   end
+	end
+	
+	test "Can create object with table_id and session jwt" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
+
+		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
+				params: {"test": "test"}.to_json, 
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+	end
 
    test "Can create object with uuid and table_id" do
       matt = users(:matt)

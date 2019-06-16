@@ -203,9 +203,21 @@ class ValidationService
 		user.email_confirmation_token != token ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_jwt_signature(jwt)
+   def self.validate_jwt_signature(jwt, session_id = 0)
+      secret = ENV['JWT_SECRET']
+      if session_id != 0
+         session = Session.find_by_id(session_id)
+         if !session
+            # Session does not exist
+            error_code = 2814
+            return [{success: false, error: [error_code, get_error_message(error_code)], status: 401}]
+         end
+
+         secret = session.secret
+      end
+
 		begin
-			decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+			decoded_jwt = JWT.decode jwt, secret, true, { :algorithm => ENV['JWT_ALGORITHM'] }
 			[{success: true}, decoded_jwt]
 		rescue JWT::ExpiredSignature
 			# JWT expired

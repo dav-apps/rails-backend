@@ -45,6 +45,14 @@ class ActiveSupport::TestCase
       get "/v1/auth/login?email=#{user.email}&password=#{password}&auth=" + generate_auth_token(dev)
       response
    end
+
+   def generate_session_jwt(user, dev, app_id, password)
+		post "/v1/auth/session", 
+				headers: {'Authorization' => generate_auth_token(devs(:sherlock)), 'Content-Type' => 'application/json'},
+				params: {email: user.email, password: password, api_key: dev.api_key, app_id: app_id, device_name: "Testdevice", device_type: "Testdevice", device_os: "Ubuntu"}.to_json
+		resp = JSON.parse(response.body)
+		return resp["jwt"]
+   end
    
    def generate_auth_token(dev)
       dev.api_key + "," + Base64.strict_encode64(OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid))

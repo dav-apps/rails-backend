@@ -411,7 +411,7 @@ class AppsController < ApplicationController
 				raise RuntimeError, errors.to_json
 			end
 
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
