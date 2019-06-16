@@ -17,34 +17,34 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Dev does not exist in create_app" do
       matt = users(:matt)
       
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
       sherlock = devs(:sherlock)
       sherlock.destroy!
       
-      post "/v1/apps/app?jwt=#{matts_jwt}&name=Test&desc=Hello World"
+      post "/v1/apps/app?name=Test&desc=Hello World", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 404
       assert_same(resp["errors"][0][0], 2802)
    end
    
-   test "can't create an app from outside the website" do
+   test "Can't create an app from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      post "/v1/apps/app?jwt=#{matts_jwt}&name=Test&desc=Hello World"
+      post "/v1/apps/app?name=Test&desc=Hello World", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
       assert_same(resp["errors"][0][0], 1102)
    end
    
-   test "can't create an app with too short name and description" do
+   test "Can't create an app with too short name and description" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/apps/app?jwt=#{matts_jwt}&name=s&desc=s"
+      post "/v1/apps/app?name=s&desc=s", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -53,11 +53,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_same(resp["errors"][1][0], 2204)
    end
    
-   test "can't create an app with too long name and description" do
+   test "Can't create an app with too long name and description" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{"o"*35}&desc=" + "o"*510
+      post "/v1/apps/app?name=#{"o"*35}&desc=" + "o"*510, headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -68,19 +68,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can create and delete app from website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
       testapp_name = "testapp1231"
       testapp_desc = "asdasdasdasdasd"
       
-      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{testapp_name}&desc=#{testapp_desc}"
+      post "/v1/apps/app?name=#{testapp_name}&desc=#{testapp_desc}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 201
       assert_equal(testapp_name, resp["name"])
       assert_equal(testapp_desc, resp["description"])
       
-      delete "/v1/apps/app/#{resp["id"]}?jwt=#{matts_jwt}"
+      delete "/v1/apps/app/#{resp["id"]}", headers: {'Authorization' => jwt}
       resp2 = JSON.parse response.body
       
       assert_response 200
@@ -88,14 +88,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can create app with links" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
       testapp_name = "testapp11231"
       testapp_desc = "asdasdasdasd"
       link_web = "http://dav-apps.tech"
       link_play = "http://dav-apps.tech"
 
-      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{testapp_name}&desc=#{testapp_desc}&link_web=#{link_web}&link_play=#{link_play}"
+      post "/v1/apps/app?name=#{testapp_name}&desc=#{testapp_desc}&link_web=#{link_web}&link_play=#{link_play}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -104,7 +104,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(link_web, resp["link_web"])
       assert_equal(link_play, resp["link_play"])
 
-      delete "/v1/apps/app/#{resp["id"]}?jwt=#{matts_jwt}"
+      delete "/v1/apps/app/#{resp["id"]}", headers: {'Authorization' => jwt}
       resp2 = JSON.parse response.body
       
       assert_response 200
@@ -112,20 +112,20 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can't create app with invalid link" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
       testapp_name = "testapp11231"
       testapp_desc = "asdasdasdasd"
       link_web = "blablabla"
       link_windows = "alert('Hello')"
 
-      post "/v1/apps/app?jwt=#{matts_jwt}&name=#{testapp_name}&desc=#{testapp_desc}&link_web=#{link_web}&link_windows=#{link_windows}"
+      post "/v1/apps/app?name=#{testapp_name}&desc=#{testapp_desc}&link_web=#{link_web}&link_windows=#{link_windows}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(resp["errors"].length, 2)
-      assert_same(resp["errors"][0][0], 2402)
-      assert_same(resp["errors"][1][0], 2404)
+      assert_equal(resp["errors"].length, 2)
+      assert_equal(resp["errors"][0][0], 2402)
+      assert_equal(resp["errors"][1][0], 2404)
    end
    # End create_app tests
    
@@ -135,26 +135,26 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(resp["errors"].length, 1)
+      assert_equal(resp["errors"].length, 1)
    end
    
    test "App does not exist in get_app" do
       cards_id = apps(:Cards).id
       apps(:Cards).destroy!
       
-      matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/app/#{cards_id}?jwt=#{matts_jwt}"
+      get "/v1/apps/app/#{cards_id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 404
-      assert_same(2803, resp["errors"][0][0])
+      assert_equal(2803, resp["errors"][0][0])
    end
    
    test "get_app can't be called from outside the website" do
-      matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:dav)).body)["jwt"]
+      jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:dav)).body)["jwt"]
       
-      get "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/app/#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -162,18 +162,18 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "get_app can be called from the appropriate dev" do
-      matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/app/#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
    end
    
    test "Can get the tables of the app" do
-      matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/apps/app/#{apps(:TestApp).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/app/#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -181,9 +181,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't get an app of the first dev as another dev" do
-      matts_jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/app/#{apps(:Cards).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/app/#{apps(:Cards).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403

@@ -1,5 +1,4 @@
 class AppsController < ApplicationController
-   
 	# App methods
 	def create_app
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
@@ -8,7 +7,6 @@ class AppsController < ApplicationController
       link_web = params["link_web"]
       link_play = params["link_play"]
       link_windows = params["link_windows"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
@@ -104,8 +102,8 @@ class AppsController < ApplicationController
 	end
 
 	def get_app
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		app_id = params["id"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
