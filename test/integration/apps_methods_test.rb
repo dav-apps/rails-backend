@@ -204,7 +204,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		get "/v1/apps/app/#{apps(:TestApp).id}/active_users?jwt=#{jwt}"
+		get "/v1/apps/app/#{apps(:TestApp).id}/active_users", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
@@ -215,7 +215,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		get "/v1/apps/app/#{apps(:Cards).id}/active_users?jwt=#{jwt}"
+		get "/v1/apps/app/#{apps(:Cards).id}/active_users", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
@@ -239,7 +239,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 									count_monthly: 9,
 									count_yearly: 20)
 
-		get "/v1/apps/app/#{app.id}/active_users?jwt=#{jwt}"
+		get "/v1/apps/app/#{app.id}/active_users", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -266,7 +266,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		first_active_user = active_app_users(:first_active_testapp_user)
 		second_active_user = active_app_users(:second_active_testapp_user)
 
-		get "/v1/apps/app/#{app.id}/active_users?jwt=#{jwt}&start=#{start_timestamp}&end=#{end_timestamp}"
+		get "/v1/apps/app/#{app.id}/active_users?start=#{start_timestamp}&end=#{end_timestamp}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -296,7 +296,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can get all apps from the website" do
       auth = generate_auth_token(devs(:sherlock))
       
-      get "/v1/apps/apps/all?auth=#{auth}"
+      get "/v1/apps/apps/all", headers: {'Authorization' => auth}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -305,7 +305,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    test "Can't get all apps from outside the website" do
       auth = generate_auth_token(devs(:matt))
       
-      get "/v1/apps/apps/all?auth=#{auth}"
+      get "/v1/apps/apps/all", headers: {'Authorization' => auth}
       resp = JSON.parse response.body
       
       assert_response 403

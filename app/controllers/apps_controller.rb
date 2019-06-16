@@ -159,8 +159,8 @@ class AppsController < ApplicationController
 	end
 
 	def get_active_users_of_app
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		app_id = params["id"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s').beginning_of_day : (Time.now - 1.month).beginning_of_day
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s').beginning_of_day : Time.now.beginning_of_day
 
@@ -207,7 +207,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_all_apps
-		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
 		
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
