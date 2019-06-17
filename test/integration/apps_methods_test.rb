@@ -2643,8 +2643,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
-      assert_same(2110, resp["errors"][1][0])
+      assert_equal(2102, resp["errors"][0][0])
+      assert_equal(2110, resp["errors"][1][0])
 	end
 	
 	test "get_all_notifications should return all notifications of the app and user" do
@@ -2657,22 +2657,53 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       notification2FirstProperty = notification_properties(:TestNotification2FirstProperty)
       notification2SecondProperty = notification_properties(:TestNotification2SecondProperty)
 
-		get "/v1/apps/notifications?jwt=#{jwt}&app_id=#{apps(:TestApp).id}"
+		get "/v1/apps/notifications?app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
 		assert_response 200
-		assert_same(notification1.id, resp["notifications"][1]["id"])
+		assert_equal(notification1.id, resp["notifications"][1]["id"])
 		assert_equal(notification1.uuid, resp["notifications"][1]["uuid"])
-		assert_same(notification1.time.to_i, resp["notifications"][1]["time"])
-		assert_same(notification1.interval, resp["notifications"][1]["interval"])
+		assert_equal(notification1.time.to_i, resp["notifications"][1]["time"])
+		assert_equal(notification1.interval, resp["notifications"][1]["interval"])
 
       assert_equal(notification1FirstProperty.value, resp["notifications"][1]["properties"][notification1FirstProperty.name])
       assert_equal(notification1SecondProperty.value, resp["notifications"][1]["properties"][notification1SecondProperty.name])
 
-		assert_same(notification2.id, resp["notifications"][0]["id"])
+		assert_equal(notification2.id, resp["notifications"][0]["id"])
 		assert_equal(notification2.uuid, resp["notifications"][0]["uuid"])
-		assert_same(notification2.time.to_i, resp["notifications"][0]["time"])
-		assert_same(notification2.interval, resp["notifications"][0]["interval"])
+		assert_equal(notification2.time.to_i, resp["notifications"][0]["time"])
+		assert_equal(notification2.interval, resp["notifications"][0]["interval"])
+
+      assert_equal(notification2FirstProperty.value, resp["notifications"][0]["properties"][notification2FirstProperty.name])
+      assert_equal(notification2SecondProperty.value, resp["notifications"][0]["properties"][notification2SecondProperty.name])
+	end
+
+	test "get_all_notifications with session jwt should return all notifications of the app and user" do
+		matt = users(:matt)
+		notification1 = notifications(:TestNotification)
+      notification2 = notifications(:TestNotification2)
+      notification1FirstProperty = notification_properties(:TestNotificationFirstProperty)
+      notification1SecondProperty = notification_properties(:TestNotificationSecondProperty)
+      notification2FirstProperty = notification_properties(:TestNotification2FirstProperty)
+		notification2SecondProperty = notification_properties(:TestNotification2SecondProperty)
+		jwt = generate_session_jwt(matt, devs(:matt), notification1.app_id, "schachmatt")
+
+		get "/v1/apps/notifications?app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(notification1.id, resp["notifications"][1]["id"])
+		assert_equal(notification1.uuid, resp["notifications"][1]["uuid"])
+		assert_equal(notification1.time.to_i, resp["notifications"][1]["time"])
+		assert_equal(notification1.interval, resp["notifications"][1]["interval"])
+
+      assert_equal(notification1FirstProperty.value, resp["notifications"][1]["properties"][notification1FirstProperty.name])
+      assert_equal(notification1SecondProperty.value, resp["notifications"][1]["properties"][notification1SecondProperty.name])
+
+		assert_equal(notification2.id, resp["notifications"][0]["id"])
+		assert_equal(notification2.uuid, resp["notifications"][0]["uuid"])
+		assert_equal(notification2.time.to_i, resp["notifications"][0]["time"])
+		assert_equal(notification2.interval, resp["notifications"][0]["interval"])
 
       assert_equal(notification2FirstProperty.value, resp["notifications"][0]["properties"][notification2FirstProperty.name])
       assert_equal(notification2SecondProperty.value, resp["notifications"][0]["properties"][notification2SecondProperty.name])
@@ -2682,11 +2713,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		
-		get "/v1/apps/notifications?jwt=#{jwt}&app_id=#{apps(:TestApp).id}"
+		get "/v1/apps/notifications?app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 	# End get_all_notifications tests
 	
@@ -2708,8 +2739,24 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		new_time = Time.now.to_i
 		new_interval = 123123
 
-		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}&time=#{new_time}&interval=#{new_interval}",
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/notification/#{notification.uuid}?time=#{new_time}&interval=#{new_interval}",
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(new_time, resp["time"])
+		assert_equal(new_interval, resp["interval"])
+	end
+
+	test "Can update a notification with session jwt" do
+		matt = users(:matt)
+		notification = notifications(:TestNotification)
+		jwt = generate_session_jwt(matt, devs(:matt), notification.app_id, "schachmatt")
+		new_time = Time.now.to_i
+		new_interval = 123123
+
+		put "/v1/apps/notification/#{notification.uuid}?time=#{new_time}&interval=#{new_interval}",
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -2728,9 +2775,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		third_property_name = "new_key"
 		third_property_value = "Hello World!"
 
-		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
-				headers: {'Content-Type' => 'application/json'},
-				params: "{\"#{first_property_name}\": \"#{first_property_value}\", \"#{second_property_name}\": \"#{second_property_value}\", \"#{third_property_name}\": \"#{third_property_value}\"}"
+		put "/v1/apps/notification/#{notification.uuid}",
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+				params: {"#{first_property_name}": first_property_value, "#{second_property_name}": second_property_value, "#{third_property_name}": third_property_value}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -2748,9 +2795,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_property_name = notification_properties(:TestNotificationSecondProperty).name
 		second_property_value = notification_properties(:TestNotificationSecondProperty).value
 
-		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
-				headers: {'Content-Type' => 'application/json'},
-				params: "{\"#{first_property_name}\": \"#{first_property_value}\"}"
+		put "/v1/apps/notification/#{notification.uuid}",
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+				params: {"#{first_property_name}": first_property_value}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -2766,9 +2813,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_property_name = notification_properties(:TestNotificationSecondProperty).name
 		second_property_value = notification_properties(:TestNotificationSecondProperty).value
 		
-		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
-				headers: {'Content-Type' => 'application/json'},
-				params: "{\"#{first_property_name}\": \"\"}"
+		put "/v1/apps/notification/#{notification.uuid}",
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+				params: {"#{first_property_name}": ""}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -2781,9 +2828,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		notification = notifications(:TestNotification)
 		first_property_name = notification_properties(:TestNotificationFirstProperty).name
 
-		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
-				headers: {'Content-Type' => 'application/json'},
-				params: "{\"#{first_property_name}\": \"#{ "a" * 65100 }\"}"
+		put "/v1/apps/notification/#{notification.uuid}",
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+				params: {"#{first_property_name}": "#{'a' * 65100}"}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 400
@@ -2796,9 +2843,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		notification = notifications(:TestNotification)
 		first_property_name = notification_properties(:TestNotificationFirstProperty).name
 
-		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
-				headers: {'Content-Type' => 'application/json'},
-				params: "{\"#{ "test" * 100 }\": \"blabla\"}"
+		put "/v1/apps/notification/#{notification.uuid}",
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+				params: {"#{'test' * 100}": "blabla"}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 400
@@ -2811,12 +2858,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		notification = notifications(:TestNotification)
 		first_property_name = notification_properties(:TestNotificationFirstProperty).name
 
-		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
-				params: "{\"#{first_property_name}\": \"blabla\"}"
+		put "/v1/apps/notification/#{notification.uuid}",
+				headers: {'Authorization' => jwt},
+				params: {"#{first_property_name}": "blabla"}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 415
-		assert_same(1104, resp["errors"][0][0])
+		assert_equal(1104, resp["errors"][0][0])
 	end
 
 	test "Can't update a notification that does not exist" do
@@ -2826,8 +2874,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		property_name = "title"
 		property_value ="Test"
 
-		put "/v1/apps/notification/#{uuid}?jwt=#{jwt}",
-				params: "{\"#{property_name}\": \"#{property_value}\"}"
+		put "/v1/apps/notification/#{uuid}",
+				headers: {'Authorization' => jwt},
+				params: {"#{property_name}": property_value}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 404
@@ -2841,8 +2890,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		property_name = "title"
 		property_value ="Test"
 
-		put "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}",
-				params: "{\"#{property_name}\": \"#{property_value}\"}"
+		put "/v1/apps/notification/#{notification.uuid}",
+				headers: {'Authorization' => jwt},
+				params: {"#{property_name}": property_value}
 		resp = JSON.parse response.body
 
 		assert_response 403
@@ -2856,7 +2906,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't delete a notification that does not exist" do
@@ -2864,11 +2914,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      delete "/v1/apps/notification/#{uuid}?jwt=#{jwt}"
+      delete "/v1/apps/notification/#{uuid}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 404
-      assert_same(2812, resp["errors"][0][0])
+      assert_equal(2812, resp["errors"][0][0])
    end
 
 	test "Can't delete the notification of another user" do
@@ -2876,11 +2926,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		notification = notifications(:TestNotification)
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 
-		delete "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
+		delete "/v1/apps/notification/#{notification.uuid}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
    test "Can delete a notification" do
@@ -2888,7 +2938,18 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       notification = notifications(:TestNotification)
 		
-		delete "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
+		delete "/v1/apps/notification/#{notification.uuid}", headers: {'Authorization' => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 200
+	end
+	
+	test "Can delete a notification with session jwt" do
+		matt = users(:matt)
+		notification = notifications(:TestNotification)
+		jwt = generate_session_jwt(matt, devs(:matt), notification.app_id, "schachmatt")
+		
+		delete "/v1/apps/notification/#{notification.uuid}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
