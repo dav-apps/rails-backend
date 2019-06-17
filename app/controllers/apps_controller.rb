@@ -1181,8 +1181,8 @@ class AppsController < ApplicationController
 	end
 
 	def get_table_by_id
-		table_id = params["id"]      
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		table_id = params["id"]
 		
 		default_count = 100
 		default_page = 1
@@ -1205,7 +1205,7 @@ class AppsController < ApplicationController
 				raise RuntimeError, errors.to_json
 			end
 
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
@@ -1272,8 +1272,8 @@ class AppsController < ApplicationController
 	end
 
 	def update_table
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		table_id = params["id"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
@@ -1342,8 +1342,8 @@ class AppsController < ApplicationController
 	end
 
 	def delete_table
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		table_id = params["id"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)

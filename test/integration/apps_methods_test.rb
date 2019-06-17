@@ -1797,40 +1797,57 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't get the table of the app of another dev by id" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/table/#{tables(:davTable).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can't get the table of the app of another dev by id from the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/table/#{tables(:davTable).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can get the table by id and only the entries of the current user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/table/#{tables(:card).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/table/#{tables(:card).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(apps(:Cards).id, resp["app_id"])
+      assert_equal(apps(:Cards).id, resp["app_id"])
+      resp["table_objects"].each do |e|
+         obj = TableObject.find_by_id(e["id"])
+			assert_not_nil(obj)
+			assert_equal(generate_table_object_etag(obj), e["etag"])
+			assert_same(users(:matt).id, obj.user.id)
+      end
+	end
+	
+	test "Can get the table by id and only the entries of the current user with session jwt" do
+      matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
+      
+      get "/v1/apps/table/#{tables(:card).id}", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(apps(:Cards).id, resp["app_id"])
       resp["table_objects"].each do |e|
          obj = TableObject.find_by_id(e["id"])
 			assert_not_nil(obj)
@@ -1841,9 +1858,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
    test "Can get the table of the app of the own dev by id from the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}"
+      get "/v1/apps/table/#{tables(:note).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1851,27 +1868,27 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 	test "Can get a table by id and in pages" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		count = 1
 		page = 1
 		
-		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}&count=#{count}&page=#{page}"
+		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&count=#{count}&page=#{page}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
-		assert_same(count, resp["table_objects"].count)
+		assert_equal(count, resp["table_objects"].count)
 		assert_equal(table_objects(:first).uuid, resp["table_objects"][0]["uuid"])
 	end
 
 	test "Can get the second page of a table by id" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		count = 1
 		page = 2
 		
-		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}&count=#{count}&page=#{page}"
+		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&count=#{count}&page=#{page}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
-		assert_same(count, resp["table_objects"].count)
+		assert_equal(count, resp["table_objects"].count)
 		assert_equal(table_objects(:third).uuid, resp["table_objects"][0]["uuid"])
 	end
 
@@ -1883,7 +1900,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 
-		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&jwt=#{jwt}"
+		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -1902,146 +1919,146 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
    
    test "Can't use another content type but json in update_table" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"test\"}", 
-				headers: {'Content-Type' => 'application/xml'}
+		put "/v1/auth/user", 
+				params: {name: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
-      assert_same(1104, resp["errors"][0][0])
+      assert_equal(1104, resp["errors"][0][0])
    end
    
    test "update_table can't be called from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/table/#{tables(:note).id}", 
+				params: {name: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't update the table of the app of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/table/#{tables(:davTable).id}", 
+				params: {name: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
-   test "Can't update a table with too long table name" do
+   test "Can't update a table with too long name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"#{"n"*220}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/table/#{tables(:note).id}", 
+				params: {name: "#{'n' * 220}"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2305, resp["errors"][0][0])
+      assert_equal(2305, resp["errors"][0][0])
    end
    
-   test "Can't update a table with too short table name" do
+   test "Can't update a table with too short name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"t\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/table/#{tables(:note).id}", 
+				params: {name: "t"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2205, resp["errors"][0][0])
+      assert_equal(2205, resp["errors"][0][0])
    end
    
-   test "Can't update a table with invalid table name" do
+   test "Can't update a table with invalid name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"Test name\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/table/#{tables(:note).id}", 
+				params: {name: "Test name"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2501, resp["errors"][0][0])
+      assert_equal(2501, resp["errors"][0][0])
    end
    
    test "Can get the table properties after updating" do
       new_name = "TestName"
       
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}", #
-				params: "{\"name\":\"#{new_name}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/table/#{tables(:note).id}", 
+				params: {name: new_name}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(tables(:note).id, resp["id"])
+      assert_equal(tables(:note).id, resp["id"])
       assert_equal(new_name, resp["name"])
    end
    
    test "Can't update a table of the first dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/apps/table/#{tables(:card).id}?jwt=#{matts_jwt}", 
-				params: "{\"name\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/apps/table/#{tables(:card).id}", 
+				params: {name: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    # End update_table tests
    
    # delete_table tests
    test "delete_table can't be called from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      delete "/v1/apps/table/#{tables(:note).id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/table/#{tables(:note).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't delete the table of an app of another user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/apps/table/#{tables(:davTable).id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/table/#{tables(:davTable).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Table gets deleted" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       table_id = tables(:note).id
       
-      delete "/v1/apps/table/#{table_id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/table/#{table_id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -2050,13 +2067,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't delete tables of the first dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/apps/table/#{tables(:card).id}?jwt=#{matts_jwt}"
+      delete "/v1/apps/table/#{tables(:card).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    # End delete_table tests
    
