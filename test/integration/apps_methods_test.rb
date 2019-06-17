@@ -2083,32 +2083,60 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
    
    test "Can't create access tokens for objects of another user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       object = table_objects(:fourth)
       
-      post "/v1/apps/object/#{object.id}/access_token?jwt=#{matts_jwt}"
+      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't create access tokens for objects of the apps of another dev" do
       sherlock = users(:sherlock)
-      sherlocks_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       object = table_objects(:seventh)
 
-      post "/v1/apps/object/#{object.id}/access_token?jwt=#{sherlocks_jwt}"
+      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
-   end
+      assert_equal(1102, resp["errors"][0][0])
+	end
+	
+	test "Can create access token" do
+		matt = users(:matt)
+		obj = table_objects(:first)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 201
+
+		access_token = AccessToken.find_by_id(resp["id"])
+		assert_equal(resp["token"], access_token.token)
+	end
+
+	test "Can create access token with session jwt" do
+		matt = users(:matt)
+		obj = table_objects(:first)
+		jwt = generate_session_jwt(matt, devs(:sherlock), obj.table.app_id, "schachmatt")
+
+		post "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 201
+
+		access_token = AccessToken.find_by_id(resp["id"])
+		assert_equal(resp["token"], access_token.token)
+	end
    # End create_access_token tests
 
    # get_access_token tests
@@ -2117,7 +2145,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can get access token" do
@@ -2125,7 +2153,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       obj = table_objects(:sixth)
 
-      get "/v1/apps/object/#{obj.id}/access_token?jwt=#{jwt}"
+      get "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_not_nil(resp["access_token"][0]["id"])
+	end
+	
+	test "Can get access token with session jwt" do
+      sherlock = users(:sherlock)
+		obj = table_objects(:sixth)
+		jwt = generate_session_jwt(sherlock, devs(:sherlock), obj.table.app_id, "sherlocked")
+
+      get "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -2137,11 +2177,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       obj = table_objects(:third)
 
-      get "/v1/apps/object/#{obj.id}/access_token?jwt=#{jwt}"
+      get "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can't get access token of object of the app of another dev" do
@@ -2149,11 +2189,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
       obj = table_objects(:seventh)
 
-      get "/v1/apps/object/#{obj.id}/access_token?jwt=#{jwt}"
+      get "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    # End get_access_token
 
@@ -2163,7 +2203,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can add access token to object" do
@@ -2172,11 +2212,26 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       access_token = access_tokens(:first_test_token)
       object = table_objects(:sixth)
 
-      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}?jwt=#{jwt}"
+      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 200
-      assert_equal(access_token.id, resp["id"])
+		assert_equal(access_token.id, resp["id"])
+		assert_equal(access_token.token, resp["token"])
+	end
+	
+	test "Can add access token to object with session jwt" do
+      sherlock = users(:sherlock)
+      access_token = access_tokens(:first_test_token)
+		object = table_objects(:sixth)
+		jwt = generate_session_jwt(sherlock, devs(:sherlock), object.table.app_id, "sherlocked")
+
+      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+
+      assert_response 200
+		assert_equal(access_token.id, resp["id"])
+		assert_equal(access_token.token, resp["token"])
    end
 
    test "Can't add access token to object of another user" do
@@ -2185,11 +2240,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       access_token = access_tokens(:first_test_token)
       object = table_objects(:third)
 
-      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}?jwt=#{jwt}"
+      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can't add access token to object of the table of another dev" do
@@ -2198,21 +2253,21 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       access_token = access_tokens(:first_test_token)
       object = table_objects(:seventh)
 
-      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}?jwt=#{jwt}"
+      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    # End add_access_token_to_object tests
 
    # remove_access_token_from_object tests
-   test "Missing fields in remove_access_token_from_objects" do
+   test "Missing fields in remove_access_token_from_object" do
       put "/v1/apps/object/1/access_token/token"
       resp = JSON.parse response.body
 
       assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Access token will be destroyed in remove_access_token_from_object" do
@@ -2221,7 +2276,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       object = table_objects(:third)
 
       # Create new access_token and add it to an object
-      post "/v1/apps/object/#{object.id}/access_token?jwt=#{jwt}"
+      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -2235,7 +2290,35 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(resp2["id"], object.id)
 
       # Remove the access token from the object and check if the access token was deleted
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => jwt}
+      assert_response 200
+      
+      get "/v1/apps/object/#{object.id}?access_token=#{token}"
+      resp3 = JSON.parse response.body
+      assert_response 403
+	end
+	
+	test "Access token will be destroyed in remove_access_token_from_object with session jwt" do
+      matt = users(:matt)
+		object = table_objects(:third)
+		jwt = generate_session_jwt(matt, devs(:sherlock), object.table.app_id, "schachmatt")
+
+      # Create new access_token and add it to an object
+      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      token = resp["token"]
+
+      # Try to get the object as not logged in user
+      get "/v1/apps/object/#{object.id}?access_token=#{token}"
+      resp2 = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(resp2["id"], object.id)
+
+      # Remove the access token from the object and check if the access token was deleted
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => jwt}
       assert_response 200
       
       get "/v1/apps/object/#{object.id}?access_token=#{token}"
@@ -2251,7 +2334,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       sherlock_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 
       # Create new access_token and add it to an object
-      post "/v1/apps/object/#{object.id}/access_token?jwt=#{matt_jwt}"
+      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => matt_jwt}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -2265,14 +2348,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(resp2["id"], object.id)
 
       # Try to remove the access token as another user
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{sherlock_jwt}"
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => sherlock_jwt}
       resp3 = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp3["errors"][0][0])
+      assert_equal(1102, resp3["errors"][0][0])
 
       # Remove the access token
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{matt_jwt}"
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => matt_jwt}
       assert_response 200
    end
 
@@ -2283,7 +2366,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       object = table_objects(:eight)
 
       # Create new access_token and add it to an object
-      post "/v1/apps/object/#{object.id}/access_token?jwt=#{mattXmatt_jwt}"
+      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => mattXmatt_jwt}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -2297,14 +2380,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(resp2["id"], object.id)
 
       # Try to remove the access token with another jwt
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{mattXsherlock_jwt}"
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => mattXsherlock_jwt}
       resp3 = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp3["errors"][0][0])
+      assert_equal(1102, resp3["errors"][0][0])
 
       # Remove the access token
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}?jwt=#{mattXmatt_jwt}"
+      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => mattXmatt_jwt}
       assert_response 200
    end
    # End remove_access_token_from_object tests
