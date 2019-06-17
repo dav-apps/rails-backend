@@ -594,42 +594,42 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't get app from outside the website" do
       app = apps(:TestApp)
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      get "/v1/analytics/app/#{app.id}?jwt=#{matts_jwt}"
+      get "/v1/analytics/app/#{app.id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can't get app of another dev" do
       app = apps(:Cards)
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      get "/v1/analytics/app/#{app.id}?jwt=#{matts_jwt}"
+      get "/v1/analytics/app/#{app.id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can't get app that does not exist" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-      get "/v1/analytics/app/2?jwt=#{matts_jwt}"
+      get "/v1/analytics/app/2", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 404
-      assert_same(2803, resp["errors"][0][0])
+      assert_equal(2803, resp["errors"][0][0])
    end
 
    test "Can get app" do
@@ -637,7 +637,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       sherlock = users(:sherlock)
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 
-      get "/v1/analytics/app/#{app.id}?jwt=#{jwt}"
+      get "/v1/analytics/app/#{app.id}", headers: {'Authorization' => jwt}
 
       assert_response 200
    end
@@ -649,36 +649,36 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't get users from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      get "/v1/analytics/users?jwt=#{matts_jwt}"
+      get "/v1/analytics/users", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can't get users as another user but the first one" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-      get "/v1/analytics/users?jwt=#{matts_jwt}"
+      get "/v1/analytics/users", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can get users" do
       sherlock = users(:sherlock)
       jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 
-      get "/v1/analytics/users?jwt=#{jwt}"
+      get "/v1/analytics/users", headers: {'Authorization' => jwt}
 
       assert_response 200
    end
@@ -690,29 +690,29 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
 	end
 
 	test "Can't get active users from outside the website" do
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		
-		get "/v1/analytics/active_users?jwt=#{jwt}"
+		get "/v1/analytics/active_users", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can't get active users as another user but the first one" do
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		
-		get "/v1/analytics/active_users?jwt=#{jwt}"
+		get "/v1/analytics/active_users", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can get active users" do
@@ -730,7 +730,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 										count_monthly: 8,
 										count_yearly: 21)
 		
-		get "/v1/analytics/active_users?jwt=#{jwt}"
+		get "/v1/analytics/active_users", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -757,7 +757,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		first_active_user = active_users(:first_active_user)
 		second_active_user = active_users(:second_active_user)
 
-		get "/v1/analytics/active_users?jwt=#{jwt}&start=#{start_timestamp}&end=#{end_timestamp}"
+		get "/v1/analytics/active_users?start=#{start_timestamp}&end=#{end_timestamp}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 200
