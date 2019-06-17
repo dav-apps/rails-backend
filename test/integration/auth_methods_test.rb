@@ -86,8 +86,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(resp["errors"][0][0], 2102)
-      assert_same(resp["errors"][1][0], 2118)
+      assert_equal(resp["errors"][0][0], 2102)
+      assert_equal(resp["errors"][1][0], 2118)
    end
 
    test "Can't login by jwt from outside the website" do
@@ -95,11 +95,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       cato = users(:cato)
       cato_jwt = (JSON.parse login_user(cato, "123456", matt_dev).body)["jwt"]
 
-      get "/v1/auth/login_by_jwt?api_key=#{matt_dev.api_key}&jwt=#{cato_jwt}"
+      get "/v1/auth/login_by_jwt?api_key=#{matt_dev.api_key}", headers: {'Authorization' => cato_jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(resp["errors"][0][0], 1102)
+      assert_equal(resp["errors"][0][0], 1102)
    end
 
    test "Can login by jwt" do
@@ -107,7 +107,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       cato = users(:cato)
       website_jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
 
-      get "/v1/auth/login_by_jwt?api_key=#{matt_dev.api_key}&jwt=#{website_jwt}"
+      get "/v1/auth/login_by_jwt?api_key=#{matt_dev.api_key}", headers: {'Authorization' => website_jwt}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -124,7 +124,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp3 = JSON.parse response.body
       
       assert_response 403
-      assert_same(resp3["errors"][0][0], 1102)
+      assert_equal(resp3["errors"][0][0], 1102)
    end
    # End login_by_jwt tests
    

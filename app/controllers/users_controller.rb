@@ -137,8 +137,8 @@ class UsersController < ApplicationController
 	end
 
 	define_method :login_by_jwt do
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		api_key = params[:api_key]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
