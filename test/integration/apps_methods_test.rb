@@ -2415,39 +2415,40 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert(response.status == 400 || response.status ==  401)
-		assert_same(2102, resp["errors"][0][0])
-		assert_same(2110, resp["errors"][1][0])
-		assert_same(2121, resp["errors"][2][0])
+		assert_equal(2102, resp["errors"][0][0])
+		assert_equal(2110, resp["errors"][1][0])
+		assert_equal(2121, resp["errors"][2][0])
 	end
 
 	test "Can't create a notification for the app of another dev" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		post "/v1/apps/notification?jwt=#{matts_jwt}&app_id=#{apps(:davApp).id}&time=123213123"
+		post "/v1/apps/notification?app_id=#{apps(:davApp).id}&time=123213123", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can't create a notification when using another Content-Type than application/json" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		time = 1231312
 		interval = 121221
 
-		post "/v1/apps/notification?jwt=#{matts_jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}",
-				params: '{"test": "testvalue"}'
+		post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}",
+            params: {test: "testvalue"}.to_json,
+            headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 415
-		assert_same(1104, resp["errors"][0][0])
+		assert_equal(1104, resp["errors"][0][0])
 	end
 
 	test "Can create a notification with interval and body" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		time = 1231312
 		interval = 121221
 		first_property_name = "test"
@@ -2455,9 +2456,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_property_name = "bla"
 		second_property_value = "testtest"
 
-		post "/v1/apps/notification?jwt=#{matts_jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}",
-				params: "{\"#{first_property_name}\": \"#{first_property_value}\", \"#{second_property_name}\": \"#{second_property_value}\"}",
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}",
+            params: {"#{first_property_name}": first_property_value, "#{second_property_name}": second_property_value}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
       assert_response 201
@@ -2465,7 +2466,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		notification = Notification.find_by_id(resp["id"])
       assert_not_nil(notification)
       assert_not_nil(resp["uuid"])
-		assert_same(interval, resp["interval"])
+		assert_equal(interval, resp["interval"])
 
 		first_property = notification.notification_properties.first
 		second_property = notification.notification_properties.second
@@ -2482,15 +2483,34 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       time = Time.now.to_i
       uuid = SecureRandom.uuid
 
-      post "/v1/apps/notification?jwt=#{jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&uuid=#{uuid}",
-            headers: {'Content-Type' => 'application/json'}
+      post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&uuid=#{uuid}",
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 201
       notification = Notification.find_by_id(resp["id"])
       assert_not_nil(notification)
-      assert_same(0, notification.interval)
-      assert_same(time, notification.time.to_time.to_i)
+      assert_equal(0, notification.interval)
+      assert_equal(time, notification.time.to_time.to_i)
+      assert_equal(uuid, notification.uuid)
+   end
+
+   test "Can create a notification with uuid and session jwt" do
+		matt = users(:matt)
+		app = apps(:TestApp)
+      jwt = generate_session_jwt(matt, devs(:matt), app.id, "schachmatt")
+      time = Time.now.to_i
+      uuid = SecureRandom.uuid
+
+      post "/v1/apps/notification?app_id=#{app.id}&time=#{time}&uuid=#{uuid}",
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+      
+      assert_response 201
+      notification = Notification.find_by_id(resp["id"])
+      assert_not_nil(notification)
+      assert_equal(0, notification.interval)
+      assert_equal(time, notification.time.to_time.to_i)
       assert_equal(uuid, notification.uuid)
    end
 
@@ -2500,12 +2520,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       time = Time.now.to_i
       uuid = notifications(:TestNotification).uuid
 
-      post "/v1/apps/notification?jwt=#{jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&uuid=#{uuid}",
-            headers: {'Content-Type' => 'application/json'}
+      post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&uuid=#{uuid}",
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(2704, resp["errors"][0][0])
+      assert_equal(2704, resp["errors"][0][0])
    end
 
    test "Can't create a notification with too long property name" do
@@ -2515,9 +2535,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       time = Time.now.to_i
       interval = 20000
 
-      post "/v1/apps/notification?jwt=#{jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}&uuid=#{uuid}",
-            headers: {'Content-Type' => 'application/json'},
-            params: "{\"#{ "hello" * 100 }\": \"testtest\"}"
+      post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}&uuid=#{uuid}",
+            params: {"#{'hello' * 100}": "testtest"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
 		assert_response 400
@@ -2531,9 +2551,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       time = Time.now.to_i
       interval = 20000
 
-      post "/v1/apps/notification?jwt=#{jwt}&app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}&uuid=#{uuid}",
-            headers: {'Content-Type' => 'application/json'},
-            params: "{\"testkey\": \"#{ "a" * 65100 }\"}"
+      post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}&uuid=#{uuid}",
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+            params: {testkey: "#{'a' * 65100}"}.to_json
       resp = JSON.parse response.body
       
       assert_response 400
@@ -2547,7 +2567,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't get a notification that does not exist" do
@@ -2555,11 +2575,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      get "/v1/apps/notification/#{uuid}?jwt=#{jwt}"
+      get "/v1/apps/notification/#{uuid}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 404
-      assert_same(2812, resp["errors"][0][0])
+      assert_equal(2812, resp["errors"][0][0])
 	end
 	
 	test "Can't get the notification of another user" do
@@ -2567,11 +2587,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		notification = notifications(:TestNotification)
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 
-		get "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
+		get "/v1/apps/notification/#{notification.uuid}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can get a notification" do
@@ -2581,14 +2601,35 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       firstProperty = notification_properties(:TestNotificationFirstProperty)
       secondProperty = notification_properties(:TestNotificationSecondProperty)
 
-		get "/v1/apps/notification/#{notification.uuid}?jwt=#{jwt}"
+		get "/v1/apps/notification/#{notification.uuid}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
-		assert_same(notification.id, resp["id"])
+		assert_equal(notification.id, resp["id"])
 		assert_equal(notification.uuid, resp["uuid"])
-		assert_same(notification.time.to_i, resp["time"])
-      assert_same(notification.interval, resp["interval"])
+		assert_equal(notification.time.to_i, resp["time"])
+      assert_equal(notification.interval, resp["interval"])
+      
+      # Check the properties
+		assert_equal(firstProperty.value, resp["properties"][firstProperty.name])
+		assert_equal(secondProperty.value, resp["properties"][secondProperty.name])
+	end
+
+	test "Can get a notification with session jwt" do
+		matt = users(:matt)
+      notification = notifications(:TestNotification)
+      firstProperty = notification_properties(:TestNotificationFirstProperty)
+      secondProperty = notification_properties(:TestNotificationSecondProperty)
+		jwt = generate_session_jwt(matt, devs(:matt), notification.app_id, "schachmatt")
+
+		get "/v1/apps/notification/#{notification.uuid}", headers: {'Authorization' => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(notification.id, resp["id"])
+		assert_equal(notification.uuid, resp["uuid"])
+		assert_equal(notification.time.to_i, resp["time"])
+      assert_equal(notification.interval, resp["interval"])
       
       # Check the properties
 		assert_equal(firstProperty.value, resp["properties"][firstProperty.name])
