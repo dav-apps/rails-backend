@@ -7,60 +7,60 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    # Login tests
-   test "can login" do
-      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked&auth=" + generate_auth_token(devs(:sherlock))
-      assert_response :success
+   test "Can login" do
+      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked", headers: {'Authorization' => generate_auth_token(devs(:sherlock))} 
+      assert_response 200
    end
    
-   test "can't login without email" do
-      get "/v1/auth/login?password=sherlocked&auth=" + generate_auth_token(devs(:sherlock))
+   test "Can't login without email" do
+      get "/v1/auth/login?password=sherlocked", headers: {'Authorization' => generate_auth_token(devs(:sherlock))}
       assert_response 400
    end
    
-   test "can't login without password" do
-      get "/v1/auth/login?email=sherlock@web.de&auth=" + generate_auth_token(devs(:sherlock))
+   test "Can't login without password" do
+      get "/v1/auth/login?email=sherlock@web.de", headers: {'Authorization' => generate_auth_token(devs(:sherlock))}
       assert_response 400
    end
    
-   test "can't login without auth" do
+   test "Can't login without auth" do
       get "/v1/auth/login?email=sherlock@web.de&password=sherlocked"
       assert_response 401
    end
    
-   test "can login without being the dev" do
-      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked&auth=" + generate_auth_token(devs(:matt))
+   test "Can login without being the dev" do
+      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked", headers: {'Authorization' => generate_auth_token(devs(:matt))}
       assert_response 200
    end
    
-   test "can login without being confirmed" do
+   test "Can login without being confirmed" do
       matt = users(:matt)
       matt.confirmed = false
       matt.save
       
-      get "/v1/auth/login?email=matt@test.de&password=schachmatt&auth=" + generate_auth_token(devs(:matt))
+      get "/v1/auth/login?email=matt@test.de&password=schachmatt", headers: {'Authorization' => generate_auth_token(devs(:matt))}
       resp = JSON.parse response.body
       
 		assert_response 200
 		assert_not_nil(resp["jwt"])
    end
    
-   test "can't login with an incorrect password" do
-      get "/v1/auth/login?email=matt@test.de&password=falschesPassword&auth=" + generate_auth_token(devs(:matt))
+   test "Can't login with an incorrect password" do
+      get "/v1/auth/login?email=matt@test.de&password=falschesPassword", headers: {'Authorization' => generate_auth_token(devs(:matt))}
       resp = JSON.parse response.body
       
       assert_response 401
-      assert_same(resp["errors"][0][0], 1201)
+      assert_equal(resp["errors"][0][0], 1201)
    end
    
-   test "can't login with an invalid auth token" do
+   test "Can't login with an invalid auth token" do
       dev = devs(:matt)
       auth = dev.api_key + "," + Base64.strict_encode64(Base64.strict_encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid)))
       
-      get "/v1/auth/login?email=matt@test.de&password=schachmatt&auth=" + auth
+      get "/v1/auth/login?email=matt@test.de&password=schachmatt", headers: {'Authorization' => auth}
       resp = JSON.parse response.body
       
       assert_response 401
-      assert_same(resp["errors"][0][0], 1101)
+      assert_equal(resp["errors"][0][0], 1101)
    end
    
    test "Dev does not exist in login" do
@@ -72,11 +72,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       sherlock = devs(:sherlock)
       sherlock.destroy!
       
-      get "/v1/auth/login?email=matt@test.de&password=schachmatt&auth=" + sherlock_auth_token
+      get "/v1/auth/login?email=matt@test.de&password=schachmatt", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 404
-      assert_same(resp["errors"][0][0], 2802)
+      assert_equal(resp["errors"][0][0], 2802)
    end
    # End login tests
    
@@ -1233,7 +1233,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       assert_response 200
 
-      get "/v1/auth/login?email=#{matt.email}&password=#{password}&auth=" + generate_auth_token(devs(:sherlock))
+      get "/v1/auth/login?email=#{matt.email}&password=#{password}", headers: {'Authorization' => generate_auth_token(devs(:sherlock))}
 
       assert_response 200
    end

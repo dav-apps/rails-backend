@@ -42,7 +42,7 @@ class ActiveSupport::TestCase
    end
    
    def login_user(user, password, dev)
-      get "/v1/auth/login?email=#{user.email}&password=#{password}&auth=" + generate_auth_token(dev)
+      get "/v1/auth/login?email=#{user.email}&password=#{password}", headers: {'Authorization' => generate_auth_token(dev)}
       response
    end
 

@@ -87,9 +87,9 @@ class UsersController < ApplicationController
 	end
 
 	define_method :login do
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
 		email = params[:email]
       password = params[:password]
-		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
 		begin
 			auth_validation = ValidationService.validate_auth_missing(auth)
