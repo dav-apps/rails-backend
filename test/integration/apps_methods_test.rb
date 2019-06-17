@@ -1652,7 +1652,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2205, resp["errors"][0][0])
+      assert_equal(2205, resp["errors"][0][0])
    end
    
    test "Can't create a table with invalid name" do
@@ -1663,7 +1663,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2501, resp["errors"][0][0])
+      assert_equal(2501, resp["errors"][0][0])
    end
    # End create_table tests
    
@@ -1673,16 +1673,16 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
-      assert_same(2110, resp["errors"][1][0])
-      assert_same(2113, resp["errors"][2][0])
+      assert_equal(2102, resp["errors"][0][0])
+      assert_equal(2110, resp["errors"][1][0])
+      assert_equal(2113, resp["errors"][2][0])
    end
    
    test "Can't get the table of the app of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/apps/table?table_name=#{tables(:davTable).name}&app_id=#{apps(:davApp).id}&jwt=#{matts_jwt}"
+      get "/v1/apps/table?table_name=#{tables(:davTable).name}&app_id=#{apps(:davApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1691,9 +1691,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can't get the table of the app of another dev from the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/table?table_name=#{tables(:davTable).name}&app_id=#{apps(:davApp).id}&jwt=#{matts_jwt}"
+      get "/v1/apps/table?table_name=#{tables(:davTable).name}&app_id=#{apps(:davApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1702,9 +1702,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can get the table and only the entries of the current user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}"
+      get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1713,15 +1713,32 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 			obj = TableObject.find_by_id(e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
-			assert_same(users(:matt).id, obj.user.id)
+			assert_equal(users(:matt).id, obj.user.id)
       end
-   end
+	end
+	
+	test "Can get the table and only the entries of the current user with session jwt" do
+      matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
+      
+      get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(apps(:Cards).id, resp["app_id"])
+      resp["table_objects"].each do |e|
+			obj = TableObject.find_by_id(e["id"])
+			assert_not_nil(obj)
+			assert_equal(generate_table_object_etag(obj), e["etag"])
+			assert_equal(users(:matt).id, obj.user.id)
+      end
+	end
    
    test "Can get the table of the app of the own dev from the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/apps/table?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&jwt=#{matts_jwt}"
+      get "/v1/apps/table?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1729,39 +1746,39 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 	test "Can get a table in pages" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		count = 1
 		page = 1
 		
-		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}&count=#{count}&page=#{page}"
+		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&count=#{count}&page=#{page}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
-		assert_same(count, resp["table_objects"].count)
+		assert_equal(count, resp["table_objects"].count)
 		assert_equal(table_objects(:first).uuid, resp["table_objects"][0]["uuid"])
 	end
 
 	test "Can get the second page of a table" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		count = 1
 		page = 2
 		
-		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}&count=#{count}&page=#{page}"
+		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&count=#{count}&page=#{page}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
-		assert_same(count, resp["table_objects"].count)
+		assert_equal(count, resp["table_objects"].count)
 		assert_equal(table_objects(:third).uuid, resp["table_objects"][0]["uuid"])
 	end
 
 	test "get_table should update the last_active fields of the user and the users_app" do
       matt = users(:matt)
       matt_cards = users_apps(:mattCards)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       old_last_active = matt.last_active
       old_users_app_last_active = matt_cards.last_active
 		old_updated_at = matt.updated_at
 
-		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&jwt=#{matts_jwt}"
+		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
