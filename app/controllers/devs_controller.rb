@@ -1,7 +1,6 @@
 class DevsController < ApplicationController
-   
    def create_dev
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 
       begin
          ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -37,7 +36,7 @@ class DevsController < ApplicationController
    end
 
    def get_dev
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 
       begin
          ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -73,8 +72,8 @@ class DevsController < ApplicationController
    end
 
    def get_dev_by_api_key
+      auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
       requested_dev_api_key = params["api_key"]
-      auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
       begin
          auth_validation = ValidationService.validate_auth_missing(auth)
@@ -118,7 +117,7 @@ class DevsController < ApplicationController
 	end
 	
 	def delete_dev
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -151,7 +150,7 @@ class DevsController < ApplicationController
 	end
 
 	def generate_new_keys
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
