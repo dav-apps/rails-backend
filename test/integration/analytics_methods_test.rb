@@ -12,9 +12,9 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2118, resp["errors"][0][0])
-      assert_same(2111, resp["errors"][1][0])
-      assert_same(2110, resp["errors"][2][0])
+      assert_equal(2118, resp["errors"][0][0])
+      assert_equal(2111, resp["errors"][1][0])
+      assert_equal(2110, resp["errors"][2][0])
    end
    
    test "Can't create event with too short event name" do
@@ -24,7 +24,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2203, resp["errors"][0][0])
+      assert_equal(2203, resp["errors"][0][0])
    end
    
    test "Can't create event with too long event name" do
@@ -34,17 +34,17 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2303, resp["errors"][0][0])
+      assert_equal(2303, resp["errors"][0][0])
    end
    
-   test "Create new event when event does not yet exist" do
+   test "Can create new event when event does not yet exist" do
       api_key = devs(:matt).api_key
       
       post "/v1/analytics/event?api_key=#{api_key}&name=NewEvent&app_id=#{apps(:TestApp).id}"
       resp = JSON.parse response.body
       
       assert_response 201
-      assert_same(Event.find_by(name: "NewEvent").id, resp["event_id"])
+      assert_equal(Event.find_by(name: "NewEvent").id, resp["event_id"])
    end
 
    test "Can't create event log for the event of another dev" do
@@ -54,7 +54,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can create event log without properties" do
@@ -76,11 +76,10 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       secondPropertyName = "test2"
       firstPropertyValue = "bla"
       secondPropertyValue = "blabla"
-      data = '{"' + firstPropertyName + '": "' + firstPropertyValue + '", 
-               "' + secondPropertyName + '": "' + secondPropertyValue + '"}'
+      data = {"#{firstPropertyName}": firstPropertyValue, "#{secondPropertyName}": secondPropertyValue}
       
       post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", 
-            params: data, 
+            params: data.to_json, 
             headers: {"Content-Type" => "application/json"}
       resp = JSON.parse response.body
 
@@ -97,24 +96,24 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       api_key = devs(:matt).api_key
 
       post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", 
-            params: "{\"#{"n"*240}\":\"test\"}", 
+            params: {"#{'n' * 240}": "test"}.to_json,
             headers: {"Content-Type" => "application/json"}
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(2306, resp["errors"][0][0])
+      assert_equal(2306, resp["errors"][0][0])
    end
    
    test "Can't create event log with too long property value" do
       api_key = devs(:matt).api_key
 
       post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", 
-            params: "{\"test\":\"#{"t"*65100}\"}", 
+            params: {test: "#{'t' * 65100}"}.to_json,
             headers: {"Content-Type" => "application/json"}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2307, resp["errors"][0][0])
+      assert_equal(2307, resp["errors"][0][0])
    end
 
    test "create_event_log with save_country should create a property with the country code" do
@@ -134,10 +133,10 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       name = events(:LoginMobile).name
       propertyName = "test"
       propertyValue = "blabla"
-      data = '{"' + propertyName + '": "' + propertyValue + '"}'
+      data = {"#{propertyName}": propertyValue}
 
       post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}&save_country=true", 
-            params: data,
+            params: data.to_json,
             headers: {"Content-Type": "application/json"}
       
       resp = JSON.parse response.body
@@ -154,10 +153,10 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       name = events(:LoginMobile).name
       first_property_name = "test"
       second_property_name = "test2"
-      data = '{"' + first_property_name + '": "", "' + second_property_name + '": "content"}'
+      data = {"#{first_property_name}": "", "#{second_property_name}": "content"}
 
       post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", 
-            params: data, 
+            params: data.to_json, 
             headers: {"Content-Type" => "application/json"}
       resp = JSON.parse response.body
 
@@ -174,12 +173,12 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "get_event returns the log summaries of an event from within the last month" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
       # Update the event summaries with new dates
 		first_event_summary = event_summaries(:LoginSummaryDay1)
@@ -189,7 +188,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		first_event_summary.save
 		second_event_summary.save
       
-      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
+      get "/v1/analytics/event/#{events(:Login).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -214,11 +213,11 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 
    test "get_event returns the log summaries of the specified timeframe" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       start_timestamp = 1529020800  # 15.6.2018
       end_timestamp = 1531612800    # 15.7.2018
 
-      get "/v1/analytics/event/#{events(:Login).id}?start=#{start_timestamp}&end=#{end_timestamp}&jwt=#{matts_jwt}"
+      get "/v1/analytics/event/#{events(:Login).id}?start=#{start_timestamp}&end=#{end_timestamp}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -236,14 +235,14 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 	
 	test "get_event returns the log summaries of the given sort" do
 		matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		# Update the event summary with a new date
 		event_summary = event_summaries(:LoginSummaryMonth)
 		event_summary.time = Time.now - 2.days
 		event_summary.save
       
-      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}&sort=month"
+      get "/v1/analytics/event/#{events(:Login).id}?sort=month", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 200
@@ -273,24 +272,24 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
    
    test "get_event can't be called from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
+      get "/v1/analytics/event/#{events(:Login).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "get_event can't return the event of the app of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}"
+      get "/v1/analytics/event/#{events(:CreateCard).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    # End get_event tests
 
@@ -300,14 +299,14 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
-      assert_same(2110, resp["errors"][1][0])
-      assert_same(2111, resp["errors"][2][0])
+      assert_equal(2102, resp["errors"][0][0])
+      assert_equal(2110, resp["errors"][1][0])
+      assert_equal(2111, resp["errors"][2][0])
    end
 
    test "get_event_by_name returns the log summaries of an event by name from within the last month" do
       matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		
 		# Update the event summaries with new dates
 		first_event_summary = event_summaries(:LoginSummaryDay1)
@@ -317,7 +316,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		first_event_summary.save
 		second_event_summary.save
       
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
+      get "/v1/analytics/event?name=#{events(:Login).name}&app_id=#{events(:Login).app_id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -342,12 +341,12 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 
    test "get_event_by_name returns the event logs of the specified timeframe" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       start_timestamp = 1529020800  # 15.6.2018
       end_timestamp = 1531612800    # 15.7.2018
       login_event = events(:Login)
 
-      get "/v1/analytics/event?app_id=#{login_event.app_id}&name=#{login_event.name}&start=#{start_timestamp}&end=#{end_timestamp}&jwt=#{matts_jwt}"
+      get "/v1/analytics/event?app_id=#{login_event.app_id}&name=#{login_event.name}&start=#{start_timestamp}&end=#{end_timestamp}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -365,7 +364,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 	
 	test "get_event_by_name returns the log summaries of the given sort" do
 		matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		login_event = events(:Login)
 
 		# Update the event summary with a new date
@@ -373,7 +372,7 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		event_summary.time = Time.now - 2.days
 		event_summary.save
       
-      get "/v1/analytics/event?app_id=#{login_event.app_id}&name=#{login_event.name}&jwt=#{matts_jwt}&sort=month"
+      get "/v1/analytics/event?app_id=#{login_event.app_id}&name=#{login_event.name}&sort=month", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 200
@@ -403,24 +402,24 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 
    test "get_event_by_name can't be called from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:Login).name}&app_id=#{events(:Login).app_id}"
+      get "/v1/analytics/event?name=#{events(:Login).name}&app_id=#{events(:Login).app_id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "get_event_by_name can't return the event of the app of another dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/analytics/event?jwt=#{matts_jwt}&name=#{events(:CreateCard).name}&app_id=#{events(:CreateCard).app_id}"
+      get "/v1/analytics/event?name=#{events(:CreateCard).name}&app_id=#{events(:CreateCard).app_id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    # End get_event_by_name tests
    
@@ -430,157 +429,157 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
    
    test "Can't use another content type but json in update_event" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/auth/user?jwt=#{matts_jwt}", 
-            params: "{\"name\":\"test\"}", 
-            headers: {'Content-Type' => 'application/xml'}
+      put "/v1/auth/user", 
+				params: {name: "test"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
-      assert_same(1104, resp["errors"][0][0])
+      assert_equal(1104, resp["errors"][0][0])
    end
    
    test "update_event can't be called from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
-            params: "{\"name\":\"test\"}", 
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}", 
+				params: {name: "test"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
-   test "can't update events that don't belong to the dev" do
+   test "Can't update events that don't belong to the dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login2).id}?jwt=#{matts_jwt}", 
-            params: "{\"name\":\"newname\"}", 
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login2).id}", 
+				params: {name: "newname"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
-   test "can't update events that belong to the first dev" do
+   test "Can't update events that belong to the first dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:CreateCard).id}?jwt=#{matts_jwt}", 
-            params: "{\"name\":\"newname\"}", 
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:CreateCard).id}", 
+				params: {name: "newname"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can get the properties of the event after updating" do
       new_name = "newname"
       
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
-            params: "{\"name\":\"#{new_name}\"}", 
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}", 
+				params: {name: new_name}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(events(:Login).id, resp["id"])
+      assert_equal(events(:Login).id, resp["id"])
       assert_equal(new_name, resp["name"])
    end
    
    test "Can't update an event with too long name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
-            params: "{\"name\":\"#{"n"*30}\"}", 
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}", 
+				params: {name: "#{'n' * 30}"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2303, resp["errors"][0][0])
+      assert_equal(2303, resp["errors"][0][0])
    end
    
    test "Can't update an event with too short name" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
-            params: "{\"name\":\"n\"}", 
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}", 
+				params: {name: "n"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2203, resp["errors"][0][0])
+      assert_equal(2203, resp["errors"][0][0])
    end
    
    test "Can't update an event with name that's already taken" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      put "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}", 
-            params: "{\"name\":\"login_mobile\"}", 
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/analytics/event/#{events(:Login).id}", 
+				params: {name: "login_mobile"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2703, resp["errors"][0][0])
+      assert_equal(2703, resp["errors"][0][0])
    end
    # End update_event tests
    
    # delete_event tests
    test "Can't delete events of the apps of other devs" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/analytics/event/#{events(:Login2).id}?jwt=#{matts_jwt}"
+      delete "/v1/analytics/event/#{events(:Login2).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't delete events from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-      delete "/v1/analytics/event/#{events(:Login).id}?jwt=#{matts_jwt}"
+      delete "/v1/analytics/event/#{events(:Login).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't delete events of apps of the first dev" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      delete "/v1/analytics/event/#{events(:OpenApp).id}?jwt=#{matts_jwt}"
+      delete "/v1/analytics/event/#{events(:OpenApp).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can delete the events of own apps" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       event_id = events(:Login).id
       
-      delete "/v1/analytics/event/#{event_id}?jwt=#{matts_jwt}"
+      delete "/v1/analytics/event/#{event_id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200

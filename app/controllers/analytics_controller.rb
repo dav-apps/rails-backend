@@ -1,5 +1,4 @@
 class AnalyticsController < ApplicationController
-	
 	def create_event_log
 		api_key = params["api_key"]
 		name = params["name"]
@@ -110,9 +109,9 @@ class AnalyticsController < ApplicationController
 		end
 	end
 
-	def get_event
+   def get_event
+      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		event_id = params["id"]
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s') : (Time.now - 1.month)
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s') : Time.now
 		sort = params["sort"]
@@ -197,10 +196,10 @@ class AnalyticsController < ApplicationController
 		end
 	end
 
-	def get_event_by_name
+   def get_event_by_name
+      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		name = params["name"]
 		app_id = params["app_id"]
-      jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s') : (Time.now - 1.month)
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s') : Time.now
 		sort = params["sort"]
@@ -287,9 +286,9 @@ class AnalyticsController < ApplicationController
 		end
 	end
 
-	def update_event
+   def update_event
+      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		event_id = params["id"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
@@ -350,8 +349,8 @@ class AnalyticsController < ApplicationController
 	end
 	
 	def delete_event
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		event_id = params["id"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			jwt_validation = ValidationService.validate_jwt_missing(jwt)
