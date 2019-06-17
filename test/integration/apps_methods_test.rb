@@ -2962,57 +2962,57 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't create a subscription when using another Content-Type than application/json" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      post "/v1/apps/subscription?jwt=#{jwt}"
+      post "/v1/apps/subscription", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 415
-      assert_same(1104, resp["errors"][0][0])
+      assert_equal(1104, resp["errors"][0][0])
    end
 
    test "Can't create a subscription without endpoint" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      post "/v1/apps/subscription?jwt=#{jwt}",
-            params: '{"p256dh": "blabla", "auth": "blabla"}',
-            headers: {'Content-Type' => 'application/json'}
+      post "/v1/apps/subscription",
+            params: {p256dh: "blabla", auth: "blabla"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(2122, resp["errors"][0][0])
+      assert_equal(2122, resp["errors"][0][0])
    end
 
    test "Can't create a subscription without p256dh" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      post "/v1/apps/subscription?jwt=#{jwt}",
-            params: '{"endpoint": "blabla", "auth": "blabla"}',
-            headers: {'Content-Type' => 'application/json'}
+      post "/v1/apps/subscription",
+            params: {endpoint: "blabla", auth: "blabla"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(2123, resp["errors"][0][0])
+      assert_equal(2123, resp["errors"][0][0])
    end
 
    test "Can't create a subscription without auth" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      post "/v1/apps/subscription?jwt=#{jwt}",
-            params: '{"endpoint": "blabla", "p256dh": "blabla"}',
-            headers: {'Content-Type' => 'application/json'}
+      post "/v1/apps/subscription",
+            params: {endpoint: "blabla", p256dh: "blabla"}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(2101, resp["errors"][0][0])
+      assert_equal(2101, resp["errors"][0][0])
    end
 
    test "Can create a subscription" do
@@ -3022,9 +3022,27 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       p256dh = "somekey"
       auth = "someauthtoken"
 
-      post "/v1/apps/subscription?jwt=#{jwt}",
-            params: '{"endpoint": "' + endpoint + '", "p256dh": "' + p256dh + '", "auth": "' + auth + '"}',
-            headers: {'Content-Type' => 'application/json'}
+      post "/v1/apps/subscription",
+            params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+      resp = JSON.parse response.body
+
+      assert_response 201
+      assert_equal(endpoint, resp["endpoint"])
+      assert_equal(p256dh, resp["p256dh"])
+      assert_equal(auth, resp["auth"])
+	end
+	
+	test "Can create a subscription with session jwt" do
+      matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:matt), apps(:TestApp).id, "schachmatt")
+      endpoint = "https://endpoint.tech/"
+      p256dh = "somekey"
+      auth = "someauthtoken"
+
+      post "/v1/apps/subscription",
+            params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -3041,9 +3059,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       p256dh = "somekey"
       auth = "someauthtoken"
 
-      post "/v1/apps/subscription?jwt=#{jwt}&uuid=#{uuid}",
-            params: '{"endpoint": "' + endpoint + '", "p256dh": "' + p256dh + '", "auth": "' + auth + '"}',
-            headers: {'Content-Type' => 'application/json'}
+      post "/v1/apps/subscription?uuid=#{uuid}",
+            params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -3060,7 +3078,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
 	end
 	
 	test "Can't get a subscription that does not exist" do
@@ -3068,11 +3086,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		get "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+		get "/v1/apps/subscription/#{uuid}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 404
-		assert_same(2813, resp["errors"][0][0])
+		assert_equal(2813, resp["errors"][0][0])
 	end
 
 	test "Can't get the subscription of another user" do
@@ -3081,11 +3099,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		subscription = web_push_subscriptions(:MattsFirstSubscription)
 		uuid = subscription.uuid
 		
-		get "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+		get "/v1/apps/subscription/#{uuid}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can get a subscription" do
@@ -3094,11 +3112,28 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		subscription = web_push_subscriptions(:MattsFirstSubscription)
 		uuid = subscription.uuid
 
-		get "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+		get "/v1/apps/subscription/#{uuid}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
-		assert_same(subscription.id, resp["id"])
+		assert_equal(subscription.id, resp["id"])
+		assert_equal(subscription.uuid, resp["uuid"])
+		assert_equal(subscription.endpoint, resp["endpoint"])
+		assert_equal(subscription.p256dh, resp["p256dh"])
+		assert_equal(subscription.auth, resp["auth"])
+	end
+
+	test "Can get a subscription with session jwt" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:matt), apps(:TestApp).id, "schachmatt")
+		subscription = web_push_subscriptions(:MattsFirstSubscription)
+		uuid = subscription.uuid
+
+		get "/v1/apps/subscription/#{uuid}", headers: {'Authorization' => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 200
+		assert_equal(subscription.id, resp["id"])
 		assert_equal(subscription.uuid, resp["uuid"])
 		assert_equal(subscription.endpoint, resp["endpoint"])
 		assert_equal(subscription.p256dh, resp["p256dh"])
@@ -3115,7 +3150,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't delete a subscription that does not exist" do
@@ -3123,11 +3158,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       uuid = SecureRandom.uuid
 
-      delete "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+      delete "/v1/apps/subscription/#{uuid}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 404
-      assert_same(2813, resp["errors"][0][0])
+      assert_equal(2813, resp["errors"][0][0])
    end
 
    test "Can't delete the subscription of another user" do
@@ -3136,11 +3171,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       subscription = web_push_subscriptions(:MattsFirstSubscription)
       uuid = subscription.uuid
 
-      delete "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+      delete "/v1/apps/subscription/#{uuid}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
 	end
 	
 	test "Can delete a subscription" do
@@ -3149,7 +3184,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		subscription = web_push_subscriptions(:MattsFirstSubscription)
 		uuid = subscription.uuid
 
-		delete "/v1/apps/subscription/#{uuid}?jwt=#{jwt}"
+		delete "/v1/apps/subscription/#{uuid}", headers: {'Authorization' => jwt}
+		resp = JSON.parse response.body
+
+		assert_response 200
+	end
+
+	test "Can delete a subscription with session jwt" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:matt), apps(:TestApp).id, "schachmatt")
+		subscription = web_push_subscriptions(:MattsFirstSubscription)
+		uuid = subscription.uuid
+
+		delete "/v1/apps/subscription/#{uuid}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 200
