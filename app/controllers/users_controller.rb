@@ -3,10 +3,10 @@ class UsersController < ApplicationController
 	jwt_expiration_hours_dev = 10000000
 
 	define_method :signup do
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
 		email = params[:email]
       password = params[:password]
 		username = params[:username]
-		auth = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["auth"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 
 		begin
 			auth_validation = ValidationService.validate_auth_missing(auth)

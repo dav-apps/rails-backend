@@ -115,12 +115,12 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       app_jwt = resp["jwt"]
 
       # Use this jwt to try to access resources that are only accessible by the first dev
-      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=#{tables(:card).name}&jwt=#{website_jwt}"
+      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=#{tables(:card).name}", headers: {'Authorization' => website_jwt}
       resp2 = JSON.parse response.body
       
       assert_response 200
       
-      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=#{tables(:card).name}&jwt=#{app_jwt}"
+      get "/v1/apps/table?app_id=#{apps(:Cards).id}&table_name=#{tables(:card).name}", headers: {'Authorization' => app_jwt}
       resp3 = JSON.parse response.body
       
       assert_response 403
@@ -134,72 +134,72 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert(response.status == 400 || response.status ==  401)
-      assert_same(2101, resp["errors"][0][0])
-      assert_same(2105, resp["errors"][1][0])
-      assert_same(2106, resp["errors"][2][0])
-      assert_same(2107, resp["errors"][3][0])
+      assert_equal(2101, resp["errors"][0][0])
+      assert_equal(2105, resp["errors"][1][0])
+      assert_equal(2106, resp["errors"][2][0])
+      assert_equal(2107, resp["errors"][3][0])
    end
    
    test "Email already taken in signup" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=dav@gmail.com&password=testtest&username=test"
+      post "/v1/auth/signup?email=dav@gmail.com&password=testtest&username=test", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2702, resp["errors"][0][0])
+      assert_equal(2702, resp["errors"][0][0])
    end
    
    test "Username already taken in signup" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=cato"
+      post "/v1/auth/signup?email=test@example.com&password=testtest&username=cato", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2701, resp["errors"][0][0])
+      assert_equal(2701, resp["errors"][0][0])
    end
    
    test "Can't signup with too short username and password" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=te&username=t"
+      post "/v1/auth/signup?email=test@example.com&password=te&username=t", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2201, resp["errors"][0][0])
-      assert_same(2202, resp["errors"][1][0])
+      assert_equal(2201, resp["errors"][0][0])
+      assert_equal(2202, resp["errors"][1][0])
    end
    
    test "Can't signup with too long username and password" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=#{"n"*50}&username=#{"n"*30}"
+      post "/v1/auth/signup?email=test@example.com&password=#{"n"*50}&username=#{"n"*30}", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2301, resp["errors"][0][0])
-      assert_same(2302, resp["errors"][1][0])
+      assert_equal(2301, resp["errors"][0][0])
+      assert_equal(2302, resp["errors"][1][0])
    end
    
    test "Can't signup with invalid email" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=testexample&password=testtest&username=testuser"
+      post "/v1/auth/signup?email=testexample&password=testtest&username=testuser", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2401, resp["errors"][0][0])
+      assert_equal(2401, resp["errors"][0][0])
    end
    
    test "Can't signup from outside the website" do
       matts_auth_token = generate_auth_token(devs(:matt))
       
-      post "/v1/auth/signup?auth=#{matts_auth_token}&email=testexample&password=testtest&username=testuser"
+      post "/v1/auth/signup?email=testexample&password=testtest&username=testuser", headers: {'Authorization' => matts_auth_token}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can successfully sign up" do
@@ -208,7 +208,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		password = "testtest"
 		username = "testuser"
       
-      post "/v1/auth/signup?auth=#{matts_auth_token}&email=#{email}&password=#{password}&username=#{username}"
+      post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}", headers: {'Authorization' => matts_auth_token}
       resp = JSON.parse response.body
       
 		assert_response 201
@@ -532,9 +532,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       file1Path = "test/fixtures/files/test.png"
 
-		post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", 
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", 
 				params: File.open(file1Path, "rb").read, 
-				headers: {'Content-Type' => 'image/png'}
+				headers: {'Authorization' => jwt, 'Content-Type' => 'image/png'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -545,7 +545,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_equal(File.size(file1Path), resp2["apps"][0]["used_storage"])
 
-      delete "/v1/apps/object/#{resp["id"]}?jwt=#{jwt}"
+      delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       assert_response 200
    end
    # End get_user_by_jwt tests
@@ -1028,9 +1028,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       tester_jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
       tester_jwt2 = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
 
-		post "/v1/apps/object?jwt=#{tester_jwt}&table_name=#{table.name}&app_id=#{app.id}", 
-				params: "{\"test\": \"testobject\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{table.name}&app_id=#{app.id}", 
+				params: {test: "testobject"}.to_json,
+				headers: {'Authorization' => tester_jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1050,7 +1050,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "Can confirm user" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
-      post "/v1/auth/signup?auth=#{sherlock_auth_token}&email=test@example.com&password=testtest&username=testuser"
+      post "/v1/auth/signup?email=test@example.com&password=testtest&username=testuser", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
 		assert_response 201
