@@ -980,8 +980,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(2108, resp["errors"][0][0])
-      assert_same(2109, resp["errors"][1][0])
+      assert_equal(2108, resp["errors"][0][0])
+      assert_equal(2109, resp["errors"][1][0])
    end
 
    test "Can't delete user with incorrect confirmation tokens" do
@@ -993,13 +993,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt.password_confirmation_token = password_confirmation_token
       matt.save
 
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
       delete "/v1/auth/user/#{matt.id}?email_confirmation_token=#{email_confirmation_token + "adsad"}&password_confirmation_token=#{password_confirmation_token + "asdasd"}"
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1203, resp["errors"][0][0])
+      assert_equal(1203, resp["errors"][0][0])
    end
    
    test "User will be deleted" do
@@ -1012,8 +1010,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt.password_confirmation_token = password_confirmation_token
       matt.save
 
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
       delete "/v1/auth/user/#{matt.id}?email_confirmation_token=#{email_confirmation_token}&password_confirmation_token=#{password_confirmation_token}"
       resp = JSON.parse response.body
       
@@ -1028,19 +1024,19 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't remove app from outside the website" do
       tester = users(:tester2)
       app = apps(:TestApp)
-      tester_jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
 
-      delete "/v1/auth/app/#{app.id}?jwt=#{tester_jwt}"
+      delete "/v1/auth/app/#{app.id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "remove_app removes all objects and the association" do
@@ -1060,7 +1056,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       obj_id = resp["id"]
 
       # Remove app
-      delete "/v1/auth/app/#{app.id}?jwt=#{tester_jwt2}"
+      delete "/v1/auth/app/#{app.id}", headers: {'Authorization' => tester_jwt2}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1081,7 +1077,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       new_user = User.find_by_id(resp["id"])
       
       new_users_confirmation_token = User.find_by_id(resp["id"]).email_confirmation_token
-      post "/v1/auth/user/#{new_user.id}/confirm?email_confirmation_token=#{new_user.email_confirmation_token}&jwt=#{jwt}"
+      post "/v1/auth/user/#{new_user.id}/confirm?email_confirmation_token=#{new_user.email_confirmation_token}", headers: {'Authorization' => jwt}
       
       assert_response 200
       assert(User.find_by_id(new_user.id).confirmed)
@@ -1104,11 +1100,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		tester = users(:tester)
 		jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/user/#{tester.id}/confirm?jwt=#{jwt}"
+      post "/v1/auth/user/#{tester.id}/confirm", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2108, resp["errors"][0][0])
+      assert_equal(2108, resp["errors"][0][0])
 	end
 	
 	test "Can't confirm user without jwt or password" do
@@ -1118,18 +1114,18 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 		
 		assert_response 401
-		assert_same(2102, resp["errors"][0][0])
+		assert_equal(2102, resp["errors"][0][0])
 	end
    
    test "Can't confirm new user with incorrect email_confirmation_token" do
 		tester = users(:tester)
 		jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg&jwt=#{jwt}"
+      post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1204, resp["errors"][0][0])
+      assert_equal(1204, resp["errors"][0][0])
    end
    
    test "User is already confirmed" do
@@ -1137,11 +1133,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matts_confirmation_token = "testconfirmationtoken"
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/user/#{matt.id}/confirm?email_confirmation_token=#{matts_confirmation_token}&jwt=#{jwt}"
+      post "/v1/auth/user/#{matt.id}/confirm?email_confirmation_token=#{matts_confirmation_token}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1106, resp["errors"][0][0])
+      assert_equal(1106, resp["errors"][0][0])
    end
    # End confirm_user tests
    
@@ -1151,7 +1147,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2106, resp["errors"][0][0])
+      assert_equal(2106, resp["errors"][0][0])
    end 
    
    test "Can't send verification email with already confirmed user" do
@@ -1161,7 +1157,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1106, resp["errors"][0][0])
+      assert_equal(1106, resp["errors"][0][0])
    end
    
    test "Can send verification email" do
@@ -1180,15 +1176,15 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(2106, resp["errors"][0][0])
+      assert_equal(2106, resp["errors"][0][0])
    end
 
-   test "Can't send delete account email to non-existant user" do
+   test "Can't send delete account email to non-existent user" do
       post "/v1/auth/send_delete_account_email?email=nonexistantemail@example.com"
       resp = JSON.parse response.body
       
       assert_response 404
-      assert_same(2801, resp["errors"][0][0])
+      assert_equal(2801, resp["errors"][0][0])
    end
 
    test "Can send delete account email" do
@@ -1207,7 +1203,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2106, resp["errors"][0][0])
+      assert_equal(2106, resp["errors"][0][0])
    end
    
    test "Can send password reset email" do
@@ -1269,7 +1265,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1203, resp["errors"][0][0])
+      assert_equal(1203, resp["errors"][0][0])
    end
    
    test "Can't save new password with empty new_password" do
@@ -1281,7 +1277,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2603, resp["errors"][0][0])
+      assert_equal(2603, resp["errors"][0][0])
    end
    
    test "Can save new password and login" do
@@ -1376,7 +1372,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1204, resp["errors"][0][0])
+      assert_equal(1204, resp["errors"][0][0])
    end
    
    test "Can't save new email with empty new_email" do
@@ -1388,7 +1384,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2601, resp["errors"][0][0])
+      assert_equal(2601, resp["errors"][0][0])
    end
    
    test "Can send reset new email email" do
@@ -1423,7 +1419,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2602, resp["errors"][0][0])
+      assert_equal(2602, resp["errors"][0][0])
    end
    
    test "Changes do apply in reset_new_email" do

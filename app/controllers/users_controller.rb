@@ -727,7 +727,7 @@ class UsersController < ApplicationController
 	end
 
 	def remove_app
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		app_id = params["app_id"]
 		
 		begin
@@ -777,10 +777,10 @@ class UsersController < ApplicationController
 	end
 
 	def confirm_user
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		email_confirmation_token = params["email_confirmation_token"]
 		user_id = params["id"]
 		password = params["password"]
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
 		
 		begin
 			id_validation = ValidationService.validate_id_missing(user_id)
