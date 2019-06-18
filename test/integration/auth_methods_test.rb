@@ -441,57 +441,68 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # get_user tests
    test "Can't get user when the requested user is not the current user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/auth/user/#{users(:sherlock).id}?jwt=#{matts_jwt}"
+      get "/v1/auth/user/#{users(:sherlock).id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can get user when the requested user is the current user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      get "/v1/auth/user/#{matt.id}?jwt=#{matts_jwt}"
+      get "/v1/auth/user/#{matt.id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(matt.id, resp["id"])
-   end
+      assert_equal(matt.id, resp["id"])
+	end
+	
+	test "Can get user with session jwt when the requested user is the current user" do
+      matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
+      
+      get "/v1/auth/user/#{matt.id}", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+      
+      assert_response 200
+      assert_equal(matt.id, resp["id"])
+	end
    
    test "User does not exist in get_user" do
       matt = users(:matt)
       matt_id = matt.id
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       matt.destroy!
       
-      get "/v1/auth/user/#{matt_id}?jwt=#{matts_jwt}"
+      get "/v1/auth/user/#{matt_id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
       
       assert_response 404
-      assert_same(2801, resp["errors"][0][0])
+      assert_equal(2801, resp["errors"][0][0])
    end
    
    test "Can see apps, avatar url and avatar_etag of the user in get_user" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
-				params: "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
+            params: {page1: "Hello World", page2: "Hallo Welt"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      get "/v1/auth/user/#{matt.id}?jwt=#{jwt}"
+      get "/v1/auth/user/#{matt.id}", headers: {'Authorization' => jwt}
       resp2 = JSON.parse response.body
       
       assert_response 200
-      assert_same(apps(:Cards).id, resp2["apps"][0]["id"])
+      assert_equal(apps(:Cards).id, resp2["apps"][0]["id"])
       assert_not_nil(resp2["avatar"])
       assert_not_nil(resp2["avatar_etag"])
-   end
-   # End get_user_by_jwt tests
+	end
+   # End get_user tests
 
    # get_user_by_jwt tests
    test "Missing fields in get_user_by_jwt" do
@@ -499,30 +510,41 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
 
    test "Can't get the user when the JWT is invalid" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-
-      get "/v1/auth/user?jwt=#{jwt}ashd9asd"
+      get "/v1/auth/user", headers: {'Authorization' => "blablabla"}
       resp = JSON.parse response.body
 
       assert_response 401
-      assert_same(1302, resp["errors"][0][0])
+      assert_equal(1302, resp["errors"][0][0])
    end
 
-   test "Can get the user and can see avatar url, avatar_etag" do
+   test "Can get the user and can see avatar url and avatar etag" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-      get "/v1/auth/user?jwt=#{jwt}"
+      get "/v1/auth/user", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 200
-      assert_same(matt.id, resp["id"])
-      assert_same(0, resp["used_storage"])
+      assert_equal(matt.id, resp["id"])
+      assert_equal(0, resp["used_storage"])
+      assert_not_nil(resp["avatar"])
+      assert_not_nil(resp["avatar_etag"])
+	end
+	
+	test "Can get the user with session jwt and can see avatar url and avatar etag" do
+      matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
+
+      get "/v1/auth/user", headers: {'Authorization' => jwt}
+      resp = JSON.parse response.body
+
+      assert_response 200
+      assert_equal(matt.id, resp["id"])
+      assert_equal(0, resp["used_storage"])
       assert_not_nil(resp["avatar"])
       assert_not_nil(resp["avatar_etag"])
    end
@@ -539,7 +561,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       assert_response 201
 
-      get "/v1/auth/user?jwt=#{jwt}"
+      get "/v1/auth/user", headers: {'Authorization' => jwt}
       resp2 = JSON.parse response.body
 
       assert_response 200
@@ -913,9 +935,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(ENV['STRIPE_DAV_PRO_PRODUCT_ID'], subscription.plan.product)
 
 		# Downgrade to Free
-		put "/v1/auth/user?jwt=#{jwt}",
+		put "/v1/auth/user",
             params: '{"plan": ' + free_plan.to_s + '}',
-            headers: {'Content-Type' => 'application/json'}
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 200
