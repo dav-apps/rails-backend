@@ -575,143 +575,143 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # update_user tests
    test "Can't use another content type but json in update_user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/xml'}
+		put "/v1/auth/user", 
+            params: {test: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
-      assert_same(1104, resp["errors"][0][0])
+      assert_equal(1104, resp["errors"][0][0])
    end
    
    test "Can't update user from outside the website" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"test\":\"test\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {test: "test"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
       
    test "Can't update user with invalid email" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"email\":\"testemail\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {email: "testemail"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2401, resp["errors"][0][0])
+      assert_equal(2401, resp["errors"][0][0])
    end
    
    test "Can't update user with too short username" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"username\":\"d\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {username: "d"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2201, resp["errors"][0][0])
+      assert_equal(2201, resp["errors"][0][0])
    end
    
    test "Can't update user with too long username" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"username\":\"#{"d"*30}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {username: "#{'d' * 30}"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2301, resp["errors"][0][0])
+      assert_equal(2301, resp["errors"][0][0])
    end
    
    test "Can't update user with username that's already taken" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"username\":\"cato\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {username: "cato"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2701, resp["errors"][0][0])
+      assert_equal(2701, resp["errors"][0][0])
    end
    
    test "Can't update user with too short password" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"password\":\"c\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {password: "c"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2202, resp["errors"][0][0])
+      assert_equal(2202, resp["errors"][0][0])
    end
    
    test "Can't update user with too long password" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"password\":\"#{"n"*40}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {password: "#{'n' * 40}"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2302, resp["errors"][0][0])
+      assert_equal(2302, resp["errors"][0][0])
    end
 
    test "Can't update user with not existing plan" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: '{"plan": 4}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {plan: 4}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1108, resp["errors"][0][0])
+      assert_equal(1108, resp["errors"][0][0])
    end
 
    test "Can't update user with invalid plan" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: '{"plan": "sadasd"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {plan: "sadasd"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(1108, resp["errors"][0][0])
+      assert_equal(1108, resp["errors"][0][0])
    end
    
    test "Can update new_password in update_user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       old_new_password = matt.new_password
       new_password = "testpassword"
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: '{"password":"' + new_password + '"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {password: new_password}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       matt = User.find_by_id(matt.id)
@@ -722,13 +722,13 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_not_equal(new_password, matt.new_password)
    end
    
-   test "Can update the email in update_user" do
+   test "Can update email in update_user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: '{"email":"test14@example.com"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {email: "test14@example.com"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -739,11 +739,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can update username in update_user" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"username\":\"newtestuser\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {username: "newtestuser"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -754,11 +754,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can update email and password of user at once" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {email: "newemail@test.com", password: "hello password"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -771,18 +771,18 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-		post "/v1/apps/object?jwt=#{jwt}&table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
-				params: "{\"page1\":\"Hello World\", \"page2\":\"Hallo Welt\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
+            params: {page1: "Hello World", page2: "Hallo Welt"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-		put "/v1/auth/user?jwt=#{jwt}", 
-				params: "{\"email\":\"newemail@test.com\",\"password\": \"hello password\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {email: "newemail@test.com", password: "hello password"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
       
       assert_response 200
-      assert_same(apps(:Cards).id, resp2["apps"][0]["id"])
+      assert_equal(apps(:Cards).id, resp2["apps"][0]["id"])
    end
 
    test "Can update plan with payment token in update_user" do
@@ -791,24 +791,24 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       payment_token = "tok_visa"
 
       # Upgrade to plus
-		put "/v1/auth/user?jwt=#{jwt}", 
-				params: '{"plan": 1, "payment_token": "' + payment_token + '"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {plan: 1, payment_token: payment_token}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(resp["plan"], 1)
+      assert_equal(resp["plan"], 1)
 
       # Downgrade to free
-		put "/v1/auth/user?jwt=#{jwt}", 
-				params: '{"plan": 0}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {plan: 0}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
 
 		# User should still be on plus, but with subscription status of 1
       assert_response 200
-		assert_same(resp2["plan"], 1)
-		assert_same(resp2["subscription_status"], 1)
+		assert_equal(resp2["plan"], 1)
+		assert_equal(resp2["subscription_status"], 1)
 
 		subscription = Stripe::Subscription.list(customer: torera.stripe_customer_id).data.first
 		assert(subscription.cancel_at_period_end)
@@ -818,26 +818,26 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		put "/v1/auth/user?jwt=#{jwt}", 
-				params: '{"plan": 1}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+            params: {plan: 1}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
-      assert_same(1113, resp["errors"][0][0])
+      assert_equal(1113, resp["errors"][0][0])
    end
 
-   test "Can't update invalid payment_token in update_user" do
+   test "Can't update user with invalid payment token" do
       torera = users(:torera)
       jwt = (JSON.parse login_user(torera, "Geld", devs(:sherlock)).body)["jwt"]
 
-		put "/v1/auth/user?jwt=#{jwt}", 
-				params: '{"plan": 1, "payment_token": "blablabla"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+				params: {plan: 1, payment_token: "blablabla"}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2405, resp["errors"][0][0])
+      assert_equal(2405, resp["errors"][0][0])
    end
 
    test "Can update payment token in update_user" do
@@ -848,9 +848,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
       source_id = customer.sources.data[0] ? customer.sources.data[0].id : nil
 
-		put "/v1/auth/user?jwt=#{jwt}", 
-				params: '{"payment_token": "' + payment_token + '"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+				params: {payment_token: payment_token}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -868,9 +868,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       pro_plan = 2
 
       # Upgrade to Plus
-      put "/v1/auth/user?jwt=#{jwt}",
-            params: '{"plan": ' + plus_plan.to_s + '}',
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/auth/user",
+				params: {plan: plus_plan}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -880,9 +880,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'], subscription.plan.product)
 
       # Upgrade to Pro
-      put "/v1/auth/user?jwt=#{jwt}",
-            params: '{"plan": ' + pro_plan.to_s + '}',
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/auth/user",
+				params: {plan: pro_plan}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -892,9 +892,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(ENV['STRIPE_DAV_PRO_PRODUCT_ID'], subscription.plan.product)
 
 		# Downgrade to Free
-		put "/v1/auth/user?jwt=#{jwt}",
-            params: '{"plan": ' + plus_plan.to_s + '}',
-            headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user",
+				params: {plan: plus_plan}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -904,9 +904,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(ENV['STRIPE_DAV_PLUS_PRODUCT_ID'], subscription.plan.product)
 		
 		# Downgrade to Free
-		put "/v1/auth/user?jwt=#{jwt}",
-				params: '{"plan": ' + free_plan.to_s + '}',
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user",
+				params: {plan: free_plan}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -923,9 +923,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		pro_plan = 2
 		
 		# Upgrade to Pro
-      put "/v1/auth/user?jwt=#{jwt}",
-            params: '{"plan": ' + pro_plan.to_s + '}',
-            headers: {'Content-Type' => 'application/json'}
+      put "/v1/auth/user",
+				params: {plan: pro_plan}.to_json,
+            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -936,7 +936,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
 		# Downgrade to Free
 		put "/v1/auth/user",
-            params: '{"plan": ' + free_plan.to_s + '}',
+				params: {plan: free_plan}.to_json,
             headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
@@ -950,9 +950,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    test "Can upload an avatar and the etag updates in update_user" do
       avatarPath = "test/fixtures/files/test.png"
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-      get "/v1/auth/user/#{matt.id}?jwt=#{matts_jwt}"
+      get "/v1/auth/user/#{matt.id}", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -961,9 +961,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       avatar = File.open(avatarPath, "rb")
       avatar_content = Base64.encode64(avatar.read)
 
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
+		put "/v1/auth/user", 
 				params: {avatar: avatar_content}.to_json, 
-				headers: {'Content-Type' => 'application/json'}
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
       avatar_etag2 = resp2["avatar_etag"]
 
@@ -1286,12 +1286,12 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can save new password and login" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_password = "testpassword"
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: '{"password": "' + new_password + '"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+				params: {password: new_password}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1304,19 +1304,19 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_nil(User.find_by_id(matt.id).new_password)
 
-      get "/v1/auth/login?email=#{matt.email}&password=#{new_password}&auth=" + generate_auth_token(devs(:sherlock))
+      get "/v1/auth/login?email=#{matt.email}&password=#{new_password}", headers: {'Authorization' => generate_auth_token(devs(:sherlock))}
    end
    # End save_new_password tests
    
    # save_new_email tests
    test "Changes do apply in save_new_email" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_email = "newtest@email.com"
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: '{"email": "' + new_email + '"}', 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+				params: {email: new_email}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       matt = User.find_by_id(matt.id)
@@ -1393,13 +1393,13 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    test "Can send reset new email email" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       old_email = matt.email
       new_email = "new-test@email.com"
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"email\": \"#{new_email}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+				params: {email: new_email}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1428,13 +1428,13 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    test "Changes do apply in reset_new_email" do
       matt = users(:matt)
-      matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       new_email = "new-test@email.com"
       original_email = matt.email
       
-		put "/v1/auth/user?jwt=#{matts_jwt}", 
-				params: "{\"email\": \"#{new_email}\"}", 
-				headers: {'Content-Type' => 'application/json'}
+		put "/v1/auth/user", 
+				params: {email: new_email}.to_json,
+				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200

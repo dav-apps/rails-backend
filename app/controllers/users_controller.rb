@@ -435,7 +435,7 @@ class UsersController < ApplicationController
 	end
 
 	def update_user
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
