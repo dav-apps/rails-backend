@@ -15,10 +15,27 @@ module ApplicationCable
 			if !app_id
 				reject_unauthorized_connection
 			end
+
+			# Get the session id, if there is one
+			jwt_parts = jwt.split(' ').last.split('.')
+			jwt = jwt_parts[0..2].join('.')
+			session_id = jwt_parts[3].to_i
+			secret = ENV['JWT_SECRET']
+
+			if session_id != 0
+				session = Session.find_by_id(session_id)
+
+				if !session
+					# Session does not exist
+					reject_unauthorized_connection
+				end
+
+				secret = session.secret
+			end
 			
 			# Validate the JWT
 			begin
-				decoded_jwt = JWT.decode jwt, ENV['JWT_SECRET'], true, { :algorithm => ENV['JWT_ALGORITHM'] }
+				decoded_jwt = JWT.decode jwt, secret, true, { :algorithm => ENV['JWT_ALGORITHM'] }
 				user = User.find_by_id(decoded_jwt[0]["user_id"])
 
 				if(!user)
