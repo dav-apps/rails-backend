@@ -1066,7 +1066,7 @@ class UsersController < ApplicationController
 	end
 
 	def create_archive
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -1105,7 +1105,7 @@ class UsersController < ApplicationController
 	end
 
 	def get_archive
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		archive_id = params[:id]
 		file = params[:file] == "true"
 
@@ -1170,7 +1170,7 @@ class UsersController < ApplicationController
 	end
 
 	def get_archive_part
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		id = params[:id]
 		file = params[:file] == "true"
 
@@ -1226,7 +1226,7 @@ class UsersController < ApplicationController
 	end
 
 	def delete_archive
-		jwt = request.headers['HTTP_AUTHORIZATION'].to_s.length < 2 ? params["jwt"].to_s.split(' ').last : request.headers['HTTP_AUTHORIZATION'].to_s.split(' ').last
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		archive_id = params[:id]
 
 		begin

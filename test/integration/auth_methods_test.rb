@@ -1458,18 +1458,18 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert_response 401
-		assert_same(2102, resp["errors"][0][0])
+		assert_equal(2102, resp["errors"][0][0])
 	end
 
 	test "Can't create an archive from outside the website" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		post "/v1/auth/archive?jwt=#{matts_jwt}"
+		post "/v1/auth/archive", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 	# End create_archive tests
 
@@ -1479,53 +1479,53 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert_response 401
-		assert_same(2102, resp["errors"][0][0])
+		assert_equal(2102, resp["errors"][0][0])
 	end
 
 	test "Can't get the archive of another user" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		get "/v1/auth/archive/#{archives(:SherlocksFirstArchive).id}?jwt=#{matts_jwt}"
+		get "/v1/auth/archive/#{archives(:SherlocksFirstArchive).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can't get the archive from outside the website" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		get "/v1/auth/archive/#{archives(:MattsFirstArchive).id}?jwt=#{matts_jwt}"
+		get "/v1/auth/archive/#{archives(:MattsFirstArchive).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can get the archive" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		archive_id = archives(:MattsFirstArchive).id
 
-		get "/v1/auth/archive/#{archive_id}?jwt=#{matts_jwt}"
+		get "/v1/auth/archive/#{archive_id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 200
-      assert_same(archive_id, resp["id"])
-      assert_same(archive_parts(:FirstPartOfMattsFirstArchive).id, resp["parts"][0]["id"])
+      assert_equal(archive_id, resp["id"])
+      assert_equal(archive_parts(:FirstPartOfMattsFirstArchive).id, resp["parts"][0]["id"])
 	end
 
 	test "Can't get an archive that does not exist" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		get "/v1/auth/archive/22?jwt=#{matts_jwt}"
+		get "/v1/auth/archive/22", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 404
-		assert_same(2810, resp["errors"][0][0])
+		assert_equal(2810, resp["errors"][0][0])
 	end
 	# End get_archive tests
 
@@ -1535,52 +1535,52 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert_response 401
-		assert_same(2102, resp["errors"][0][0])
+		assert_equal(2102, resp["errors"][0][0])
 	end
 
 	test "Can't get the archive_part of the archive of another user" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		get "/v1/auth/archive_part/#{archive_parts(:FirstPartOfSherlocksFirstArchive).id}?jwt=#{matts_jwt}"
+		get "/v1/auth/archive_part/#{archive_parts(:FirstPartOfSherlocksFirstArchive).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can't get the archive_part from outside the website" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		get "/v1/auth/archive_part/#{archive_parts(:FirstPartOfMattsFirstArchive).id}?jwt=#{matts_jwt}"
+		get "/v1/auth/archive_part/#{archive_parts(:FirstPartOfMattsFirstArchive).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can get the archive_part" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		archive_part_id = archive_parts(:FirstPartOfMattsFirstArchive).id
 
-		get "/v1/auth/archive_part/#{archive_part_id}?jwt=#{matts_jwt}"
+		get "/v1/auth/archive_part/#{archive_part_id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 200
-		assert_same(archive_part_id, resp["id"])
+		assert_equal(archive_part_id, resp["id"])
 	end
 
 	test "Can't get an archive_part that does not exist" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		get "/v1/auth/archive_part/22?jwt=#{matts_jwt}"
+		get "/v1/auth/archive_part/22", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 		
 		assert_response 404
-		assert_same(2811, resp["errors"][0][0])
+		assert_equal(2811, resp["errors"][0][0])
 	end
 	# End get_archive_part tests
 
@@ -1590,40 +1590,40 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert_response 401
-		assert_same(2102, resp["errors"][0][0])
+		assert_equal(2102, resp["errors"][0][0])
 	end
 
 	test "Can't delete the archive of another user" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		delete "/v1/auth/archive/#{archives(:SherlocksFirstArchive).id}?jwt=#{matts_jwt}"
+		delete "/v1/auth/archive/#{archives(:SherlocksFirstArchive).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can't delete an archive from outside the website" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		delete "/v1/auth/archive/#{archives(:MattsFirstArchive).id}?jwt=#{matts_jwt}"
+		delete "/v1/auth/archive/#{archives(:MattsFirstArchive).id}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can't delete an archive that does not exist" do
 		matt = users(:matt)
-		matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-		delete "/v1/auth/archive/22?jwt=#{matts_jwt}"
+		delete "/v1/auth/archive/22", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 404
-		assert_same(2810, resp["errors"][0][0])
+		assert_equal(2810, resp["errors"][0][0])
 	end
 	# End delete_archive tests
 end
