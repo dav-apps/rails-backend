@@ -272,7 +272,7 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(session.save))
 
 			# Append the session id at the end of the jwt
-			token = token + ",#{session.id}"
+			token = token + ".#{session.id}"
 
 			result = session.attributes.except("secret")
 			result['exp'] = exp.to_i

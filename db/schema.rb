@@ -120,7 +120,7 @@ ActiveRecord::Schema.define(version: 20190614205314) do
     t.text "value"
   end
 
-  create_table "sessions", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" do |t|
+  create_table "sessions", force: :cascade, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8" do |t|
     t.integer "user_id"
     t.integer "app_id"
     t.string "secret"

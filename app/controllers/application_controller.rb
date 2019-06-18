@@ -131,8 +131,18 @@ class ApplicationController < ActionController::API
 		end
    end
 
-   def get_jwt_from_header(auth_header)
-		jwt, session_id = auth_header ? auth_header.split(' ').last.split(',') : nil
-		return [jwt, session_id.to_i]
+	def get_jwt_from_header(auth_header)
+		# session JWT: header.payload.signature.session_id
+		# Try to get the session id. If there is no session id, this is a normal jwt and the session id is 0
+		if !auth_header
+			return nil
+		end
+
+		jwt_parts = auth_header.split(' ').last.split('.')
+
+		jwt = jwt_parts[0..2].join('.')
+		session_id = jwt_parts[3].to_i
+
+		return [jwt, session_id]
    end
 end
