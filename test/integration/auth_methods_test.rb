@@ -215,7 +215,116 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_not_nil(resp["jwt"])
 		assert_equal(email, resp["email"])
 		assert_equal(username, resp["username"])
-   end
+	end
+	
+	test "Can sign up with session" do
+		auth = generate_auth_token(devs(:sherlock))
+		email = "test@dav-apps.tech"
+		password = "password"
+		username = "testuser-12312"
+		app = apps(:TestApp)
+		dev = devs(:matt)
+		device_name = "TestDevice"
+		device_type = "Laptop"
+		device_os = "Windows"
+
+		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=#{app.id}",
+				headers: {'Authorization' => auth},
+				params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
+		resp = JSON.parse response.body
+		
+		assert_response 201
+
+		assert_equal(email, resp["email"])
+		assert_equal(username, resp["username"])
+
+		jwt = resp['jwt']
+		session_id = jwt.split('.').last.to_i
+		session = Session.find_by_id(session_id)
+
+		assert_not_nil(session)
+		assert_equal(resp["id"], session.user_id)
+		assert_equal(app.id, session.app_id)
+		assert_equal(device_name, session.device_name)
+		assert_equal(device_type, session.device_type)
+		assert_equal(device_os, session.device_os)
+	end
+
+	test "Can't signup with session without api key and device info" do
+		auth = generate_auth_token(devs(:sherlock))
+		email = "testtest@dav-apps.tech"
+		password = "password"
+		username = "testuser-234234"
+		app = apps(:TestApp)
+
+		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=#{app.id}",
+				headers: {'Authorization' => auth}
+		resp = JSON.parse response.body
+
+		assert_response 400
+		assert_equal(2118, resp["errors"][0][0])
+		assert_equal(2125, resp["errors"][1][0])
+		assert_equal(2126, resp["errors"][2][0])
+		assert_equal(2127, resp["errors"][3][0])
+	end
+
+	test "Can't signup with session with the app of another dev" do
+		auth = generate_auth_token(devs(:sherlock))
+		email = "test@dav-apps.tech"
+		password = "password"
+		username = "testuser-12312"
+		app = apps(:davApp)
+		dev = devs(:matt)
+		device_name = "TestDevice"
+		device_type = "Laptop"
+		device_os = "Windows"
+
+		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=#{app.id}",
+				headers: {'Authorization' => auth},
+				params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't signup with session with the api key of a dev that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+		email = "test@dav-apps.tech"
+		password = "password"
+		username = "testuser-12312"
+		app = apps(:TestApp)
+		device_name = "TestDevice"
+		device_type = "Laptop"
+		device_os = "Windows"
+
+		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=#{app.id}",
+				headers: {'Authorization' => auth},
+				params: {api_key: "blablabla", device_name: device_name, device_type: device_type, device_os: device_os}.to_json
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2802, resp["errors"][0][0])
+	end
+
+	test "Can't signup with session with an app that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+		email = "test@dav-apps.tech"
+		password = "password"
+		username = "testuser-12312"
+		dev = devs(:matt)
+		device_name = "TestDevice"
+		device_type = "Laptop"
+		device_os = "Windows"
+
+		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=-20",
+				headers: {'Authorization' => auth},
+				params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2803, resp["errors"][0][0])
+	end
    # End signup tests
 
    # create_session tests

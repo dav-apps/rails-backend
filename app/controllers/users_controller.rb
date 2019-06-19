@@ -7,18 +7,41 @@ class UsersController < ApplicationController
 		email = params[:email]
       password = params[:password]
 		username = params[:username]
+		app_id = params[:app_id].to_i
 
 		begin
+			if app_id != 0
+				# Get the device info from the body
+				body = ValidationService.parse_json(request.body.string)
+				dev_api_key = body['api_key']
+				device_name = body['device_name']
+				device_type = body['device_type']
+				device_os = body['device_os']
+			end
+
 			auth_validation = ValidationService.validate_auth_missing(auth)
 			username_validation = ValidationService.validate_username_missing(username)
 			email_validation = ValidationService.validate_email_missing(email)
 			password_validation = ValidationService.validate_password_missing(password)
+			# Validations for the session properties
+			if app_id != 0
+				dev_api_key_validation = ValidationService.validate_api_key_missing(dev_api_key)
+				device_name_validation = ValidationService.validate_device_name_missing(device_name)
+				device_type_validation = ValidationService.validate_device_type_missing(device_type)
+				device_os_validation = ValidationService.validate_device_os_missing(device_os)
+			end
 			errors = Array.new
 
 			errors.push(auth_validation) if !auth_validation[:success]
 			errors.push(username_validation) if !username_validation[:success]
 			errors.push(email_validation) if !email_validation[:success]
 			errors.push(password_validation) if !password_validation[:success]
+			if app_id != 0
+				errors.push(dev_api_key_validation) if !dev_api_key_validation[:success]
+				errors.push(device_name_validation) if !device_name_validation[:success]
+				errors.push(device_type_validation) if !device_type_validation[:success]
+				errors.push(device_os_validation) if !device_os_validation[:success]
+			end
 
 			if errors.length > 0
 				raise RuntimeError, errors.to_json
@@ -54,16 +77,39 @@ class UsersController < ApplicationController
 				raise RuntimeError, errors.to_json
 			end
 
+			if app_id != 0
+				# Check if the app belongs to the dev with the api key
+				app_dev = Dev.find_by(api_key: dev_api_key)
+				ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(app_dev))
+
+				app = App.find_by_id(app_id)
+				ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+				ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, app_dev))
+			end
+
 			# Create the new user
 			user = User.new(email: email, password: password, username: username)
 			user.email_confirmation_token = generate_token
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
-			# Create a jwt for login
+			# Create a jwt
 			expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
-         exp = Time.now.to_i + expHours * 3600
-         payload = {:email => user.email, :username => user.username, :user_id => user.id, :dev_id => dev.id, :exp => exp}
-         jwt = JWT.encode payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM']
+			exp = Time.now.to_i + expHours * 3600
+			payload = {:email => user.email, :user_id => user.id, :dev_id => dev.id, :exp => exp}
+
+			if app_id != 0
+				# Create a session jwt
+				secret = SecureRandom.urlsafe_base64(30)
+
+				# Create the session
+				session = Session.new(user_id: user.id, app_id: app_id, secret: secret, exp: Time.at(exp).utc, device_name: device_name, device_type: device_type, device_os: device_os)
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(session.save))
+
+				jwt = (JWT.encode(payload, secret, ENV['JWT_ALGORITHM'])) + ".#{session.id}"
+			else
+				# Create a normal jwt
+				jwt = JWT.encode(payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM'])
+			end
 			
 			UserNotifier.send_verification_email(user).deliver_later
 
