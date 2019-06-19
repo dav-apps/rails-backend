@@ -538,7 +538,7 @@ class AppsController < ApplicationController
 				users_app.update_column(:last_active, Time.now)
 
 				# Notify connected clients of the new object
-				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 0)
+				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 0, session_id: session_id)
 
 				# Return the data
 				result = obj.attributes
@@ -600,7 +600,7 @@ class AppsController < ApplicationController
 					users_app.update_column(:last_active, Time.now)
 
 					# Notify connected clients of the new object
-					TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 0)
+					TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 0, session_id: session_id)
 
 					result["properties"] = properties
 					result["etag"] = generate_table_object_etag(obj)
@@ -859,7 +859,7 @@ class AppsController < ApplicationController
 				users_app.update_column(:last_active, Time.now) if users_app
 
 				# Notify connected clients of the updated object
-				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 1)
+				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 1, session_id: session_id)
 
 				# Return the data
 				result = obj.attributes
@@ -921,7 +921,7 @@ class AppsController < ApplicationController
 				users_app.update_column(:last_active, Time.now) if users_app
 
 				# Notify connected clients of the updated object
-				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 1)
+				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 1, session_id: session_id)
 
 				# Get the properties
 				properties = Hash.new
@@ -1005,7 +1005,7 @@ class AppsController < ApplicationController
 			users_app.update_column(:last_active, Time.now) if users_app
 
 			# Notify connected clients of the deleted object
-			TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 2)
+			TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 2, session_id: session_id)
 
 			obj.destroy!
 			result = {}
