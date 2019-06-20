@@ -74,3 +74,8 @@ notification_properties = NotificationProperty.create([
 	{notification: notifications.second, name: "title", value: "Your daily summary"},
 	{notification: notifications.second, name: "message", value: "You have 2 appointments and one Todo for today"}
 ])
+
+sessions = Session.create([
+	# eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImRhdmNsYXNzbGlicmFyeXRlc3RAZGF2LWFwcHMudGVjaCIsInVzZXJfaWQiOjUsImRldl9pZCI6MiwiZXhwIjozNzU2MTA1MDAyMn0.jZpdLre_ZMWGN2VNbZOn2Xg51RLAT6ocGnyM38jljHI.1
+	{user: users[4], app: apps[2], secret: "Pv99J1z5AcITJwi-kUVMTgKTj4EWD4bicoLPq2rT", exp: DateTime.parse("3160-04-06 09:00:22"), device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}
+])
