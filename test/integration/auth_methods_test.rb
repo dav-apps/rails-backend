@@ -547,6 +547,79 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
    # End get_session tests
    
+	# delete_session tests
+	test "Missing fields in delete_session" do
+		delete "/v1/auth/session"
+		resp = JSON.parse response.body
+
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
+	end
+
+	test "Can't delete a session that does not exist" do
+		# Create a session
+		auth_token = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt_dev = devs(:matt)
+
+		user_id = matt.id
+		app_id = apps(:TestApp).id
+		device_name = "Surface Book"
+		device_type = "Laptop"
+		device_os = "Windows 10"
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => app_id, "device_name" => device_name, "device_type" => device_type, "device_os" => device_os}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 201
+
+		# Delete the session
+		session = Session.find_by_id(resp["id"])
+		session.destroy!
+		
+		session = Session.find_by_id(resp["id"])
+		assert_nil(session)
+
+		# Try to delete the session through the endpoint
+		delete "/v1/auth/session", headers: {'Authorization' => resp["jwt"]}
+		resp2 = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2814, resp2["errors"][0][0])
+	end
+
+	test "Can delete a session" do
+		# Create a session
+		auth_token = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt_dev = devs(:matt)
+
+		user_id = matt.id
+		app_id = apps(:TestApp).id
+		device_name = "Surface Book"
+		device_type = "Laptop"
+		device_os = "Windows 10"
+
+		post "/v1/auth/session", 
+				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => app_id, "device_name" => device_name, "device_type" => device_type, "device_os" => device_os}.to_json,
+				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
+
+		assert_response 201
+
+		# Delete the session
+		delete "/v1/auth/session", headers: {'Authorization' => resp["jwt"]}
+		resp = JSON.parse response.body
+
+		assert_response 200
+
+		session = Session.find_by_id(resp["id"])
+		assert_nil(session)
+	end
+	# End delete_session tests
+
    # get_user tests
    test "Can't get user when the requested user is not the current user" do
       matt = users(:matt)

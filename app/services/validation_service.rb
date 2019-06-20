@@ -210,7 +210,7 @@ class ValidationService
          if !session
             # Session does not exist
             error_code = 2814
-            return [{success: false, error: [error_code, get_error_message(error_code)], status: 401}]
+            return [{success: false, error: [error_code, get_error_message(error_code)], status: 404}]
          end
 
          secret = session.secret
@@ -230,7 +230,7 @@ class ValidationService
 			error_code = 1303
 			[{success: false, error: [error_code, get_error_message(error_code)], status: 401}]
 		end
-	end
+   end
 
 	def self.validate_auth_missing(auth)
 		error_code = 2101

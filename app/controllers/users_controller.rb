@@ -370,6 +370,42 @@ class UsersController < ApplicationController
 		end
    end
 
+   def delete_session
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		
+		begin
+			# Validate the jwt
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			# Validate the user and dev from the jwt
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			# Get the session
+			session = Session.find_by_id(session_id)
+			ValidationService.raise_validation_error(ValidationService.validate_session_does_not_exist(session))
+			ValidationService.raise_validation_error(ValidationService.validate_session_belongs_to_user(session, user))
+
+			# Delete the session
+			session.destroy!
+
+			render json: {}, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			result = Hash.new
+			result["errors"] = ValidationService.get_errors_of_validations(validations)
+			render json: result, status: validations.last["status"]
+		end
+   end
+
 	def get_user
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		requested_user_id = params["id"]
