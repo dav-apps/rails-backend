@@ -37,14 +37,14 @@ module Workspace
          "https://calendo-dav-staging.azurewebsites.net",
          "https://pocketlib.dav-apps.tech",
          "https://pocketlib-dav.azurewebsites.net",
-         "https://pocketlib-dav-staging.azurewebsites.net"
+         "https://pocketlib-dav-staging.azurewebsites.net",
 			nil
 		]
 
     	Rails.application.config.middleware.insert_before 0, Rack::Cors do
 			allow do
 				origins 	ENV['BASE_URL'],
-							'blog.dav-apps.tech'
+							'blog.dav-apps.tech',
 							'localhost:3001',
 							'cards-dav.azurewebsites.net',
 							'calendo-dav.azurewebsites.net',
