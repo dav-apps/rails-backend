@@ -125,10 +125,7 @@ class UsersController < ApplicationController
 			render json: result, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -174,11 +171,8 @@ class UsersController < ApplicationController
          result["user_id"] = user.id
 			render json: result, status: 200
 		rescue RuntimeError => e
-			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+         validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -226,10 +220,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -326,9 +317,7 @@ class UsersController < ApplicationController
 			render json: result, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
    end
    
@@ -364,9 +353,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
    end
 
@@ -400,9 +387,7 @@ class UsersController < ApplicationController
 			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
    end
 
@@ -462,10 +447,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -509,10 +491,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -752,10 +731,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -801,10 +777,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -851,10 +824,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -908,10 +878,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -934,10 +901,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -961,10 +925,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -986,10 +947,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -1032,10 +990,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -1067,10 +1022,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -1112,10 +1064,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -1140,10 +1089,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -1179,10 +1125,7 @@ class UsersController < ApplicationController
 			render json: result, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -1244,10 +1187,7 @@ class UsersController < ApplicationController
 			end
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -1300,10 +1240,7 @@ class UsersController < ApplicationController
 			end
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
@@ -1347,10 +1284,7 @@ class UsersController < ApplicationController
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
-			result = Hash.new
-			result["errors"] = ValidationService.get_errors_of_validations(validations)
-
-			render json: result, status: validations.last["status"]
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
 
