@@ -87,23 +87,27 @@ class BlobOperationsService
 		Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
 		Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
 		
-		client = Azure::Blob::BlobService.new
-		blobs = client.list_blobs(ENV['AZURE_AVATAR_CONTAINER_NAME'])
+      client = Azure::Blob::BlobService.new
+      begin
+         blobs = client.list_blobs(ENV['AZURE_AVATAR_CONTAINER_NAME'])
 
-		blob = nil
-		default_blob = nil
+         blob = nil
+         default_blob = nil
 
-		blobs.each do |b|
-			name = b.name.split('.').first
-			if name == user_id.to_s
-				blob = b
-			elsif name == "default"
-				default_blob = b
-			end
-		end
+         blobs.each do |b|
+            name = b.name.split('.').first
+            if name == user_id.to_s
+               blob = b
+            elsif name == "default"
+               default_blob = b
+            end
+         end
 
-		# return [name, etag]
-		return blob ? [ENV['AZURE_AVATAR_CONTAINER_URL'] + blob.name, blob.properties[:etag]] : [ENV['AZURE_AVATAR_CONTAINER_URL'] + default_blob.name, default_blob.properties[:etag]]
+         # return [name, etag]
+   		return !blob.nil? ? [ENV['AZURE_AVATAR_CONTAINER_URL'] + blob.name, blob.properties[:etag]] : [ENV['AZURE_AVATAR_CONTAINER_URL'] + default_blob.name, default_blob.properties[:etag]]
+      rescue Faraday::ConnectionFailed => e
+         return ["", ""]
+      end
 	end
 
    def self.delete_avatar(user_id)

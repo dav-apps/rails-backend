@@ -602,7 +602,7 @@ class ValidationService
 		when 1103
 			"Unknown validation error"
 		when 1104
-			"Content-type not supported"
+			"Content-Type not supported"
 		when 1105
 			"User is not confirmed"
 		when 1106
