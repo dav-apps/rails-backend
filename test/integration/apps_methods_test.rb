@@ -1912,6 +1912,53 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(old_updated_at, matt.updated_at)
 	end
    # End get_table_by_id
+
+   # get_table_by_id_and_auth tests
+	test "Missing fields in get_table_by_id_and_auth" do
+		get "/v1/apps/table/#{tables(:card).id}/auth"
+		resp = JSON.parse(response.body)
+
+		assert(response.status == 401)
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't get table by id and auth with invalid auth" do
+		get "/v1/apps/table/#{tables(:card).id}/auth", headers: {'Authorization' => 'blabla'}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(1101, resp["errors"][0][0])
+	end
+
+	test "Can't get not existing table by id and auth" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		get "/v1/apps/table/-234/auth", headers: {'Authorization' => auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2804, resp["errors"][0][0])
+	end
+
+	test "Can't get table by id and auth if the app does not belong to the dev" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		get "/v1/apps/table/#{tables(:note).id}/auth", headers: {'Authorization' => auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get table by id and auth" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		get "/v1/apps/table/#{tables(:card).id}/auth", headers: {'Authorization' => auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+	end
+   # End get_table_by_id_and_auth tests
    
    # update_table tests
    test "Missing fields in update_table" do
