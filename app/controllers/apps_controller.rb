@@ -1232,6 +1232,67 @@ class AppsController < ApplicationController
 		end
 	end
 
+	def get_table_by_id_and_auth
+		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		table_id = params["id"]
+		user_id = params["user_id"]
+
+		begin
+			auth_validation = ValidationService.validate_auth_missing(auth)
+			id_validation = ValidationService.validate_id_missing(table_id)
+			errors = Array.new
+
+			errors.push(auth_validation) if !auth_validation[:success]
+			errors.push(id_validation) if !id_validation[:success]
+
+			if errors.length > 0
+				raise RuntimeError, errors.to_json
+			end
+
+			api_key = auth.split(",")[0]
+			sig = auth.split(",")[1]
+			
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+			
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			table = Table.find_by_id(table_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
+
+			# Check if the table belongs to an app of the dev
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(table.app, dev))
+
+			# Return the data
+			result = table.attributes
+			array = Array.new
+
+			table_objects = table.table_objects.where(user_id: user_id)
+
+			table_objects.each do |obj|
+				object = Hash.new
+				object["id"] = obj.id
+				object["uuid"] = obj.uuid
+				object["etag"] = generate_table_object_etag(obj)
+
+				properties = Hash.new
+				obj.properties.each do |prop|
+					properties[prop.name] = prop.value
+				end
+
+				object["properties"] = properties
+
+				array.push(object)
+			end
+
+			result["table_objects"] = array
+			render json: result, status: 200
+		rescue => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
+
 	def update_table
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		table_id = params["id"]
