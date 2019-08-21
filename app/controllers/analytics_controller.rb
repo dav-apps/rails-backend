@@ -5,27 +5,12 @@ class AnalyticsController < ApplicationController
 		app_id = params["app_id"]
 		save_country = params["save_country"] == "true"
 
-		begin
-			api_key_validation = ValidationService.validate_api_key_missing(api_key)
-			name_validation = ValidationService.validate_name_missing(name)
-			app_id_validation = ValidationService.validate_app_id_missing(app_id)
-			errors = Array.new
-
-			if !api_key_validation[:success]
-				errors.push(api_key_validation)
-			end
-
-			if !name_validation[:success]
-				errors.push(name_validation)
-			end
-
-			if !app_id_validation[:success]
-				errors.push(app_id_validation)
-			end
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+      begin
+         ValidationService.raise_multiple_validation_errors([
+            ValidationService.validate_api_key_missing(api_key),
+            ValidationService.validate_name_missing(name),
+            ValidationService.validate_app_id_missing(app_id)
+         ])
 
 			dev = Dev.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
@@ -54,11 +39,13 @@ class AnalyticsController < ApplicationController
 			object = ValidationService.parse_json(request.body.string)
 			object.each do |key, value|
 				if value
-					if value.length > 0
-						ValidationService.raise_validation_error(ValidationService.validate_property_name_too_short(key))
-						ValidationService.raise_validation_error(ValidationService.validate_property_value_too_short(value))
-						ValidationService.raise_validation_error(ValidationService.validate_property_name_too_long(key))
-						ValidationService.raise_validation_error(ValidationService.validate_property_value_too_long(value))
+               if value.length > 0
+                  ValidationService.raise_multiple_validation_errors([
+                     ValidationService.validate_property_name_too_short(key),
+                     ValidationService.validate_property_value_too_short(value),
+                     ValidationService.validate_property_name_too_long(key),
+                     ValidationService.validate_property_value_too_long(value)
+                  ])
 					end
 				end
 			end
@@ -113,17 +100,11 @@ class AnalyticsController < ApplicationController
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s') : Time.now
 		sort = params["sort"]
 
-		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(event_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+      begin
+         ValidationService.raise_multiple_validation_errors([
+            ValidationService.validate_jwt_missing(jwt),
+            ValidationService.validate_id_missing(event_id)
+         ])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -199,18 +180,11 @@ class AnalyticsController < ApplicationController
 		sort = params["sort"]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			app_id_validation = ValidationService.validate_app_id_missing(app_id)
-			name_validation = ValidationService.validate_name_missing(name)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(app_id_validation) if !app_id_validation[:success]
-			errors.push(name_validation) if !name_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_app_id_missing(app_id),
+				ValidationService.validate_name_missing(name)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -282,16 +256,10 @@ class AnalyticsController < ApplicationController
 		event_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(event_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(event_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -341,16 +309,10 @@ class AnalyticsController < ApplicationController
 		event_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(event_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(event_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -387,16 +349,10 @@ class AnalyticsController < ApplicationController
 		id = params[:id]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])

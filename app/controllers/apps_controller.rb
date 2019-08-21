@@ -8,19 +8,12 @@ class AppsController < ApplicationController
       link_play = params["link_play"]
       link_windows = params["link_windows"]
 		
-		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			name_validation = ValidationService.validate_name_missing(name)
-			desc_validation = ValidationService.validate_desc_missing(desc)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(name_validation) if !name_validation[:success]
-			errors.push(desc_validation) if !desc_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+      begin
+         ValidationService.raise_multiple_validation_errors([
+            ValidationService.validate_jwt_missing(jwt),
+            ValidationService.validate_name_missing(name),
+            ValidationService.validate_desc_missing(desc)
+         ])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -35,43 +28,30 @@ class AppsController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			# Validate properties
-			errors = Array.new
-			name_too_short_validation = ValidationService.validate_app_name_too_short(name)
-			name_too_long_validation = ValidationService.validate_app_name_too_long(name)
-			desc_too_short_validation = ValidationService.validate_desc_too_short(desc)
-			desc_too_long_validation = ValidationService.validate_desc_too_long(desc)
-
-			errors.push(name_too_short_validation) if !name_too_short_validation[:success]
-			errors.push(name_too_long_validation) if !name_too_long_validation[:success]
-			errors.push(desc_too_short_validation) if !desc_too_short_validation[:success]
-			errors.push(desc_too_long_validation) if !desc_too_long_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+         # Validate properties
+         ValidationService.raise_multiple_validation_errors([
+            ValidationService.validate_app_name_too_short(name),
+            ValidationService.validate_app_name_too_long(name),
+            ValidationService.validate_desc_too_short(desc),
+            ValidationService.validate_desc_too_long(desc)
+         ])
 
 			# Validate the links
-			errors = Array.new
+         validations = Array.new
 
 			if link_web
-				link_web_validation = ValidationService.validate_link_web_not_valid(link_web)
-				errors.push(link_web_validation) if !link_web_validation[:success]
+            validations.push(ValidationService.validate_link_web_not_valid(link_web))
 			end
 
 			if link_play
-				link_play_validation = ValidationService.validate_link_play_not_valid(link_play)
-				errors.push(link_play_validation) if !link_play_validation[:success]
+            validations.push(ValidationService.validate_link_play_not_valid(link_play))
 			end
 
 			if link_windows
-				link_windows_validation = ValidationService.validate_link_windows_not_valid(link_windows)
-				errors.push(link_windows_validation) if !link_windows_validation[:success]
-			end
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+            validations.push(ValidationService.validate_link_windows_not_valid(link_windows))
+         end
+         
+         ValidationService.raise_multiple_validation_errors(validations)
 
 			# Create the app
 			app = App.new(name: name, description: desc, dev_id: user.dev.id)
@@ -103,16 +83,10 @@ class AppsController < ApplicationController
 		app_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(app_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(app_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -236,16 +210,10 @@ class AppsController < ApplicationController
 		app_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(app_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(app_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -265,57 +233,47 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
 			object = ValidationService.parse_json(request.body.string)
-			errors = Array.new
+			validations = Array.new
 
 			name = object["name"]
 			if name
-				name_too_short_validation = ValidationService.validate_app_name_too_short(name)
-				name_too_long_validation = ValidationService.validate_app_name_too_long(name)
-
-				errors.push(name_too_short_validation) if !name_too_short_validation[:success]
-				errors.push(name_too_long_validation) if !name_too_long_validation[:success]
+				validations.push(
+					ValidationService.validate_app_name_too_short(name), 
+					ValidationService.validate_app_name_too_long(name)
+				)
 
 				app.name = name
 			end
 
 			desc = object["description"]
 			if desc
-				desc_too_short_validation = ValidationService.validate_desc_too_short(desc)
-				desc_too_long_validation = ValidationService.validate_desc_too_long(desc)
-				
-				errors.push(desc_too_short_validation) if !desc_too_short_validation[:success]
-				errors.push(desc_too_long_validation) if !desc_too_long_validation[:success]
+				validations.push(
+					ValidationService.validate_desc_too_short(desc),
+					ValidationService.validate_desc_too_long(desc)
+				)
 
 				app.description = desc
 			end
 
 			link_web = object["link_web"]
 			if link_web
-				link_web_validation = ValidationService.validate_link_web_not_valid(link_web)
-				errors.push(link_web_validation) if !link_web_validation[:success]
-
+				validations.push(ValidationService.validate_link_web_not_valid(link_web))
 				app.link_web = link_web
 			end
 
 			link_play = object["link_play"]
 			if link_play
-				link_play_validation = ValidationService.validate_link_play_not_valid(link_play)
-				errors.push(link_play_validation) if !link_play_validation[:success]
-
+				validations.push(ValidationService.validate_link_play_not_valid(link_play))
 				app.link_play = link_play
 			end
 
 			link_windows = object["link_windows"]
 			if link_windows
-				link_windows_validation = ValidationService.validate_link_windows_not_valid(link_windows)
-				errors.push(link_windows_validation) if !link_windows_validation[:success]
-
+				validations.push(ValidationService.validate_link_windows_not_valid(link_windows))
 				app.link_windows = link_windows
 			end
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			
+			ValidationService.raise_multiple_validation_errors(validations)
 
 			# Update the app
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(app.save))
@@ -332,16 +290,10 @@ class AppsController < ApplicationController
 		app_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(app_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(app_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -379,18 +331,11 @@ class AppsController < ApplicationController
 		uuid = params["uuid"]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			app_id_validation = ValidationService.validate_app_id_missing(app_id)
-			table_name_validation = ValidationService.validate_table_name_and_table_id_missing(table_name, table_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(app_id_validation) if !app_id_validation[:success]
-			errors.push(table_name_validation) if !table_name_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_app_id_missing(app_id),
+				ValidationService.validate_table_name_and_table_id_missing(table_name, table_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -418,18 +363,11 @@ class AppsController < ApplicationController
 					ValidationService.raise_validation_error(ValidationService.validate_users_dev_is_dev(user, dev, 2804))
 
 					# Validate the table name
-					table_name_too_short_validation = ValidationService.validate_table_name_too_short(table_name)
-					table_name_too_long_validation = ValidationService.validate_table_name_too_long(table_name)
-					table_name_invalid_validation = ValidationService.validate_table_name_contains_not_allowed_characters(table_name)
-					errors = Array.new
-
-					errors.push(table_name_too_short_validation) if !table_name_too_short_validation[:success]
-					errors.push(table_name_too_long_validation) if !table_name_too_long_validation[:success]
-					errors.push(table_name_invalid_validation) if !table_name_invalid_validation[:success]
-
-					if errors.length > 0
-						raise RuntimeError, errors.to_json
-					end
+					ValidationService.raise_multiple_validation_errors([
+						ValidationService.validate_table_name_too_short(table_name),
+						ValidationService.validate_table_name_too_long(table_name),
+						ValidationService.validate_table_name_contains_not_allowed_characters(table_name)
+					])
 
 					# Create the table
 					table = Table.new(app_id: app.id, name: (table_name[0].upcase + table_name[1..-1]))
@@ -478,20 +416,12 @@ class AppsController < ApplicationController
 				object.each do |key, value|
 					if value
 						if value.length > 0
-							property_name_too_short_validation = ValidationService.validate_property_name_too_short(key)
-							property_name_too_long_validation = ValidationService.validate_property_name_too_long(key)
-							property_value_too_short_validation = ValidationService.validate_property_value_too_short(value)
-							property_value_too_long_validation = ValidationService.validate_property_value_too_long(value)
-							errors = Array.new
-							
-							errors.push(property_name_too_short_validation) if !property_name_too_short_validation[:success]
-							errors.push(property_name_too_long_validation) if !property_name_too_long_validation[:success]
-							errors.push(property_value_too_short_validation) if !property_value_too_short_validation[:success]
-							errors.push(property_value_too_long_validation) if !property_value_too_long_validation[:success]
-
-							if errors.length > 0
-								raise RuntimeError, errors.to_json
-							end
+							ValidationService.raise_multiple_validation_errors([
+								ValidationService.validate_property_name_too_short(key),
+								ValidationService.validate_property_name_too_long(key),
+								ValidationService.validate_property_value_too_short(value),
+								ValidationService.validate_property_value_too_long(value)
+							])
 						end
 					end
 				end
@@ -718,16 +648,10 @@ class AppsController < ApplicationController
 		ext = params["ext"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(object_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(object_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -857,20 +781,12 @@ class AppsController < ApplicationController
 
 				object.each do |key, value|
 					if value && value.length > 0
-						name_too_short_validation = ValidationService.validate_property_name_too_short(key)
-						name_too_long_validation = ValidationService.validate_property_name_too_long(key)
-						value_too_short_validation = ValidationService.validate_property_value_too_short(value)
-						value_too_long_validation = ValidationService.validate_property_value_too_long(value)
-						errors = Array.new
-
-						errors.push(name_too_short_validation) if !name_too_short_validation[:success]
-						errors.push(name_too_long_validation) if !name_too_long_validation[:success]
-						errors.push(value_too_short_validation) if !value_too_short_validation[:success]
-						errors.push(value_too_long_validation) if !value_too_long_validation[:success]
-
-						if errors.length > 0
-							raise RuntimeError, errors.to_json
-						end
+						ValidationService.raise_multiple_validation_errors([
+							ValidationService.validate_property_name_too_short(key),
+							ValidationService.validate_property_name_too_long(key),
+							ValidationService.validate_property_value_too_short(value),
+							ValidationService.validate_property_value_too_long(value)
+						])
 					end
 				end
 
@@ -921,16 +837,10 @@ class AppsController < ApplicationController
 		object_id = params["id"]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(object_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(object_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -996,18 +906,11 @@ class AppsController < ApplicationController
       app_id = params["app_id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			app_id_validation = ValidationService.validate_app_id_missing(app_id)
-			table_name_validation = ValidationService.validate_table_name_missing(table_name)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(app_id_validation) if !app_id_validation[:success]
-			errors.push(table_name_validation) if !table_name_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_app_id_missing(app_id),
+				ValidationService.validate_table_name_missing(table_name)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1029,18 +932,11 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_table_already_exists(table))
 
 			# Validate the properties
-			name_too_short_validation = ValidationService.validate_table_name_too_short(table_name)
-			name_too_long_validation = ValidationService.validate_table_name_too_long(table_name)
-			name_invalid_validation = ValidationService.validate_table_name_contains_not_allowed_characters(table_name)
-			errors = Array.new
-
-			errors.push(name_too_short_validation) if !name_too_short_validation[:success]
-			errors.push(name_too_long_validation) if !name_too_long_validation[:success]
-			errors.push(name_invalid_validation) if !name_invalid_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_table_name_too_short(table_name),
+				ValidationService.validate_table_name_too_long(table_name),
+				ValidationService.validate_table_name_contains_not_allowed_characters(table_name)
+			])
 
 			# Create the table and return the data
 			table = Table.new(name: (table_name[0].upcase + table_name[1..-1]), app_id: app.id)
@@ -1068,18 +964,11 @@ class AppsController < ApplicationController
 		page = page < 1 ? default_page : page
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			app_id_validation = ValidationService.validate_app_id_missing(app_id)
-			table_name_validation = ValidationService.validate_table_name_missing(table_name)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(app_id_validation) if !app_id_validation[:success]
-			errors.push(table_name_validation) if !table_name_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_app_id_missing(app_id),
+				ValidationService.validate_table_name_missing(table_name)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1158,16 +1047,10 @@ class AppsController < ApplicationController
 		page = page < 1 ? default_page : page
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(table_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(table_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1238,16 +1121,10 @@ class AppsController < ApplicationController
 		user_id = params["user_id"]
 
 		begin
-			auth_validation = ValidationService.validate_auth_missing(auth)
-			id_validation = ValidationService.validate_id_missing(table_id)
-			errors = Array.new
-
-			errors.push(auth_validation) if !auth_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_auth_missing(auth),
+				ValidationService.validate_id_missing(table_id)
+			])
 
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
@@ -1298,16 +1175,10 @@ class AppsController < ApplicationController
 		table_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(table_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(table_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1335,18 +1206,11 @@ class AppsController < ApplicationController
 			# Validate the properties
 			name = object["name"]
 			if name
-				name_too_short_validation = ValidationService.validate_table_name_too_short(name)
-				name_too_long_validation = ValidationService.validate_table_name_too_long(name)
-				name_invalid_validation = ValidationService.validate_table_name_contains_not_allowed_characters(name)
-				errors = Array.new
-
-				errors.push(name_too_short_validation) if !name_too_short_validation[:success]
-				errors.push(name_too_long_validation) if !name_too_long_validation[:success]
-				errors.push(name_invalid_validation) if !name_invalid_validation[:success]
-
-				if errors.length > 0
-					raise RuntimeError, errors.to_json
-				end
+				ValidationService.raise_multiple_validation_errors([
+					ValidationService.validate_table_name_too_short(name),
+					ValidationService.validate_table_name_too_long(name),
+					ValidationService.validate_table_name_contains_not_allowed_characters(name)
+				])
 			end
 
 			table.name = (name[0].upcase + name[1..-1])
@@ -1365,16 +1229,10 @@ class AppsController < ApplicationController
 		table_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(table_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(table_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1412,16 +1270,10 @@ class AppsController < ApplicationController
 		object_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(object_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(object_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1465,16 +1317,10 @@ class AppsController < ApplicationController
 		object_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(object_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(object_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1517,18 +1363,11 @@ class AppsController < ApplicationController
 		token = params["token"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(object_id)
-			token_validation = ValidationService.validate_access_token_missing(token)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-			errors.push(token_validation) if !token_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(object_id),
+				ValidationService.validate_access_token_missing(token)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1575,18 +1414,11 @@ class AppsController < ApplicationController
 		token = params["token"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(object_id)
-			token_validation = ValidationService.validate_access_token_missing(token)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-			errors.push(token_validation) if !token_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(object_id),
+				ValidationService.validate_access_token_missing(token)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1644,18 +1476,11 @@ class AppsController < ApplicationController
 		interval = params["interval"]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			app_id_validation = ValidationService.validate_app_id_missing(app_id)
-			time_validation = ValidationService.validate_time_missing(time)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(app_id_validation) if !app_id_validation[:success]
-			errors.push(time_validation) if !time_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_app_id_missing(app_id),
+				ValidationService.validate_time_missing(time)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1685,20 +1510,12 @@ class AppsController < ApplicationController
 			body = ValidationService.parse_json(request.body.string)
 			body.each do |key, value|
 				if value && value.length > 0
-					property_name_too_short_validation = ValidationService.validate_property_name_too_short(key)
-					property_name_too_long_validation = ValidationService.validate_property_name_too_long(key)
-					property_value_too_short_validation = ValidationService.validate_property_value_too_short(value)
-					property_value_too_long_validation = ValidationService.validate_property_value_too_long(value)
-					errors = Array.new
-					
-					errors.push(property_name_too_short_validation) if !property_name_too_short_validation[:success]
-					errors.push(property_name_too_long_validation) if !property_name_too_long_validation[:success]
-					errors.push(property_value_too_short_validation) if !property_value_too_short_validation[:success]
-					errors.push(property_value_too_long_validation) if !property_value_too_long_validation[:success]
-
-					if errors.length > 0
-						raise RuntimeError, errors.to_json
-					end
+					ValidationService.raise_multiple_validation_errors([
+						ValidationService.validate_property_name_too_short(key),
+						ValidationService.validate_property_name_too_long(key),
+						ValidationService.validate_property_value_too_short(value),
+						ValidationService.validate_property_value_too_long(value)
+					])
 				end
 			end
 
@@ -1785,16 +1602,10 @@ class AppsController < ApplicationController
 		app_id = params["app_id"]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			app_id_validation = ValidationService.validate_app_id_missing(app_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(app_id_validation) if !app_id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_app_id_missing(app_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1875,20 +1686,12 @@ class AppsController < ApplicationController
 			body = ValidationService.parse_json(request.body.string)
 			body.each do |key, value|
 				if value && value.length > 0
-					property_name_too_short_validation = ValidationService.validate_property_name_too_short(key)
-					property_name_too_long_validation = ValidationService.validate_property_name_too_long(key)
-					property_value_too_short_validation = ValidationService.validate_property_value_too_short(value)
-					property_value_too_long_validation = ValidationService.validate_property_value_too_long(value)
-					errors = Array.new
-					
-					errors.push(property_name_too_short_validation) if !property_name_too_short_validation[:success]
-					errors.push(property_name_too_long_validation) if !property_name_too_long_validation[:success]
-					errors.push(property_value_too_short_validation) if !property_value_too_short_validation[:success]
-					errors.push(property_value_too_long_validation) if !property_value_too_long_validation[:success]
-
-					if errors.length > 0
-						raise RuntimeError, errors.to_json
-					end
+					ValidationService.raise_multiple_validation_errors([
+						ValidationService.validate_property_name_too_short(key),
+						ValidationService.validate_property_name_too_long(key),
+						ValidationService.validate_property_value_too_short(value),
+						ValidationService.validate_property_value_too_long(value)
+					])
 				end
 			end
 
@@ -2014,18 +1817,11 @@ class AppsController < ApplicationController
 			p256dh = body[p256dh_key]
 			auth = body[auth_key]
 
-			errors = Array.new
-			endpoint_validation = ValidationService.validate_endpoint_missing(endpoint)
-			p256dh_validation = ValidationService.validate_p256dh_missing(p256dh)
-			auth_validation = ValidationService.validate_subscription_auth_missing(auth)
-
-			errors.push(endpoint_validation) if !endpoint_validation[:success]
-			errors.push(p256dh_validation) if !p256dh_validation[:success]
-			errors.push(auth_validation) if !auth_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_endpoint_missing(endpoint),
+				ValidationService.validate_p256dh_missing(p256dh),
+				ValidationService.validate_subscription_auth_missing(auth)
+			])
 
 			# Create the subscription
 			subscription = WebPushSubscription.new(user: user, uuid: uuid, endpoint: endpoint, p256dh: p256dh, auth: auth)
@@ -2045,16 +1841,10 @@ class AppsController < ApplicationController
 		uuid = params["uuid"]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			uuid_validation = ValidationService.validate_uuid_missing(uuid)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(uuid_validation) if !uuid_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_uuid_missing(uuid)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -2085,16 +1875,10 @@ class AppsController < ApplicationController
 		uuid = params["uuid"]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			uuid_validation = ValidationService.validate_uuid_missing(uuid)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(uuid_validation) if !uuid_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_uuid_missing(uuid)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])

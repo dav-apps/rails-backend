@@ -34,6 +34,17 @@ class ValidationService
 		end
 	end
 
+	def self.raise_multiple_validation_errors(validations)
+		errors = Array.new
+		validations.each do |validation|
+			errors.push(validation) if !validation[:success]
+		end
+
+		if errors.length > 0
+			raise RuntimeError, errors.to_json
+		end
+	end
+
 	def self.validate_authorization(auth)
 		error_code = 1101
 		if auth

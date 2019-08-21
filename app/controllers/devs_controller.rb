@@ -70,16 +70,10 @@ class DevsController < ApplicationController
       requested_dev_api_key = params["api_key"]
 
       begin
-         auth_validation = ValidationService.validate_auth_missing(auth)
-         api_key_validation = ValidationService.validate_api_key_missing(requested_dev_api_key)
-         errors = Array.new
-
-         errors.push(auth_validation) if !auth_validation[:success]
-         errors.push(api_key_validation) if !api_key_validation[:success]
-
-         if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+         ValidationService.raise_multiple_validation_errors([
+            ValidationService.validate_auth_missing(auth),
+            ValidationService.validate_api_key_missing(requested_dev_api_key)
+         ])
 			
 			api_key = auth.split(",")[0]
          sig = auth.split(",")[1]

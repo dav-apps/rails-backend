@@ -330,16 +330,17 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # create_session tests
    test "Missing fields in create_session" do
 		post "/v1/auth/session", headers: {'Content-Type' => 'application/json'}
-		resp = JSON.parse response.body
+      resp = JSON.parse response.body
 
-		assert_response 400
-		assert_equal(2106, resp["errors"][0][0])
-		assert_equal(2107, resp["errors"][1][0])
-		assert_equal(2110, resp["errors"][2][0])
-		assert_equal(2118, resp["errors"][3][0])
-		assert_equal(2125, resp["errors"][4][0])
-		assert_equal(2126, resp["errors"][5][0])
-		assert_equal(2127, resp["errors"][6][0])
+      assert_response 400
+      assert_equal(2101, resp["errors"][0][0])
+		assert_equal(2106, resp["errors"][1][0])
+		assert_equal(2107, resp["errors"][2][0])
+		assert_equal(2110, resp["errors"][3][0])
+		assert_equal(2118, resp["errors"][4][0])
+		assert_equal(2125, resp["errors"][5][0])
+		assert_equal(2126, resp["errors"][6][0])
+		assert_equal(2127, resp["errors"][7][0])
 	end
 	
 	test "Can't create a session when using another Content-Type than application/json" do

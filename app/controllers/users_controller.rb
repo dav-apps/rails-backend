@@ -19,33 +19,24 @@ class UsersController < ApplicationController
 				device_os = body['device_os']
 			end
 
-			auth_validation = ValidationService.validate_auth_missing(auth)
-			username_validation = ValidationService.validate_username_missing(username)
-			email_validation = ValidationService.validate_email_missing(email)
-			password_validation = ValidationService.validate_password_missing(password)
+         validations = [
+            ValidationService.validate_auth_missing(auth),
+            ValidationService.validate_username_missing(username),
+            ValidationService.validate_email_missing(email),
+            ValidationService.validate_password_missing(password)
+         ]
+
 			# Validations for the session properties
-			if app_id != 0
-				dev_api_key_validation = ValidationService.validate_api_key_missing(dev_api_key)
-				device_name_validation = ValidationService.validate_device_name_missing(device_name)
-				device_type_validation = ValidationService.validate_device_type_missing(device_type)
-				device_os_validation = ValidationService.validate_device_os_missing(device_os)
-			end
-			errors = Array.new
+         if app_id != 0
+            validations.push(
+					ValidationService.validate_api_key_missing(dev_api_key),
+					ValidationService.validate_device_name_missing(device_name),
+					ValidationService.validate_device_type_missing(device_type),
+					ValidationService.validate_device_os_missing(device_os)
+				)
+         end
 
-			errors.push(auth_validation) if !auth_validation[:success]
-			errors.push(username_validation) if !username_validation[:success]
-			errors.push(email_validation) if !email_validation[:success]
-			errors.push(password_validation) if !password_validation[:success]
-			if app_id != 0
-				errors.push(dev_api_key_validation) if !dev_api_key_validation[:success]
-				errors.push(device_name_validation) if !device_name_validation[:success]
-				errors.push(device_type_validation) if !device_type_validation[:success]
-				errors.push(device_os_validation) if !device_os_validation[:success]
-			end
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+         ValidationService.raise_multiple_validation_errors(validations)
 
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
@@ -58,24 +49,14 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_email_taken(email))
 
 			# Validate the properties
-			email_validation = ValidationService.validate_email_not_valid(email)
-			username_too_short_validation = ValidationService.validate_username_too_short(username)
-			username_too_long_validation = ValidationService.validate_username_too_long(username)
-			password_too_short_validation = ValidationService.validate_password_too_short(password)
-			password_too_long_validation = ValidationService.validate_password_too_long(password)
-			username_taken_validation = ValidationService.validate_username_taken(username)
-			errors = Array.new
-
-			errors.push(email_validation) if !email_validation[:success]
-			errors.push(username_too_short_validation) if !username_too_short_validation[:success]
-			errors.push(username_too_long_validation) if !username_too_long_validation[:success]
-			errors.push(password_too_short_validation) if !password_too_short_validation[:success]
-			errors.push(password_too_long_validation) if !password_too_long_validation[:success]
-			errors.push(username_taken_validation) if !username_taken_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_email_not_valid(email),
+				ValidationService.validate_username_too_short(username),
+				ValidationService.validate_username_too_long(username),
+				ValidationService.validate_password_too_short(password),
+				ValidationService.validate_password_too_long(password),
+				ValidationService.validate_username_taken(username)
+			])
 
 			if app_id != 0
 				# Check if the app belongs to the dev with the api key
@@ -135,18 +116,11 @@ class UsersController < ApplicationController
       password = params[:password]
 
 		begin
-			auth_validation = ValidationService.validate_auth_missing(auth)
-			email_validation = ValidationService.validate_email_missing(email)
-			password_validation = ValidationService.validate_password_missing(password)
-			errors = Array.new
-
-			errors.push(auth_validation) if !auth_validation[:success]
-			errors.push(email_validation) if !email_validation[:success]
-			errors.push(password_validation) if  !password_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_auth_missing(auth),
+				ValidationService.validate_email_missing(email),
+				ValidationService.validate_password_missing(password)
+			])
 
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
@@ -181,16 +155,10 @@ class UsersController < ApplicationController
 		api_key = params[:api_key]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			api_key_validation = ValidationService.validate_api_key_missing(api_key)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(api_key_validation) if !api_key_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_api_key_missing(api_key)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -242,27 +210,16 @@ class UsersController < ApplicationController
          device_os = body['device_os']
 
 			# Validate the params
-			auth_validation = ValidationService.validate_auth_missing(auth)
-			email_validation = ValidationService.validate_email_missing(email)
-			password_validation = ValidationService.validate_password_missing(password)
-			app_id_validation = ValidationService.validate_app_id_missing(app_id)
-         app_api_key_validation = ValidationService.validate_api_key_missing(app_api_key)
-         device_name_validation = ValidationService.validate_device_name_missing(device_name)
-         device_type_validation = ValidationService.validate_device_type_missing(device_type)
-         device_os_validation = ValidationService.validate_device_os_missing(device_os)
-			errors = Array.new
-
-			errors.push(email_validation) if !email_validation[:success]
-			errors.push(password_validation) if !password_validation[:success]
-			errors.push(app_id_validation) if !app_id_validation[:success]
-         errors.push(app_api_key_validation) if !app_api_key_validation[:success]
-         errors.push(device_name_validation) if !device_name_validation[:success]
-         errors.push(device_type_validation) if !device_type_validation[:success]
-         errors.push(device_os_validation) if !device_os_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_auth_missing(auth),
+				ValidationService.validate_email_missing(email),
+				ValidationService.validate_password_missing(password),
+				ValidationService.validate_app_id_missing(app_id),
+				ValidationService.validate_api_key_missing(app_api_key),
+				ValidationService.validate_device_name_missing(device_name),
+				ValidationService.validate_device_type_missing(device_type),
+				ValidationService.validate_device_os_missing(device_os)
+			])
 
 			# Get the info from the auth
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
@@ -396,16 +353,10 @@ class UsersController < ApplicationController
 		requested_user_id = params["id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_user_id_missing(requested_user_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_user_id_missing(requested_user_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -442,6 +393,7 @@ class UsersController < ApplicationController
 				app_hash["used_storage"] = users_app.used_storage
 				users_apps.push(app_hash)
 			end
+
 			result["apps"] = users_apps
 			result["archives"] = user.archives
 			render json: result, status: 200
@@ -531,34 +483,21 @@ class UsersController < ApplicationController
 
 			username = object["username"]
 			if username
-				too_short_validation = ValidationService.validate_username_too_short(username)
-				too_long_validation = ValidationService.validate_username_too_long(username)
-				taken_validation = ValidationService.validate_username_taken(username)
-				errors = Array.new
-
-				errors.push(too_short_validation) if !too_short_validation[:success]
-				errors.push(too_long_validation) if !too_long_validation[:success]
-				errors.push(taken_validation) if !taken_validation[:success]
-
-				if errors.length > 0
-					raise RuntimeError, errors.to_json
-				end
+				ValidationService.raise_multiple_validation_errors([
+					ValidationService.validate_username_too_short(username),
+					ValidationService.validate_username_too_long(username),
+					ValidationService.validate_username_taken(username)
+				])
 
 				user.username = username
 			end
 
 			password = object["password"]
 			if password
-				too_short_validation = ValidationService.validate_password_too_short(password)
-				too_long_validation = ValidationService.validate_password_too_long(password)
-				errors = Array.new
-
-				errors.push(too_short_validation) if !too_short_validation[:success]
-				errors.push(too_long_validation) if !too_long_validation[:success]
-
-				if errors.length > 0
-					raise RuntimeError, errors.to_json
-				end
+				ValidationService.raise_multiple_validation_errors([
+					ValidationService.validate_password_too_short(password),
+					ValidationService.validate_password_too_long(password)
+				])
 
 				# Set password_confirmation_token and send email
 				user.new_password = BCrypt::Password.create(password)
@@ -741,18 +680,11 @@ class UsersController < ApplicationController
 		user_id = params[:id]
 		
 		begin
-			id_validation = ValidationService.validate_user_id_missing(user_id)
-			email_confirmation_token_validation = ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
-			password_confirmation_token_validation = ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
-			errors = Array.new
-
-			errors.push(id_validation) if !id_validation[:success]
-			errors.push(email_confirmation_token_validation) if !email_confirmation_token_validation[:success]
-			errors.push(password_confirmation_token_validation) if !password_confirmation_token_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_user_id_missing(user_id),
+				ValidationService.validate_email_confirmation_token_missing(email_confirmation_token),
+				ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+			])
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
@@ -786,16 +718,10 @@ class UsersController < ApplicationController
 		app_id = params["app_id"]
 		
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(app_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(app_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -956,31 +882,19 @@ class UsersController < ApplicationController
 		password = params["password"]
 		
 		begin
-			password_validation = ValidationService.validate_password_missing(password)
-			token_validation = ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
-			errors = Array.new
-
-			errors.push(password_validation) if !password_validation[:success]
-			errors.push(token_validation) if !token_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_password_missing(password),
+				ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+			])
 
 			user = User.find_by(password_confirmation_token: password_confirmation_token)
 			ValidationService.raise_validation_error(ValidationService.get_password_confirmation_token_incorrect_error(!user))
 
 			# Validate the password
-			too_short_validation = ValidationService.validate_password_too_short(password)
-			too_long_validation = ValidationService.validate_password_too_long(password)
-			errors = Array.new
-
-			errors.push(too_short_validation) if !too_short_validation[:success]
-			errors.push(too_long_validation) if !too_long_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_password_too_short(password),
+				ValidationService.validate_password_too_long(password)
+			])
 
 			user.password = password
 			user.password_confirmation_token = nil
@@ -999,12 +913,10 @@ class UsersController < ApplicationController
 		password_confirmation_token = params["password_confirmation_token"]
 		
 		begin
-			id_validation = ValidationService.validate_id_missing(user_id)
-			token_validation = ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
-			errors = Array.new
-
-			errors.push(id_validation) if !id_validation[:success]
-			errors.push(token_validation) if !token_validation[:success]
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_id_missing(user_id),
+				ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+			])
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
@@ -1031,16 +943,10 @@ class UsersController < ApplicationController
 		email_confirmation_token = params["email_confirmation_token"]
 		
 		begin
-			id_validation = ValidationService.validate_id_missing(user_id)
-			token_validation = ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
-			errors = Array.new
-
-			errors.push(id_validation) if !id_validation[:success]
-			errors.push(token_validation) if !token_validation[:success]
-			
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_id_missing(user_id),
+				ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
+			])
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
@@ -1135,16 +1041,10 @@ class UsersController < ApplicationController
 		file = params[:file] == "true"
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_archive_id_missing(archive_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_Validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_archive_id_missing(archive_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1197,16 +1097,10 @@ class UsersController < ApplicationController
 		file = params[:file] == "true"
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_Validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1249,16 +1143,10 @@ class UsersController < ApplicationController
 		archive_id = params[:id]
 
 		begin
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			id_validation = ValidationService.validate_id_missing(archive_id)
-			errors = Array.new
-
-			errors.push(jwt_validation) if !jwt_validation[:success]
-			errors.push(id_validation) if !id_validation[:success]
-
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_id_missing(archive_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
