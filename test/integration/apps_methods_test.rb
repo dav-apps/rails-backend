@@ -1143,7 +1143,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
       # Delete object
       delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
-      
       assert_response 200
    end
 
@@ -1214,6 +1213,148 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(old_updated_at, matt.updated_at)
 	end
    # End get_object tests
+
+   # get_object_with_auth tests
+   test "Missing fields in get_object_with_auth" do
+      obj = table_objects(:second)
+
+      get "/v1/apps/object/#{obj.id}/auth"
+      resp = JSON.parse response.body
+
+      assert_response 401
+      assert_equal(2101, resp["errors"][0][0])
+	end
+	
+	test "Can't get a table object with auth that does not exist" do
+		auth = generate_auth_token(devs(:matt))
+
+		get "/v1/apps/object/-20/auth", headers: {'Authorization' => auth}
+		resp = JSON.parse response.body
+
+		assert_response 404
+		assert_equal(2805, resp["errors"][0][0])
+	end
+
+	test "Can't get the table object of the app of another dev with auth" do
+		auth = generate_auth_token(devs(:matt))
+		obj = table_objects(:second)
+
+		get "/v1/apps/object/#{obj.id}/auth", headers: {'Authorization' => auth}
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't get the table object of the app of another dev with auth and uuid" do
+		auth = generate_auth_token(devs(:matt))
+		obj = table_objects(:second)
+
+		get "/v1/apps/object/#{obj.uuid}/auth", headers: {'Authorization' => auth}
+		resp = JSON.parse response.body
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get file of table object with auth" do
+		# Create the object with file
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		ext = 'txt'
+		content_type = 'text/plain'
+		file_content = "Hello World! This is a text file."
+
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{ext}",
+				params: file_content,
+				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+		resp = JSON.parse response.body
+
+		assert_response 201
+		obj = TableObject.find_by_id(resp["id"])
+		assert_not_nil(obj)
+
+		# Try to get the file of the object with auth
+		auth = generate_auth_token(devs(:matt))
+
+		get "/v1/apps/object/#{resp["id"]}/auth?file=true", 
+				headers: {'Authorization' => auth}
+		resp2 = response.body
+
+		assert_response 200
+		assert_equal(content_type, response.headers["Content-Type"])
+		assert_equal(file_content, resp2)
+
+		# Delete the object
+		delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
+		assert_response 200
+	end
+
+	test "Can get file of table object with auth and uuid" do
+		# Create the object with file
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		ext = 'txt'
+		content_type = 'text/plain'
+		file_content = "Hello World! This is a text file."
+
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{ext}",
+				params: file_content,
+				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		obj = TableObject.find_by_id(resp["id"])
+		assert_not_nil(obj)
+
+		# Try to get the file of the object with auth and uuid
+		auth = generate_auth_token(devs(:matt))
+
+		get "/v1/apps/object/#{resp["uuid"]}/auth?file=true", 
+				headers: {'Authorization' => auth}
+		resp2 = response.body
+
+		assert_response 200
+		assert_equal(content_type, response.headers["Content-Type"])
+		assert_equal(file_content, resp2)
+
+		# Delete the object
+		delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
+		assert_response 200
+	end
+
+	test "Can get table object with auth" do
+		auth = generate_auth_token(devs(:sherlock))
+		obj = table_objects(:third)
+
+		get "/v1/apps/object/#{obj.id}/auth", headers: {'Authorization' => auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(obj.id, resp["id"])
+		assert_equal(obj.uuid, resp["uuid"])
+		
+		obj.properties.each do |prop|
+			assert_equal(prop.value, resp["properties"][prop.name])
+		end
+	end
+
+	test "Can get table object with auth and uuid" do
+		auth = generate_auth_token(devs(:sherlock))
+		obj = table_objects(:third)
+
+		get "/v1/apps/object/#{obj.uuid}/auth", headers: {'Authorization' => auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(obj.id, resp["id"])
+		assert_equal(obj.uuid, resp["uuid"])
+		
+		obj.properties.each do |prop|
+			assert_equal(prop.value, resp["properties"][prop.name])
+		end
+	end
+   # End get_object_with_auth tests
    
    # update_object tests
    test "Can't update an object when the user does not own the object" do
