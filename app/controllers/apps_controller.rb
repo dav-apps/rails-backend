@@ -639,7 +639,83 @@ class AppsController < ApplicationController
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
-	end
+   end
+   
+   def get_object_with_auth
+      auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		id = params["id"]
+		file = params["file"]
+
+		begin
+			# Validate the auth
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+
+			api_key, sig = auth.split(',')
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			# Find the object
+         obj = TableObject.find_by(uuid: id)
+         if !obj
+				obj = TableObject.find_by_id(id)
+         end
+         ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
+
+         table = Table.find_by_id(obj.table_id)
+         ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
+         
+         app = App.find_by_id(table.app_id)
+         ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+         
+			# Check if the object belongs to the app of the dev
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+
+			if file == "true" && obj.file
+				# Return the file of the object
+				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+				filename = "#{app.id}/#{obj.id}"
+				type = "application/octet-stream"
+
+				begin
+					client = Azure::Blob::BlobService.new
+					blob = client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)
+
+					result = blob[1]
+
+					# Get the file extension and content type
+					obj.properties.each do |prop|
+						if prop.name == "ext"
+							filename += ".#{prop.value}"
+						elsif prop.name == "type"
+							type = prop.value
+						end
+					end
+				rescue Exception => e
+					ValidationService.raise_validation_error(ValidationService.get_file_does_not_exist_error)
+				end
+
+				response.headers['Content-Length'] = result.size.to_s
+				send_data(result, status: 200, type: type, filename: filename)
+			else
+				# Return the data
+				result = obj.attributes
+				properties = Hash.new
+				obj.properties.each do |prop|
+					properties[prop.name] = prop.value
+				end
+				result["properties"] = properties
+				result["etag"] = generate_table_object_etag(obj)
+
+				render json: result, status: 200
+			end
+      rescue => e
+         validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+      end
+   end
 	
 	def update_object
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
