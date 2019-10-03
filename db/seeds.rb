@@ -6,7 +6,7 @@
 #   cities = City.create([{ name: 'Chicago' }, { name: 'Copenhagen' }])
 #   Mayor.create(name: 'Emanuel', city: cities.first)
 users = User.create([
-   {email: "dav@dav-apps.tech", password: "davdavdav", username: "dav", confirmed: true},
+   {email: "dav@dav-apps.tech", password: "davdavdav", username: "Dav", confirmed: true},
    {email: "test@example.com", password: "password", username: "testuser", confirmed: true},
    {email: "nutzer@testemail.com", password: "blablablablabla", username: "nutzer", confirmed: false},
    {email: "normalo@helloworld.net", password: "schoeneheilewelt", username: "normalo", confirmed: true},
@@ -45,7 +45,10 @@ tables = Table.create([
    {name: "Appointment", app: apps[4]},
    # PocketLib Tables
    {name: "Book", app: apps[5]},
-   {name: "BookFile", app: apps[5]}
+   {name: "BookFile", app: apps[5]},
+   {name: "App", app: apps[5]},
+   {name: "EpubBookmark", app: apps[5]},
+   {name: "Settings", app: apps[5]}
 ])
 
 table_objects = TableObject.create([
