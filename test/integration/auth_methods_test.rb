@@ -1356,25 +1356,29 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # send_delete_account_email tests
    test "Missing fields in send_delete_account_email" do
       post "/v1/auth/send_delete_account_email"
-      resp = JSON.parse response.body
+      resp = JSON.parse(response.body)
 
-      assert_response 400
-      assert_equal(2106, resp["errors"][0][0])
-   end
+      assert_response 401
+      assert_equal(2102, resp["errors"][0][0])
+	end
+	
+	test "Can't send delete account email from outside the website" do
+		sherlock = users(:sherlock)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:matt)).body)["jwt"]
 
-   test "Can't send delete account email to non-existent user" do
-      post "/v1/auth/send_delete_account_email?email=nonexistantemail@example.com"
-      resp = JSON.parse response.body
-      
-      assert_response 404
-      assert_equal(2801, resp["errors"][0][0])
-   end
+		post "/v1/auth/send_delete_account_email", headers: {'Authorization' => jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
 
    test "Can send delete account email" do
-      tester = users(:tester)
+      matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/send_delete_account_email?email=#{tester.email}"
-      resp = JSON.parse response.body
+      post "/v1/auth/send_delete_account_email", headers: {'Authorization' => jwt}
+      resp = JSON.parse(response.body)
       
       assert_response 200
    end
