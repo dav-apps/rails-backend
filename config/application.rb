@@ -32,6 +32,8 @@ module Workspace
 
 		config.action_cable.allowed_request_origins = [
 			"http://localhost:3001",
+			"http://localhost:3000",
+			"http://localhost:2999",
 			"https://calendo.dav-apps.tech",
 			"https://calendo-dav.azurewebsites.net",
          "https://calendo-dav-staging.azurewebsites.net",
@@ -46,6 +48,8 @@ module Workspace
 				origins 	ENV['BASE_URL'],
 							'blog.dav-apps.tech',
 							'localhost:3001',
+							'localhost:3000',
+							'localhost:2999',
 							'cards-dav.azurewebsites.net',
 							'calendo-dav.azurewebsites.net',
 							'calendo.dav-apps.tech',

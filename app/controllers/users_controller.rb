@@ -474,6 +474,7 @@ class UsersController < ApplicationController
 			email = object["email"]
 			if email
 				ValidationService.raise_validation_error(ValidationService.validate_email_not_valid(email))
+				ValidationService.raise_validation_error(ValidationService.validate_email_taken(email))
 
 				# Set email_confirmation_token and send email
 				user.new_email = email
