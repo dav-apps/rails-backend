@@ -189,6 +189,11 @@ class ValidationService
 		!user.stripe_customer_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_user_is_user_of_app(users_app)
+		error_code = 1114
+		!users_app ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
 	def self.authenticate_user(user, password)
 		error_code = 1201
 		!user.authenticate(password) ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
@@ -632,6 +637,8 @@ class ValidationService
 			"You can't create more than #{max_archive_count} archives"
 		when 1113
 			"Please add your payment information"
+		when 1114
+			"The User is not a user of this app"
 		when 1201
 			"Password is incorrect"
 		when 1202

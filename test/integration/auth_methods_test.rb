@@ -1382,7 +1382,65 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
    end
-   # End send_delete_account_email tests
+	# End send_delete_account_email tests
+	
+	# send_remove_app_email tests
+	test "Missing fields in send_remove_app_email" do
+		post "/v1/auth/send_remove_app_email"
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2102, resp["errors"][0][0])
+		assert_equal(2110, resp["errors"][1][0])
+	end
+
+	test "Can't send remove app email from outside the website" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		app = apps(:Cards)
+
+		post "/v1/auth/send_remove_app_email?app_id=#{app.id}", headers: {'Authorization' => jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't send remove app email for app that the user does not use" do
+		sherlock = users(:sherlock)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		app = apps(:TestApp)
+
+		post "/v1/auth/send_remove_app_email?app_id=#{app.id}", headers: {'Authorization' => jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(1114, resp["errors"][0][0])
+	end
+
+	test "Can't send remove app email for app that does not exist" do
+		sherlock = users(:sherlock)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		app_id = -123
+
+		post "/v1/auth/send_remove_app_email?app_id=#{app_id}", headers: {'Authorization' => jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2803, resp["errors"][0][0])
+	end
+
+	test "Can send remove app email" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		app = apps(:Cards)
+
+		post "/v1/auth/send_remove_app_email?app_id=#{app.id}", headers: {'Authorization' => jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+	end
+	# End send_remove_app_Email tests
    
    # send_reset_password_email tests
    test "Missing fields in send_reset_password_email" do
