@@ -8,7 +8,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # Login tests
    test "Can login" do
-      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked", headers: {'Authorization' => generate_auth_token(devs(:sherlock))} 
+		sherlock = users(:sherlock)
+		password = "sherlocked"
+
+      get "/v1/auth/login?email=#{sherlock.email}&password=#{password}", headers: {'Authorization' => generate_auth_token(devs(:sherlock))} 
       assert_response 200
    end
    
@@ -28,7 +31,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can login without being the dev" do
-      get "/v1/auth/login?email=sherlock@web.de&password=sherlocked", headers: {'Authorization' => generate_auth_token(devs(:matt))}
+		sherlock = users(:sherlock)
+		password = "sherlocked"
+
+      get "/v1/auth/login?email=#{sherlock.email}&password=#{password}", headers: {'Authorization' => generate_auth_token(devs(:matt))}
       assert_response 200
    end
    
@@ -37,7 +43,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt.confirmed = false
       matt.save
       
-      get "/v1/auth/login?email=matt@test.de&password=schachmatt", headers: {'Authorization' => generate_auth_token(devs(:matt))}
+      get "/v1/auth/login?email=#{matt.email}&password=schachmatt", headers: {'Authorization' => generate_auth_token(devs(:matt))}
       resp = JSON.parse response.body
       
 		assert_response 200
@@ -45,7 +51,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't login with an incorrect password" do
-      get "/v1/auth/login?email=matt@test.de&password=falschesPassword", headers: {'Authorization' => generate_auth_token(devs(:matt))}
+		matt = users(:matt)
+
+      get "/v1/auth/login?email=#{matt.email}&password=falschesPassword", headers: {'Authorization' => generate_auth_token(devs(:matt))}
       resp = JSON.parse response.body
       
       assert_response 401
@@ -53,10 +61,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Can't login with an invalid auth token" do
+		matt = users(:matt)
       dev = devs(:matt)
       auth = dev.api_key + "," + Base64.strict_encode64(Base64.strict_encode64(OpenSSL::HMAC.digest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid)))
       
-      get "/v1/auth/login?email=matt@test.de&password=schachmatt", headers: {'Authorization' => auth}
+      get "/v1/auth/login?email=#{matt.email}&password=schachmatt", headers: {'Authorization' => auth}
       resp = JSON.parse response.body
       
       assert_response 401
@@ -72,7 +81,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       sherlock = devs(:sherlock)
       sherlock.destroy!
       
-      get "/v1/auth/login?email=matt@test.de&password=schachmatt", headers: {'Authorization' => sherlock_auth_token}
+      get "/v1/auth/login?email=#{matt.email}&password=schachmatt", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 404
@@ -141,9 +150,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    
    test "Email already taken in signup" do
-      sherlock_auth_token = generate_auth_token(devs(:sherlock))
+		sherlock_auth_token = generate_auth_token(devs(:sherlock))
+		email = users(:cato).email
       
-      post "/v1/auth/signup?email=dav@gmail.com&password=testtest&username=test", headers: {'Authorization' => sherlock_auth_token}
+      post "/v1/auth/signup?email=#{email}&password=testtest&username=test", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -152,8 +162,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    test "Username already taken in signup" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
+		username = users(:cato).username
       
-      post "/v1/auth/signup?email=test@example.com&password=testtest&username=cato", headers: {'Authorization' => sherlock_auth_token}
+      post "/v1/auth/signup?email=test@example.com&password=testtest&username=#{username}", headers: {'Authorization' => sherlock_auth_token}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1327,27 +1338,40 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # send_verification_email tests
    test "Missing fields in send_verification_email" do
       post "/v1/auth/send_verification_email"
-      resp = JSON.parse response.body
+      resp = JSON.parse(response.body)
       
-      assert_response 400
-      assert_equal(2106, resp["errors"][0][0])
+      assert_response 401
+      assert_equal(2102, resp["errors"][0][0])
    end 
    
    test "Can't send verification email with already confirmed user" do
-      matt = users(:matt)
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/send_verification_email?email=#{matt.email}"
-      resp = JSON.parse response.body
+      post "/v1/auth/send_verification_email", headers: {'Authorization' => jwt}
+      resp = JSON.parse(response.body)
       
       assert_response 400
       assert_equal(1106, resp["errors"][0][0])
-   end
+	end
+	
+	test "Can't send verification email from outside the website" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		post "/v1/auth/send_verification_email", headers: {'Authorization' => jwt}
+		resp = JSON.parse(response.body)
+		
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
    
    test "Can send verification email" do
       tester = users(:tester)
+		jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
       
-      post "/v1/auth/send_verification_email?email=#{tester.email}"
-      resp = JSON.parse response.body
+      post "/v1/auth/send_verification_email", headers: {'Authorization' => jwt}
+      resp = JSON.parse(response.body)
       
       assert_response 200
    end

@@ -1,22 +1,22 @@
 dav:
   username: dav
   confirmed: true
-  email: dav@gmail.com
+  email: dav@dav-apps.tech
 
 sherlock:
   username: Sherlock
   confirmed: true
-  email: sherlock@web.de
+  email: sherlock@dav-apps.tech
 
 matt:
   username: matt
   confirmed: true
-  email: matt@test.de
+  email: matt@dav-apps.tech
 
 cato:
   username: cato
   confirmed: true
-  email: cato@test.de
+  email: cato@dav-apps.tech
 
 tester:
   username: tester

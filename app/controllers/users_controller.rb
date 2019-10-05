@@ -809,22 +809,33 @@ class UsersController < ApplicationController
 	end
 
 	def send_verification_email
-		email = params["email"]
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 
 		begin
-			ValidationService.raise_validation_error(ValidationService.validate_email_missing(email))
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
 
-			user = User.find_by(email: email)
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			# Check if the user is already confirmed
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_not_confirmed(user))
-			
+
+			# Generate email confirmation token
 			user.email_confirmation_token = generate_token
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
 			UserNotifier.send_verification_email(user).deliver_later
-			result = {}
-			render json: result, status: 200
+			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
