@@ -919,11 +919,24 @@ class UsersController < ApplicationController
 		end
 	end
 
-	def send_reset_password_email
+	def send_password_reset_email
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
 		email = params["email"]
 
 		begin
-			ValidationService.raise_validation_error(ValidationService.validate_email_missing(email))
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_auth_missing(auth),
+				ValidationService.validate_email_missing(email)
+			])
+
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api_key = auth.split(",")[0]
+			sig = auth.split(",")[1]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			user = User.find_by(email: email)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
@@ -932,9 +945,9 @@ class UsersController < ApplicationController
 			user.password_confirmation_token = generate_token
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
-			UserNotifier.send_reset_password_email(user).deliver_later
-			result = {}
-			render json: result, status: 200
+			# Send the password reset email
+			UserNotifier.send_password_reset_email(user).deliver_later
+			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]

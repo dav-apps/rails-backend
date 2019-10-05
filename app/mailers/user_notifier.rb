@@ -24,7 +24,7 @@ class UserNotifier < ApplicationMailer
 		make_bootstrap_mail(:to => @user.email, :subject => "Remove #{@app.name} from your account")
 	end
    
-   def send_reset_password_email(user)
+   def send_password_reset_email(user)
       @user = user
       @link = ENV['BASE_URL'] + "reset_password/#{@user.password_confirmation_token}"
       

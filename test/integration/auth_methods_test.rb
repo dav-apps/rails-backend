@@ -1466,20 +1466,43 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 	# End send_remove_app_Email tests
    
-   # send_reset_password_email tests
-   test "Missing fields in send_reset_password_email" do
-      post "/v1/auth/send_reset_password_email"
-      resp = JSON.parse response.body
+   # send_password_reset_email tests
+   test "Missing fields in send_password_reset_email" do
+      post "/v1/auth/send_password_reset_email"
+      resp = JSON.parse(response.body)
       
       assert_response 400
-      assert_equal(2106, resp["errors"][0][0])
-   end
+		assert_equal(2101, resp["errors"][0][0])
+		assert_equal(2106, resp["errors"][1][0])
+	end
+	
+	test "Can't send password reset email from outside the website" do
+		matt = users(:matt)
+		auth = generate_auth_token(devs(:matt))
+
+		post "/v1/auth/send_password_reset_email?email=#{matt.email}", headers: {'Authorization' => auth}
+		resp = JSON.parse(response.body)
+		
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't send password reset email for user that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		post "/v1/auth/send_password_reset_email?email=bla@dav-apps.tech", headers: {'Authorization' => auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
    
    test "Can send password reset email" do
-      matt = users(:matt)
+		matt = users(:matt)
+		auth = generate_auth_token(devs(:sherlock))
       
-      post "/v1/auth/send_reset_password_email?email=#{matt.email}"
-      resp = JSON.parse response.body
+      post "/v1/auth/send_password_reset_email?email=#{matt.email}", headers: {'Authorization' => auth}
+      resp = JSON.parse(response.body)
       
       assert_response 200
    end
