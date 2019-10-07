@@ -1492,26 +1492,42 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       post "/v1/auth/send_password_reset_email"
       resp = JSON.parse(response.body)
       
-      assert_response 400
+      assert_response 401
 		assert_equal(2101, resp["errors"][0][0])
-		assert_equal(2106, resp["errors"][1][0])
 	end
 	
 	test "Can't send password reset email from outside the website" do
 		matt = users(:matt)
 		auth = generate_auth_token(devs(:matt))
 
-		post "/v1/auth/send_password_reset_email?email=#{matt.email}", headers: {'Authorization' => auth}
+		post "/v1/auth/send_password_reset_email?email=#{matt.email}", 
+				params: {email: matt.email}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 		
 		assert_response 403
 		assert_equal(1102, resp["errors"][0][0])
 	end
 
+	test "Can't send password reset email without content type json" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+
+		post "/v1/auth/send_password_reset_email", 
+				params: {email: matt.email}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/xml'}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
 	test "Can't send password reset email for user that does not exist" do
 		auth = generate_auth_token(devs(:sherlock))
 
-		post "/v1/auth/send_password_reset_email?email=bla@dav-apps.tech", headers: {'Authorization' => auth}
+		post "/v1/auth/send_password_reset_email", 
+				params: {email: "bla@dav-apps.tech"}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1522,7 +1538,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		auth = generate_auth_token(devs(:sherlock))
       
-      post "/v1/auth/send_password_reset_email?email=#{matt.email}", headers: {'Authorization' => auth}
+		post "/v1/auth/send_password_reset_email", 
+				params: {email: matt.email}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
       
       assert_response 200

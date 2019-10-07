@@ -923,13 +923,15 @@ class UsersController < ApplicationController
 
 	def send_password_reset_email
 		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
-		email = params["email"]
 
 		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_auth_missing(auth),
-				ValidationService.validate_email_missing(email)
-			])
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			body = ValidationService.parse_json(request.body.string)
+			
+			email = body["email"]
+			ValidationService.raise_validation_error(ValidationService.validate_email_missing(email))
 
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
