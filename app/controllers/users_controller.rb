@@ -877,13 +877,15 @@ class UsersController < ApplicationController
 
 	def send_remove_app_email
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		app_id = params["app_id"]
 
 		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_jwt_missing(jwt),
-				ValidationService.validate_app_id_missing(app_id)
-			])
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			body = ValidationService.parse_json(request.body.string)
+
+			app_id = body["app_id"]
+			ValidationService.raise_validation_error(ValidationService.validate_app_id_missing(app_id))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])

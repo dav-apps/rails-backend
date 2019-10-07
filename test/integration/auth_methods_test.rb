@@ -1413,9 +1413,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		post "/v1/auth/send_remove_app_email"
 		resp = JSON.parse(response.body)
 
-		assert_response 400
+		assert_response 401
 		assert_equal(2102, resp["errors"][0][0])
-		assert_equal(2110, resp["errors"][1][0])
 	end
 
 	test "Can't send remove app email from outside the website" do
@@ -1423,11 +1422,27 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		app = apps(:Cards)
 
-		post "/v1/auth/send_remove_app_email?app_id=#{app.id}", headers: {'Authorization' => jwt}
+		post "/v1/auth/send_remove_app_email", 
+				params: {app_id: app.id}.to_json,
+				headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 403
 		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't send remove app email without content type json" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		app = apps(:Cards)
+
+		post "/v1/auth/send_remove_app_email",
+				params: {app_id: app.id}.to_json,
+				headers: {'Authorization': jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
 	end
 
 	test "Can't send remove app email for app that the user does not use" do
@@ -1435,7 +1450,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 		app = apps(:TestApp)
 
-		post "/v1/auth/send_remove_app_email?app_id=#{app.id}", headers: {'Authorization' => jwt}
+		post "/v1/auth/send_remove_app_email", 
+				params: {app_id: app.id}.to_json,
+				headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1447,7 +1464,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 		app_id = -123
 
-		post "/v1/auth/send_remove_app_email?app_id=#{app_id}", headers: {'Authorization' => jwt}
+		post "/v1/auth/send_remove_app_email", 
+				params: {app_id: app_id}.to_json,
+				headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1459,7 +1478,9 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		app = apps(:Cards)
 
-		post "/v1/auth/send_remove_app_email?app_id=#{app.id}", headers: {'Authorization' => jwt}
+		post "/v1/auth/send_remove_app_email", 
+				params: {app_id: app.id}.to_json,
+				headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 200
