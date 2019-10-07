@@ -1,7 +1,6 @@
 class UserNotifier < ApplicationMailer
    default :from => 'no-reply@dav-apps.tech'
 
-   # send a signup email to the user, pass in the user object that contains the user's email address, username and email_confirmation_token
    def send_verification_email(user)
       @user = user
       @link = ENV['BASE_URL'] + "confirm_user/#{@user.id}/#{@user.email_confirmation_token}"
@@ -26,7 +25,7 @@ class UserNotifier < ApplicationMailer
    
    def send_password_reset_email(user)
       @user = user
-      @link = ENV['BASE_URL'] + "reset_password/#{@user.password_confirmation_token}"
+		@link = ENV['BASE_URL'] + "reset_password?user_id=#{@user.id}&password_confirmation_token=#{@user.password_confirmation_token}"
       
       make_bootstrap_mail(:to => @user.email, :subject => 'Reset your password')
    end

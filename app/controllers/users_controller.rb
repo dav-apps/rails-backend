@@ -955,30 +955,49 @@ class UsersController < ApplicationController
 	end
 
 	def set_password
-		password_confirmation_token = params["password_confirmation_token"]
-		password = params["password"]
-		
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+
 		begin
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			body = ValidationService.parse_json(request.body.string)
+
+			user_id = body["user_id"]
+			password_confirmation_token = body["password_confirmation_token"]
+			password = body["password"]
+
 			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_password_missing(password),
-				ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+				ValidationService.validate_user_id_missing(user_id),
+				ValidationService.validate_password_confirmation_token_missing(password_confirmation_token),
+				ValidationService.validate_password_missing(password)
 			])
 
-			user = User.find_by(password_confirmation_token: password_confirmation_token)
-			ValidationService.raise_validation_error(ValidationService.get_password_confirmation_token_incorrect_error(!user))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			# Validate the password
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_password_too_short(password),
-				ValidationService.validate_password_too_long(password)
-			])
+			api_key = auth.split(",")[0]
+			sig = auth.split(",")[1]
 
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			# Check if the password confirmation token matches the password confirmation token of the user
+			ValidationService.raise_validation_error(ValidationService.validate_password_confirmation_token_of_user(user, password_confirmation_token))
+
+			# Validate the new password
+			ValidationService.raise_validation_error(ValidationService.validate_password_too_short(password))
+			ValidationService.raise_validation_error(ValidationService.validate_password_too_long(password))
+
+			# Save the new password
 			user.password = password
 			user.password_confirmation_token = nil
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
-			result = {}
-			render json: result, status: 200
+			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]

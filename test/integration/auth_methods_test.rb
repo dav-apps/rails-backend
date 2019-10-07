@@ -1510,40 +1510,76 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    
    # set_password tests
    test "Missing fields in set_password" do
-      post "/v1/auth/set_password/blabla"
-      resp = JSON.parse response.body
+      post "/v1/auth/set_password"
+      resp = JSON.parse(response.body)
+
+      assert_response 401
+      assert_equal(2101, resp["errors"][0][0])
+	end
+	
+	test "Can't set password without content type json" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+      password = "newpassword"
+
+		post "/v1/auth/set_password", 
+				params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
+				headers: {'Authorization': auth}
+		resp = JSON.parse(response.body)
+		
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't set password from outside the website" do
+		auth = generate_auth_token(devs(:matt))
+		matt = users(:matt)
+		password = "newpassword"
+		
+		post "/v1/auth/set_password", 
+				params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't set password for user that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		post "/v1/auth/set_password", 
+				params: {user_id: -123, password_confirmation_token: "blablabla", password: "newpassword"}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
+
+	test "Can't set password with incorrect password confirmation token" do
+		auth = generate_auth_token(devs(:sherlock))
+      matt = users(:matt)
+      password = "newpassword"
+
+		post "/v1/auth/set_password", 
+				params: {user_id: matt.id, password_confirmation_token: "blabla", password: password}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+      resp = JSON.parse(response.body)
 
       assert_response 400
-      assert_same(2107, resp["errors"][0][0])
+      assert_equal(1203, resp["errors"][0][0])
    end
 
-   test "Can't set password with incorrect password confirmation token" do
+	test "Can set password" do
+		auth = generate_auth_token(devs(:sherlock))
       matt = users(:matt)
-      matt.password_confirmation_token = "confirmationtoken333"
-      matt.save
+      password = "newpassword"
 
-      password = "blablanewpassword"
-
-      post "/v1/auth/set_password/confirmationtoken?password=#{password}"
-      resp = JSON.parse response.body
-
-      assert_response 400
-      assert_same(1203, resp["errors"][0][0])
-   end
-
-   test "Can set password and login with new password" do
-      matt = users(:matt)
-      matt.password_confirmation_token = "confirmationtoken222"
-      matt.save
-
-      password = "blablanewpassword"
-
-      post "/v1/auth/set_password/#{matt.password_confirmation_token}?password=#{password}"
-      resp = JSON.parse response.body
-
-      assert_response 200
-
-      get "/v1/auth/login?email=#{matt.email}&password=#{password}", headers: {'Authorization' => generate_auth_token(devs(:sherlock))}
+		post "/v1/auth/set_password",
+				params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+      resp = JSON.parse(response.body)
 
       assert_response 200
    end

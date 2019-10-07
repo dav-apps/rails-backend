@@ -12,6 +12,7 @@ matt:
   username: matt
   confirmed: true
   email: matt@dav-apps.tech
+  password_confirmation_token: "passwordconfirmationtoken"
 
 cato:
   username: cato
