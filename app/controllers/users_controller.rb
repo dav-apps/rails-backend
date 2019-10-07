@@ -1009,18 +1009,30 @@ class UsersController < ApplicationController
 	end
 
 	def save_new_password
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
 		user_id = params["id"]
-		password_confirmation_token = params["password_confirmation_token"]
-		
+
 		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_id_missing(user_id),
-				ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
-			])
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			body = ValidationService.parse_json(request.body.string)
+			password_confirmation_token = body["password_confirmation_token"]
+
+			ValidationService.raise_validation_error(ValidationService.validate_password_confirmation_token_missing(password_confirmation_token))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api_key = auth.split(",")[0]
+			sig = auth.split(",")[1]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
+			# Check if the password confirmation token matches the password confirmation token of the user
 			ValidationService.raise_validation_error(ValidationService.validate_password_confirmation_token_of_user(user, password_confirmation_token))
 			ValidationService.raise_validation_error(ValidationService.validate_new_password_empty(user.new_password))
 
@@ -1030,8 +1042,8 @@ class UsersController < ApplicationController
 			user.password_confirmation_token = nil
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
-			result = {}
-			render json: result, status: 200
+
+			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]

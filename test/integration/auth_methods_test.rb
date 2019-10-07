@@ -1624,50 +1624,81 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    end
    # End set_password tests
 
-   # save_new_password tests
-   test "Can't save new password with incorrect password confirmation token" do
+	# save_new_password tests
+	test "Missing fields in save_new_password" do
+		matt = users(:matt)
+
+		post "/v1/auth/user/#{matt.id}/save_new_password"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't save new password from outside the website" do
+		auth = generate_auth_token(devs(:matt))
+		matt = users(:matt)
+		
+		post "/v1/auth/user/#{matt.id}/save_new_password",
+				params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't save new password without content type json" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		
+		post "/v1/auth/user/#{matt.id}/save_new_password",
+				params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': "application/xml"}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't save new password with incorrect password confirmation token" do
+		auth = generate_auth_token(devs(:sherlock))
       matt = users(:matt)
       
-      post "/v1/auth/user/#{matt.id}/save_new_password/asdonasdnonadoasnd"
-      resp = JSON.parse response.body
+		post "/v1/auth/user/#{matt.id}/save_new_password",
+				params: {password_confirmation_token: "aasdasdasdad"}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+      resp = JSON.parse(response.body)
       
       assert_response 400
       assert_equal(1203, resp["errors"][0][0])
    end
    
-   test "Can't save new password with empty new_password" do
-      matt = users(:matt)
-      matt.password_confirmation_token = "confirmationtoken"
-      matt.save
+	test "Can't save new password with empty new_password" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt.new_password = nil
+		matt.save
       
-      post "/v1/auth/user/#{matt.id}/save_new_password/#{matt.password_confirmation_token}"
-      resp = JSON.parse response.body
+		post "/v1/auth/user/#{matt.id}/save_new_password",
+				params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+      resp = JSON.parse(response.body)
       
       assert_response 400
       assert_equal(2603, resp["errors"][0][0])
    end
    
-   test "Can save new password and login" do
+	test "Can save new password" do
+		auth = generate_auth_token(devs(:sherlock))
       matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      new_password = "testpassword"
       
-		put "/v1/auth/user", 
-				params: {password: new_password}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      
-      matt = User.find_by_id(matt.id)
-      
-      post "/v1/auth/user/#{matt.id}/save_new_password/#{matt.password_confirmation_token}"
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert_nil(User.find_by_id(matt.id).new_password)
+		post "/v1/auth/user/#{matt.id}/save_new_password",
+				params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
 
-      get "/v1/auth/login?email=#{matt.email}&password=#{new_password}", headers: {'Authorization' => generate_auth_token(devs(:sherlock))}
+		assert_response 200
    end
    # End save_new_password tests
    

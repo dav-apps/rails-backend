@@ -13,6 +13,7 @@ matt:
   confirmed: true
   email: matt@dav-apps.tech
   password_confirmation_token: "passwordconfirmationtoken"
+  new_password: "blasdasdpasdjpasdopsadajd"
 
 cato:
   username: cato
