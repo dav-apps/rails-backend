@@ -39,8 +39,8 @@ class UserNotifier < ApplicationMailer
    
    def send_reset_new_email_email(user)
       @user = user
-      @link = ENV['BASE_URL'] + "reset_new_email/#{@user.id}"
-      
+		@link = "#{ENV['BASE_URL']}/email_link?type=reset_new_email&user_id=#{@user.id}"
+		
       make_bootstrap_mail(:to => @user.old_email, :subject => 'Your email was changed')
    end
    

@@ -1787,7 +1787,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 	end
 
-	test "Can save new email when using stripe for payments" do
+	test "Can save new email when using stripe" do
 		auth = generate_auth_token(devs(:sherlock))
 		torera = users(:torera)
 		original_email = torera.email
@@ -1804,7 +1804,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
    	assert_equal(torera.email, customer.email)
 
-		# Change the email back to the previous email
+		# Change the email back to the original email
 		email_confirmation_token = "emailconfirmationtoken"
 		torera.new_email = original_email
 		torera.email_confirmation_token = email_confirmation_token
@@ -1823,44 +1823,98 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # End save_new_email tests
    
    # reset_new_email tests
-   test "Can't reset new email with empty old_email" do
-      matt = users(:matt)
-      
-      post "/v1/auth/user/#{matt.id}/reset_new_email"
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2602, resp["errors"][0][0])
-   end
-   
-   test "Changes do apply in reset_new_email" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      new_email = "new-test@email.com"
-      original_email = matt.email
-      
-		put "/v1/auth/user", 
-				params: {email: new_email}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      matt = User.find_by_id(matt.id)
-      
-      post "/v1/auth/user/#{matt.id}/save_new_email/#{matt.email_confirmation_token}"
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      matt = User.find_by_id(matt.id)
-      
-      post "/v1/auth/user/#{matt.id}/reset_new_email"
-      resp = JSON.parse response.body
-      
-      matt = User.find_by_id(matt.id)
-      
-      assert_response 200
-      assert_equal(matt.email, original_email)
-   end
+	test "Missing fields in reset_new_email" do
+		matt = users(:matt)
+
+		post "/v1/auth/user/#{matt.id}/reset_new_email"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't reset new email for user that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		post "/v1/auth/user/-123/reset_new_email", headers: {'Authorization': auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
+
+	test "Can't reset new email from outside the website" do
+		auth = generate_auth_token(devs(:matt))
+		matt = users(:matt)
+
+		post "/v1/auth/user/#{matt.id}/reset_new_email", headers: {'Authorization': auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't reset new email with empty old_email" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt.old_email = nil
+		matt.save
+
+		post "/v1/auth/user/#{matt.id}/reset_new_email", headers: {'Authorization': auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2602, resp["errors"][0][0])
+	end
+
+	test "Can reset new email" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		old_email = matt.old_email
+
+		post "/v1/auth/user/#{matt.id}/reset_new_email", headers: {'Authorization': auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+
+		# Check if the email fields were updated
+		matt = User.find_by_id(matt.id)
+		assert_equal(old_email, matt.email)
+		assert_nil(matt.old_email)
+	end
+
+	test "Can reset new email when using stripe" do
+		auth = generate_auth_token(devs(:sherlock))
+		torera = users(:torera)
+		original_email = torera.email
+		old_email = torera.old_email
+
+		post "/v1/auth/user/#{torera.id}/reset_new_email", headers: {'Authorization': auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+
+		# Check if the email was updated on stripe
+		torera = User.find_by_id(torera.id)
+		customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
+		assert_equal(torera.email, customer.email)
+
+		# Change the email back to the original email
+		email_confirmation_token = "emailconfirmationtoken"
+		torera.new_email = original_email
+		torera.email_confirmation_token = email_confirmation_token
+		torera.save
+
+		post "/v1/auth/user/#{torera.id}/save_new_email", 
+				params: {email_confirmation_token: email_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+
+		customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
+		assert_equal(original_email, customer.email)
+	end
 	# End reset_new_email tests
 	
 	# create_archive tests

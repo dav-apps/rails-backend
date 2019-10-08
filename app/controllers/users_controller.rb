@@ -1100,24 +1100,33 @@ class UsersController < ApplicationController
 	end
 
 	def reset_new_email
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
 		user_id = params["id"]
 
 		begin
-			ValidationService.raise_validation_error(ValidationService.validate_id_missing(user_id))
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api_key = auth.split(",")[0]
+			sig = auth.split(",")[1]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 			ValidationService.raise_validation_error(ValidationService.validate_old_email_empty(user.old_email))
 
 			# Set new_email to email and email to old_email
 			user.email = user.old_email
 			user.old_email = nil
-			
-			# Save the new email on stripe
+
+			# Update the email on stripe
 			save_email_to_stripe_customer(user)
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
-			result = {}
-			render json: result, status: 200
+			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
