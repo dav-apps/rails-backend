@@ -1051,35 +1051,48 @@ class UsersController < ApplicationController
 	end
 
 	def save_new_email
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
 		user_id = params["id"]
-		email_confirmation_token = params["email_confirmation_token"]
-		
+
 		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_id_missing(user_id),
-				ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
-			])
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			body = ValidationService.parse_json(request.body.string)
+			email_confirmation_token = body["email_confirmation_token"]
+
+			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_missing(email_confirmation_token))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api_key = auth.split(",")[0]
+			sig = auth.split(",")[1]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
+			# Check if the email confirmation token matches the email confirmation token of the user
 			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_of_user(user, email_confirmation_token))
 			ValidationService.raise_validation_error(ValidationService.validate_new_email_empty(user.new_email))
 
-			# Save new email
+			# Save the new email
 			user.old_email = user.email
 			user.email = user.new_email
 			user.new_email = nil
 			user.email_confirmation_token = nil
-			
-			# Save the new email on stripe
-			save_email_to_stripe_customer(user)
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
+			# Save the new email on stripe
+			save_email_to_stripe_customer(user)
+
+			# Send email to reset new email
 			UserNotifier.send_reset_new_email_email(user).deliver_later
-			result = {}
-			render json: result, status: 200
+
+			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]

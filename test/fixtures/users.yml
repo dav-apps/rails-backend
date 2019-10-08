@@ -12,6 +12,8 @@ matt:
   username: matt
   confirmed: true
   email: matt@dav-apps.tech
+  new_email: matt2@dav-apps.tech
+  email_confirmation_token: "emailconfirmationtoken"
   password_confirmation_token: "passwordconfirmationtoken"
   new_password: "blasdasdpasdjpasdopsadajd"
 
@@ -34,4 +36,6 @@ torera:
   username: torera
   confirmed: true
   email: torera@dav-apps.tech
+  new_email: torera2@dav-apps.tech
+  email_confirmation_token: "email_confirmation_token"
   stripe_customer_id: cus_FGV94HqakLuIpc

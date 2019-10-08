@@ -25,14 +25,14 @@ class UserNotifier < ApplicationMailer
    
    def send_password_reset_email(user)
       @user = user
-		@link = ENV['BASE_URL'] + "reset_password?user_id=#{@user.id}&password_confirmation_token=#{@user.password_confirmation_token}"
+		@link = "#{ENV['BASE_URL']}/reset_password?user_id=#{@user.id}&password_confirmation_token=#{@user.password_confirmation_token}"
       
       make_bootstrap_mail(:to => @user.email, :subject => 'Reset your password')
    end
    
    def send_change_email_email(user)
       @user = user
-      @link = ENV['BASE_URL'] + "change_email/#{@user.id}/#{@user.email_confirmation_token}"
+		@link = "#{ENV['BASE_URL']}/email_link?type=change_email&user_id=#{@user.id}&email_confirmation_token=#{@user.email_confirmation_token}"
       
       make_bootstrap_mail(:to => @user.new_email, :subject => 'Confirm your new email adress')
    end
@@ -46,7 +46,7 @@ class UserNotifier < ApplicationMailer
    
    def send_change_password_email(user)
       @user = user
-      @link = ENV['BASE_URL'] + "change_password/#{@user.id}/#{@user.password_confirmation_token}"
+		@link = "#{ENV['BASE_URL']}/email_link?type=change_password&user_id=#{@user.id}&password_confirmation_token=#{@user.password_confirmation_token}"
       
       make_bootstrap_mail(:to => @user.email, :subject => 'Confirm your new password')
    end

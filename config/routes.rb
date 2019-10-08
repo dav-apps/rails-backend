@@ -16,7 +16,7 @@ Rails.application.routes.draw do
   match '/v1/auth/send_password_reset_email', to: 'users#send_password_reset_email', via: 'post'
   match '/v1/auth/set_password', to: 'users#set_password', via: 'post'
   match '/v1/auth/user/:id/save_new_password', to: 'users#save_new_password', via: 'post'
-  match '/v1/auth/user/:id/save_new_email/:email_confirmation_token', to: 'users#save_new_email', via: 'post'
+  match '/v1/auth/user/:id/save_new_email', to: 'users#save_new_email', via: 'post'
   match '/v1/auth/user/:id/reset_new_email', to: 'users#reset_new_email', via: 'post'
   match '/v1/auth/user/:id/confirm', to: 'users#confirm_user', via: 'post'
   
