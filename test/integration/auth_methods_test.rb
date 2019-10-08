@@ -1171,44 +1171,62 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       tester = users(:tester2)
 
       delete "/v1/auth/user/#{tester.id}"
-      resp = JSON.parse response.body
+      resp = JSON.parse(response.body)
 
-      assert_response 400
-      assert_equal(2108, resp["errors"][0][0])
-      assert_equal(2109, resp["errors"][1][0])
+      assert_response 401
+      assert_equal(2101, resp["errors"][0][0])
    end
+
+	test "Can't delete user from outside the website" do
+		auth = generate_auth_token(devs(:matt))
+		tester = users(:tester2)
+
+		delete "/v1/auth/user/#{tester.id}",
+				params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't delete user without content type json" do
+		auth = generate_auth_token(devs(:sherlock))
+		tester = users(:tester2)
+
+		delete "/v1/auth/user/#{tester.id}",
+				params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
 
    test "Can't delete user with incorrect confirmation tokens" do
-      email_confirmation_token = "emailconfirmationtoken"
-      password_confirmation_token = "passwordconfirmationtoken"
-      
-      matt = users(:matt)
-      matt.email_confirmation_token = email_confirmation_token
-      matt.password_confirmation_token = password_confirmation_token
-      matt.save
+		auth = generate_auth_token(devs(:sherlock))
+      tester = users(:tester2)
 
-      delete "/v1/auth/user/#{matt.id}?email_confirmation_token=#{email_confirmation_token + "adsad"}&password_confirmation_token=#{password_confirmation_token + "asdasd"}"
-      resp = JSON.parse response.body
+      delete "/v1/auth/user/#{tester.id}",
+				params: {email_confirmation_token: "blabla", password_confirmation_token: "blablabla"}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+      resp = JSON.parse(response.body)
       
       assert_response 400
-      assert_equal(1203, resp["errors"][0][0])
+      assert_equal(1204, resp["errors"][0][0])
    end
    
-   test "User will be deleted" do
-      email_confirmation_token = "emailconfirmationtoken"
-      password_confirmation_token = "passwordconfirmationtoken"
-      
-      matt = users(:matt)
-      matt_id = matt.id
-      matt.email_confirmation_token = email_confirmation_token
-      matt.password_confirmation_token = password_confirmation_token
-      matt.save
+   test "Can delete user" do
+		auth = generate_auth_token(devs(:sherlock))
+      tester = users(:tester2)
 
-      delete "/v1/auth/user/#{matt.id}?email_confirmation_token=#{email_confirmation_token}&password_confirmation_token=#{password_confirmation_token}"
-      resp = JSON.parse response.body
-      
+      delete "/v1/auth/user/#{tester.id}",
+				params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+      resp = JSON.parse(response.body)
+		
       assert_response 200
-      assert_nil(User.find_by_id(matt_id))
+      assert_nil(User.find_by_id(tester.id))
    end
    # End delete_user tests
 

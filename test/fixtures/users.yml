@@ -32,6 +32,8 @@ tester2:
   username: tester2
   confirmed: true
   email: tester2@example.com
+  email_confirmation_token: emailconfirmationtoken
+  password_confirmation_token: passwordconfirmationtoken
 
 torera:
   username: torera
