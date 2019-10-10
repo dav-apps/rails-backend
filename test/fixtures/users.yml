@@ -27,6 +27,7 @@ tester:
   username: tester
   confirmed: false
   email: tester@example.com
+  email_confirmation_token: "emailconfirmationtoken"
 
 tester2:
   username: tester2

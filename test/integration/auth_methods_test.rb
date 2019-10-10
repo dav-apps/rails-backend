@@ -1320,81 +1320,79 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
    # End remove_app tests
    
-   # confirm_user tests
-   test "Can confirm user" do
-      sherlock_auth_token = generate_auth_token(devs(:sherlock))
-      
-      post "/v1/auth/signup?email=test@example.com&password=testtest&username=testuser", headers: {'Authorization' => sherlock_auth_token}
-      resp = JSON.parse response.body
-      
-		assert_response 201
-		jwt = resp["jwt"]
-      
-      new_user = User.find_by_id(resp["id"])
-      
-      new_users_confirmation_token = User.find_by_id(resp["id"]).email_confirmation_token
-      post "/v1/auth/user/#{new_user.id}/confirm?email_confirmation_token=#{new_user.email_confirmation_token}", headers: {'Authorization' => jwt}
-      
-      assert_response 200
-      assert(User.find_by_id(new_user.id).confirmed)
-	end
-	
-	test "Can confirm user with password" do
+	# confirm_user tests
+	test "Missing fields in confirm_user" do
 		tester = users(:tester)
-		confirmation_token = "asdpasjdasdjasd"
-		password = "testpassword"
-		tester.email_confirmation_token = confirmation_token
-		tester.save
 
-		post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=#{confirmation_token}&password=#{password}"
-		resp = JSON.parse response.body
-		
+		post "/v1/auth/user/#{tester.id}/confirm"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't confirm user from outside the website" do
+		auth = generate_auth_token(devs(:matt))
+		tester = users(:tester)
+
+		post "/v1/auth/user/#{tester.id}/confirm",
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'},
+				params: {email_confirmation_token: tester.email_confirmation_token}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't confirm user without content type json" do
+		auth = generate_auth_token(devs(:sherlock))
+		tester = users(:tester)
+
+		post "/v1/auth/user/#{tester.id}/confirm",
+				headers: {'Authorization': auth, 'Content-Type': 'application/xml'},
+				params: {email_confirmation_token: tester.email_confirmation_token}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't confirm user that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		post "/v1/auth/user/-123/confirm",
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'},
+				params: {email_confirmation_token: "blablabla"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
+
+	test "Can't confirm user with incorrect email confirmation token" do
+		auth = generate_auth_token(devs(:sherlock))
+		tester = users(:tester)
+
+		post "/v1/auth/user/#{tester.id}/confirm",
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'},
+				params: {email_confirmation_token: "blablablabla"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(1204, resp["errors"][0][0])
+	end
+
+	test "Can confirm user" do
+		auth = generate_auth_token(devs(:sherlock))
+		tester = users(:tester)
+
+		post "/v1/auth/user/#{tester.id}/confirm",
+				headers: {'Authorization': auth, 'Content-TYpe': 'application/json'},
+				params: {email_confirmation_token: tester.email_confirmation_token}.to_json
+		resp = JSON.parse(response.body)
+
 		assert_response 200
 	end
-   
-   test "Can't confirm user without email_confirmation_token" do
-		tester = users(:tester)
-		jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
-      
-      post "/v1/auth/user/#{tester.id}/confirm", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2108, resp["errors"][0][0])
-	end
-	
-	test "Can't confirm user without jwt or password" do
-		tester = users(:tester)
-
-		post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=asdsadasd"
-		resp = JSON.parse response.body
-		
-		assert_response 401
-		assert_equal(2102, resp["errors"][0][0])
-	end
-   
-   test "Can't confirm new user with incorrect email_confirmation_token" do
-		tester = users(:tester)
-		jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
-      
-      post "/v1/auth/user/#{tester.id}/confirm?email_confirmation_token=aiosdashdashas8dg", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(1204, resp["errors"][0][0])
-   end
-   
-   test "User is already confirmed" do
-      matt = users(:matt)
-		matts_confirmation_token = "testconfirmationtoken"
-		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      post "/v1/auth/user/#{matt.id}/confirm?email_confirmation_token=#{matts_confirmation_token}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(1106, resp["errors"][0][0])
-   end
    # End confirm_user tests
    
    # send_verification_email tests

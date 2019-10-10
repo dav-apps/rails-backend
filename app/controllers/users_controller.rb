@@ -786,53 +786,40 @@ class UsersController < ApplicationController
 	end
 
 	def confirm_user
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		email_confirmation_token = params["email_confirmation_token"]
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
 		user_id = params["id"]
-		password = params["password"]
-		
+
 		begin
-			id_validation = ValidationService.validate_id_missing(user_id)
-			token_validation = ValidationService.validate_email_confirmation_token_missing(email_confirmation_token)
-			password_validation = ValidationService.validate_password_missing(password)
-			jwt_validation = ValidationService.validate_jwt_missing(jwt)
-			errors = Array.new
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
-			errors.push(id_validation) if !id_validation[:success]
-			errors.push(token_validation) if !token_validation[:success]
-			errors.push(jwt_validation) if !jwt_validation[:success] && !password_validation[:success]
+			body = ValidationService.parse_json(request.body.string)
 
-			if errors.length > 0
-				raise RuntimeError, errors.to_json
-			end
+			email_confirmation_token = body["email_confirmation_token"]
+			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_missing(email_confirmation_token))
+
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+			api_key = auth.split(",")[0]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			if jwt_validation[:success]
-				# Check if the jwt has the same user id as the id
-				jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
-				ValidationService.raise_validation_error(jwt_signature_validation[0])
-				jwt_user_id = jwt_signature_validation[1][0]["user_id"]
-				jwt_dev_id = jwt_signature_validation[1][0]["dev_id"]
-
-				ValidationService.raise_validation_error(ValidationService.get_access_not_allowed_error) if jwt_user_id.to_s != user_id
-
-				dev = Dev.find_by_id(jwt_dev_id)
-				ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-			elsif password_validation[:success]
-				# Check if the password is correct
-				ValidationService.raise_validation_error(ValidationService.authenticate_user(user, password))
-			end
-
+			# Check if the user is already confirmed
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_not_confirmed(user))
+
+			# Check if the email confirmation token matches the email confirmation token of the user
 			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_of_user(user, email_confirmation_token))
 
+			# Clear the email confirmation token and confirm the user
 			user.email_confirmation_token = nil
-         user.confirmed = true
-			user.save!
-			result = {}
-			render json: result, status: 200
+			user.confirmed = true
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+
+			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]

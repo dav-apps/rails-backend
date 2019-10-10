@@ -3,7 +3,7 @@ class UserNotifier < ApplicationMailer
 
    def send_verification_email(user)
       @user = user
-      @link = ENV['BASE_URL'] + "confirm_user/#{@user.id}/#{@user.email_confirmation_token}"
+		@link = "#{ENV['BASE_URL']}/email_link?type=confirm_user&user_id=#{@user.id}&email_confirmation_token=#{@user.email_confirmation_token}"
       
       make_bootstrap_mail(:to => @user.email, :subject => 'Verifiy your email address')
    end
@@ -53,14 +53,14 @@ class UserNotifier < ApplicationMailer
 
    def send_export_data_email(user)
       @user = user
-      @link = ENV["BASE_URL"] + "user#archives"
+		@link = "#{ENV['BASE_URL']}/user#archives"
 
       make_bootstrap_mail(:to => @user.email, :subject => 'The archive of your account is ready')
    end
 
    def send_failed_payment_email(user)
       @user = user
-      @link = ENV['BASE_URL'] + "user#plans"
+		@link = "#{ENV['BASE_URL']}/user#plans"
 
       make_bootstrap_mail(:to => @user.email, :subject => "Subscription renewal was not possible")
    end
