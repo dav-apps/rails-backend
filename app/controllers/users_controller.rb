@@ -719,7 +719,7 @@ class UsersController < ApplicationController
 			end
 
 			# Delete the user
-			user.destroy!
+			DeleteUserWorker.perform_async(user.id)
 
 			render json: {}, status: 200
 		rescue RuntimeError => e

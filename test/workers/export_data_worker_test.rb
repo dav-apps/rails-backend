@@ -15,7 +15,7 @@ class ExportDataWorkerTest < ActiveSupport::TestCase
 		jobs_count = ExportDataWorker.jobs.count
 
 		ExportDataWorker.perform_async(matt.id, archive.id)
-		assert_same(ExportDataWorker.jobs.count, jobs_count+1)
+		assert_equal(ExportDataWorker.jobs.count, jobs_count+1)
 	end
 
 	test "The zip file created by ExportDataWorker will include all necessary files and data" do
@@ -61,12 +61,12 @@ class ExportDataWorkerTest < ActiveSupport::TestCase
 		assert_not_nil(json["user"]["updated_at"])
 
 		assert_not_nil(json["apps"])
-		assert_same(json["apps"][0]["id"], matt.apps.first.id)
+		assert_equal(json["apps"][0]["id"], matt.apps.first.id)
 		assert_equal(json["apps"][0]["name"], matt.apps.first.name)
 		assert_not_nil(json["apps"][0]["tables"][0])
-		assert_same(json["apps"][0]["tables"][0]["id"], matt.apps.first.tables.first.id)
+		assert_equal(json["apps"][0]["tables"][0]["id"], matt.apps.first.tables.first.id)
 		assert_equal(json["apps"][0]["tables"][0]["name"], matt.apps.first.tables.first.name)
-		assert_same(json["apps"][0]["tables"][0]["table_objects"][0]["id"], matt.table_objects.first.id)
+		assert_equal(json["apps"][0]["tables"][0]["table_objects"][0]["id"], matt.table_objects.first.id)
 
 		# Delete the archive from the blob storage
 		FileUtils.rm_rf(Dir.glob(export_data_folder_path)) if File.exists?(export_data_folder_path)

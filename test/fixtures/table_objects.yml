@@ -39,3 +39,8 @@ eight:
   user: matt
   visibility: 2
   uuid: e2cf962a-bf93-45b1-9f2d-abe52c1968f0
+
+testerTableObject:
+  table: testTable
+  user: tester2
+  uuid: fc55ae01-05f6-4609-b121-e58fbf505db7

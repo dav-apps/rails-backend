@@ -2582,18 +2582,18 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    
    # users_apps tests
    test "UsersApp object will be created when the user creates a table object" do
-      tester2 = users(:tester2)
-      jwt = (JSON.parse login_user(tester2, "testpassword", devs(:sherlock)).body)["jwt"]
+      tester = users(:tester)
+      jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
       
-      assert_nil(UsersApp.find_by(user_id: tester2.id))
+      assert_nil(UsersApp.find_by(user_id: tester.id))
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}",  
 				params: {"page1": "Hello World", "page2": "Hallo Welt"}.to_json,
 				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
+      resp = JSON.parse(response.body)
       
       object_id = resp["id"]
       assert_response 201
-      assert_not_nil(UsersApp.find_by(user_id: tester2.id))
+      assert_not_nil(UsersApp.find_by(user_id: tester.id))
    end
 	# End users_apps tests
 

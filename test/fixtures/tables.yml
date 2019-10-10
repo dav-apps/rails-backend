@@ -9,3 +9,7 @@ note:
 davTable:
   name: davTable
   app: davApp
+
+testTable:
+  name: TestTable
+  app: TestApp

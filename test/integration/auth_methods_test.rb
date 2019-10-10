@@ -1226,7 +1226,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse(response.body)
 		
       assert_response 200
-      assert_nil(User.find_by_id(tester.id))
    end
    # End delete_user tests
 

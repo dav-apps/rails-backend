@@ -14,7 +14,7 @@ class RemoveAppWorkerTest < ActiveSupport::TestCase
 		jobs_count = RemoveAppWorker.jobs.count
 
 		RemoveAppWorker.perform_async(matt.id, cards.id)
-		assert_same(RemoveAppWorker.jobs.count, jobs_count+1)
+		assert_equal(RemoveAppWorker.jobs.count, jobs_count + 1)
 	end
 	
 	test "RemoveAppWorker removes table objects of app and user" do
@@ -25,6 +25,6 @@ class RemoveAppWorkerTest < ActiveSupport::TestCase
 
 		RemoveAppWorker.perform_async(matt.id, cards.id)
 
-		assert_same(matt.table_objects.where(table_id: card_table.id).count, 0)
+		assert_equal(matt.table_objects.where(table_id: card_table.id).count, 0)
 	end
 end
