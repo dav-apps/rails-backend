@@ -10,7 +10,7 @@ class UserNotifier < ApplicationMailer
 
    def send_delete_account_email(user)
       @user = user
-      @link = ENV['BASE_URL'] + "delete_account/#{@user.id}/#{@user.email_confirmation_token}/#{@user.password_confirmation_token}"
+		@link = "#{ENV['BASE_URL']}/email_link?type=delete_user&user_id=#{@user.id}&email_confirmation_token=#{@user.email_confirmation_token}&password_confirmation_token=#{@user.password_confirmation_token}"
 
       make_bootstrap_mail(:to => @user.email, :subject => 'Delete your account')
 	end
@@ -18,7 +18,7 @@ class UserNotifier < ApplicationMailer
 	def send_remove_app_email(user, app)
 		@user = user
 		@app = app
-		@link = ENV['BASE_URL'] + "remove_app/#{@user.id}/#{@user.email_confirmation_token}/#{@user.password_confirmation_token}"
+		@link = "#{ENV['BASE_URL']}/email_link?type=remove_app&app_id=#{@app.id}&user_id=#{@user.id}&password_confirmation_token=#{@user.password_confirmation_token}"
 
 		make_bootstrap_mail(:to => @user.email, :subject => "Remove #{@app.name} from your account")
 	end

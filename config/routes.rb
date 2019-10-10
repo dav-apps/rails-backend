@@ -8,7 +8,7 @@ Rails.application.routes.draw do
   match '/v1/auth/user', to: 'users#get_user_by_jwt', via: 'get'
   match '/v1/auth/user', to: 'users#update_user', via: 'put'
   match '/v1/auth/user/:id', to: 'users#delete_user', via: 'delete'
-  match '/v1/auth/app/:app_id', to: 'users#remove_app', via: 'delete'
+  match '/v1/auth/app/:id', to: 'users#remove_app', via: 'delete'
   
   match '/v1/auth/send_verification_email', to: 'users#send_verification_email', via: 'post'
   match '/v1/auth/send_delete_account_email', to: 'users#send_delete_account_email', via: 'post'

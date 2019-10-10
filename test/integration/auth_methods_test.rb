@@ -1233,47 +1233,92 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
    # remove_app tests
    test "Missing fields in remove_app" do
       delete "/v1/auth/app/1"
-      resp = JSON.parse response.body
+      resp = JSON.parse(response.body)
 
       assert_response 401
-      assert_equal(2102, resp["errors"][0][0])
+      assert_equal(2101, resp["errors"][0][0])
    end
 
-   test "Can't remove app from outside the website" do
+	test "Can't remove app from outside the website" do
+		auth = generate_auth_token(devs(:matt))
       tester = users(:tester2)
-      app = apps(:TestApp)
-      jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
+		app = apps(:TestApp)
 
-      delete "/v1/auth/app/#{app.id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
+		delete "/v1/auth/app/#{app.id}", 
+				params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
+				headers: {'Authorization' => auth, 'Content-Type': 'application/json'}
+      resp = JSON.parse(response.body)
 
       assert_response 403
       assert_equal(1102, resp["errors"][0][0])
    end
 
-   test "remove_app removes all objects and the association" do
-      tester = users(:tester2)
-      app = apps(:TestApp)
-      table = tables(:note)
-      tester_jwt = (JSON.parse login_user(tester, "testpassword", devs(:matt)).body)["jwt"]
-      tester_jwt2 = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
+	test "Can't remove app without content type json" do
+		auth = generate_auth_token(devs(:sherlock))
+		tester = users(:tester2)
+		app = apps(:TestApp)
 
-		post "/v1/apps/object?table_name=#{table.name}&app_id=#{app.id}", 
-				params: {test: "testobject"}.to_json,
-				headers: {'Authorization' => tester_jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
+		delete "/v1/auth/app/#{app.id}",
+				params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth}
+		resp = JSON.parse(response.body)
 
-      assert_response 201
-      assert(tester.apps.last.name == app.name)
-      obj_id = resp["id"]
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
 
-      # Remove app
-      delete "/v1/auth/app/#{app.id}", headers: {'Authorization' => tester_jwt2}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert(tester.apps.length == 0)
-   end
+	test "Can't remove app that the user does not use" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		app = apps(:davApp)
+
+		delete "/v1/auth/app/#{app.id}",
+				params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(1114, resp["errors"][0][0])
+	end
+
+	test "Can't remove app that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+		tester = users(:tester2)
+
+		delete "/v1/auth/app/-123",
+				params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2803, resp["errors"][0][0])
+	end
+
+	test "Can't remove app from user that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+		app = apps(:TestApp)
+
+		delete "/v1/auth/app/#{app.id}",
+				params: {user_id: -123, password_confirmation_token: "blablabla"}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
+
+	test "Can remove app" do
+		auth = generate_auth_token(devs(:sherlock))
+		tester = users(:tester2)
+		app = apps(:TestApp)
+
+		delete "/v1/auth/app/#{app.id}",
+				params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
+				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+	end
    # End remove_app tests
    
    # confirm_user tests

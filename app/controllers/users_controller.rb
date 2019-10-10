@@ -688,13 +688,13 @@ class UsersController < ApplicationController
 			email_confirmation_token = body["email_confirmation_token"]
 			password_confirmation_token = body["password_confirmation_token"]
 
-			ValidationService.raise_validation_error(ValidationService.validate_email_confirmation_token_missing(email_confirmation_token))
-			ValidationService.raise_validation_error(ValidationService.validate_password_confirmation_token_missing(password_confirmation_token))
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_email_confirmation_token_missing(email_confirmation_token),
+				ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+			])
 
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
-
 			api_key = auth.split(",")[0]
-			sig = auth.split(",")[1]
 
 			dev = Dev.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
@@ -729,39 +729,56 @@ class UsersController < ApplicationController
 	end
 
 	def remove_app
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		app_id = params["app_id"]
-		
-		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_jwt_missing(jwt),
-				ValidationService.validate_id_missing(app_id)
-			])
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		app_id = params["id"]
 
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
-			ValidationService.raise_validation_error(jwt_signature_validation[0])
-			user_id = jwt_signature_validation[1][0]["user_id"]
-			dev_id = jwt_signature_validation[1][0]["dev_id"]
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			body = ValidationService.parse_json(request.body.string)
+
+			user_id = body["user_id"]
+			password_confirmation_token = body["password_confirmation_token"]
+
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_user_id_missing(user_id),
+				ValidationService.validate_password_confirmation_token_missing(password_confirmation_token)
+			])
+			
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+			api_key = auth.split(",")[0]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
-
 			app = App.find_by_id(app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
-			# Delete user app association
+			# Check if the password confirmation token matches the password confirmation token of the user
+			ValidationService.raise_validation_error(ValidationService.validate_password_confirmation_token_of_user(user, password_confirmation_token))
+
+			# Check if the user uses the app
 			ua = UsersApp.find_by(user_id: user_id, app_id: app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_is_user_of_app(ua))
+
+			# Clear the password confirmation token
+			user.password_confirmation_token = nil
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+
+			# Delete user app association
 			if ua
 				ua.destroy!
 			end
 
+			# Remove the app data
 			RemoveAppWorker.perform_async(user.id, app.id)
-			result = {}
-			render json: result, status: 200
+
+			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
@@ -920,8 +937,7 @@ class UsersController < ApplicationController
 			ua = UsersApp.find_by(user_id: user.id, app_id: app.id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_user_of_app(ua))
 
-			# Generate email_confirmation_token and password_confirmation_token
-			user.email_confirmation_token = generate_token
+			# Generate password_confirmation_token
 			user.password_confirmation_token = generate_token
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))

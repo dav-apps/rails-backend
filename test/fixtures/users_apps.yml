@@ -1,3 +1,7 @@
 mattCards:
   app: Cards
   user: matt
+
+tester2TestApp:
+  app: TestApp
+  user: tester2
