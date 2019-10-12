@@ -76,7 +76,6 @@ class UsersController < ApplicationController
 			# Create a jwt
 			expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
 			exp = Time.now.to_i + expHours * 3600
-			payload = {:email => user.email, :user_id => user.id, :dev_id => dev.id, :exp => exp}
 
 			if app_id != 0
 				# Create a session jwt
@@ -86,9 +85,11 @@ class UsersController < ApplicationController
 				session = Session.new(user_id: user.id, app_id: app_id, secret: secret, exp: Time.at(exp).utc, device_name: device_name, device_type: device_type, device_os: device_os)
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(session.save))
 
+				payload = {:email => user.email, :user_id => user.id, :dev_id => app_dev.id, :exp => exp}
 				jwt = (JWT.encode(payload, secret, ENV['JWT_ALGORITHM'])) + ".#{session.id}"
 			else
 				# Create a normal jwt
+				payload = {:email => user.email, :user_id => user.id, :dev_id => dev.id, :exp => exp}
 				jwt = JWT.encode(payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM'])
 			end
 			
