@@ -277,7 +277,83 @@ class UsersController < ApplicationController
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
-   end
+	end
+	
+	define_method :create_session_with_jwt do
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			
+			body = ValidationService.parse_json(request.body.string)
+
+			app_id = body['app_id']
+         api_key = body['api_key']
+         device_name = body['device_name']
+         device_type = body['device_type']
+         device_os = body['device_os']
+
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_app_id_missing(app_id),
+				ValidationService.validate_api_key_missing(api_key),
+				ValidationService.validate_device_name_missing(device_name),
+				ValidationService.validate_device_type_missing(device_type),
+				ValidationService.validate_device_os_missing(device_os)
+			])
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			app_dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(app_dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, app_dev))
+
+			# Generate secret
+			secret = SecureRandom.urlsafe_base64(30)
+
+			# Create the session
+			session = Session.new(user_id: user.id, app_id: app.id, secret: secret, device_name: device_name, device_type: device_type, device_os: device_os)
+
+			# Create the JWT
+			expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
+			exp = Time.now.to_i + expHours * 3600
+			payload = {
+				email: user.email,
+				user_id: user.id,
+				dev_id: app_dev.id,
+				exp: exp
+			}
+			token = JWT.encode(payload, secret, ENV['JWT_ALGORITHM'])
+
+			# Set the expiration time of the session
+			session.exp = Time.at(exp).utc
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(session.save))
+
+			# Append the session id at the end of the jwt
+			token = "#{token}.#{session.id}"
+
+			result = session.attributes.except("secret")
+			result['exp'] = exp.to_i
+			result['jwt'] = token
+			render json: result, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
    
    def get_session
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])

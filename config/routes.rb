@@ -26,6 +26,7 @@ Rails.application.routes.draw do
   match '/v1/auth/archive/:id', to: 'users#delete_archive', via: 'delete'
 
   match '/v1/auth/session', to: 'users#create_session', via: 'post'
+  match '/v1/auth/session/jwt', to: 'users#create_session_with_jwt', via: 'post'
   match '/v1/auth/session/:id', to: 'users#get_session', via: 'get'
   match '/v1/auth/session', to: 'users#delete_session', via: 'delete'
   

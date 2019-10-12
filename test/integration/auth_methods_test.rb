@@ -486,7 +486,109 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(device_type, session.device_type)
 		assert_equal(device_os, session.device_os)
 	end
-   # End create_session tests
+	# End create_session tests
+	
+	# create_session_with_jwt tests
+	test "Missing fields in create_session_with_jwt" do
+		post "/v1/auth/session/jwt"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
+	end
+
+	test "Can't create session with jwt without device info" do
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+		app = apps(:TestApp)
+		api_key = devs(:matt).api_key
+
+		post "/v1/auth/session/jwt",
+				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+				params: {app_id: app.id, api_key: api_key}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2125, resp["errors"][0][0])
+		assert_equal(2126, resp["errors"][1][0])
+		assert_equal(2127, resp["errors"][2][0])
+	end
+
+	test "Can't create session with jwt without content type json" do
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/auth/session/jwt", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't create session with jwt from outside the website" do
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
+		api_key = devs(:matt).api_key
+
+		post "/v1/auth/session/jwt", 
+				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+				params: {app_id: 1, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create session with jwt for dev that does not exist" do
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+		app = apps(:TestApp)
+
+		post "/v1/auth/session/jwt",
+				headers: {Authorization: jwt, "Content-Type": 'application/json'},
+				params: {app_id: app.id, api_key: "blablabla", device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2802, resp["errors"][0][0])
+	end
+
+	test "Can't create session with jwt for app that does not exist" do
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+		api_key = devs(:matt).api_key
+
+		post "/v1/auth/session/jwt",
+				headers: {Authorization: jwt, "Content-Type": 'application/json'},
+				params: {app_id: -20, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2803, resp["errors"][0][0])
+	end
+
+	test "Can't create session with jwt for app that does not belong to the dev" do
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+		api_key = devs(:matt).api_key
+		app = apps(:Cards)
+
+		post "/v1/auth/session/jwt",
+				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+				params: {app_id: app.id, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can create session with jwt" do
+		jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:sherlock)).body)["jwt"]
+		app = apps(:TestApp)
+		api_key = devs(:matt).api_key
+
+		post "/v1/auth/session/jwt",
+				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+				params: {app_id: app.id, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+	end
+	# End create_sesion_with_jwt tests
 
    # get_session tests
    test "Missing fields in get_session" do
