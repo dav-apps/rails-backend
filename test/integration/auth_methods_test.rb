@@ -734,118 +734,312 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 	# End delete_session tests
 
-   # get_user tests
-   test "Can't get user when the requested user is not the current user" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      get "/v1/auth/user/#{users(:sherlock).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
-   
-   test "Can get user when the requested user is the current user" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      get "/v1/auth/user/#{matt.id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(matt.id, resp["id"])
+	# get_user tests
+	test "Missing fields in get_user" do
+		get "/v1/auth/user/#{users(:sherlock).id}"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
 	end
-	
-	test "Can get user with session jwt when the requested user is the current user" do
-      matt = users(:matt)
+
+	test "Can't get user with invalid jwt" do
+		get "/v1/auth/user/#{users(:sherlock).id}", headers: {Authorization: "blablabla"}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(1302, resp["errors"][0][0])
+	end
+
+	test "Can't get user that does not exist" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		
+		get "/v1/auth/user/-123", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
+
+	test "Can't get different user" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/auth/user/#{users(:sherlock).id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get user" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		get "/v1/auth/user/#{matt.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
+
+		[
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_nil(resp[key])
+		end
+	end
+
+	test "Can get user with all information with jwt of the first dev" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		# Save values for period_end and stripe_customer_id
+		matt.period_end = DateTime.now
+		matt.stripe_customer_id = "Hello World"
+		matt.save
+
+		get "/v1/auth/user/#{matt.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan",
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
+	end
+
+	test "Can get user with session jwt" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:dav), apps(:davApp).id, "schachmatt")
+
+		get "/v1/auth/user/#{matt.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
+
+		[
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_nil(resp[key])
+		end
+	end
+
+	test "Can get user with all information with session jwt of the first dev" do
+		matt = users(:matt)
 		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
-      
-      get "/v1/auth/user/#{matt.id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(matt.id, resp["id"])
-	end
-   
-   test "User does not exist in get_user" do
-      matt = users(:matt)
-      matt_id = matt.id
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      matt.destroy!
-      
-      get "/v1/auth/user/#{matt_id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 404
-      assert_equal(2801, resp["errors"][0][0])
-   end
-   
-   test "Can see apps, avatar url and avatar_etag of the user in get_user" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
-            params: {page1: "Hello World", page2: "Hallo Welt"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      get "/v1/auth/user/#{matt.id}", headers: {'Authorization' => jwt}
-      resp2 = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(apps(:Cards).id, resp2["apps"][0]["id"])
-      assert_not_nil(resp2["avatar"])
-      assert_not_nil(resp2["avatar_etag"])
+
+		# Save values for period_end and stripe_customer_id
+		matt.period_end = DateTime.now
+		matt.stripe_customer_id = "Hello World"
+		matt.save
+
+		get "/v1/auth/user/#{matt.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan",
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
 	end
    # End get_user tests
 
    # get_user_by_jwt tests
    test "Missing fields in get_user_by_jwt" do
       get "/v1/auth/user"
-      resp = JSON.parse response.body
+      resp = JSON.parse(response.body)
 
       assert_response 401
       assert_equal(2102, resp["errors"][0][0])
    end
 
-   test "Can't get the user when the JWT is invalid" do
-      get "/v1/auth/user", headers: {'Authorization' => "blablabla"}
-      resp = JSON.parse response.body
+   test "Can't get user with jwt with invalid jwt" do
+      get "/v1/auth/user", headers: {Authorization: "blablabla"}
+      resp = JSON.parse(response.body)
 
       assert_response 401
       assert_equal(1302, resp["errors"][0][0])
-   end
-
-   test "Can get the user and can see avatar url and avatar etag" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-
-      get "/v1/auth/user", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 200
-      assert_equal(matt.id, resp["id"])
-      assert_equal(0, resp["used_storage"])
-      assert_not_nil(resp["avatar"])
-      assert_not_nil(resp["avatar_etag"])
 	end
-	
-	test "Can get the user with session jwt and can see avatar url and avatar etag" do
-      matt = users(:matt)
+
+	test "Can get user with jwt" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		get "/v1/auth/user", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
+
+		[
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_nil(resp[key])
+		end
+	end
+
+	test "Can get user with jwt with all information with jwt of the first dev" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		# Save values for period_end and stripe_customer_id
+		matt.period_end = DateTime.now
+		matt.stripe_customer_id = "Hello World"
+		matt.save
+
+		get "/v1/auth/user", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan",
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
+	end
+
+	test "Can get user with jwt with session jwt" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:dav), apps(:davApp).id, "schachmatt")
+
+		get "/v1/auth/user", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
+
+		[
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_nil(resp[key])
+		end
+	end
+
+	test "Can get user with jwt with all information with session jwt of the first dev" do
+		matt = users(:matt)
 		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
 
-      get "/v1/auth/user", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
+		# Save values for period_end and stripe_customer_id
+		matt.period_end = DateTime.now
+		matt.stripe_customer_id = "Hello World"
+		matt.save
 
-      assert_response 200
-      assert_equal(matt.id, resp["id"])
-      assert_equal(0, resp["used_storage"])
-      assert_not_nil(resp["avatar"])
-      assert_not_nil(resp["avatar_etag"])
-   end
+		get "/v1/auth/user", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
 
-   test "Can get user and used storage of apps" do
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan",
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
+	end
+
+   test "Can get user with jwt and used storage of apps" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       file1Path = "test/fixtures/files/test.png"

@@ -430,10 +430,7 @@ class UsersController < ApplicationController
 		requested_user_id = params["id"]
 		
 		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_jwt_missing(jwt),
-				ValidationService.validate_user_id_missing(requested_user_id)
-			])
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -452,11 +449,18 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_user(user, requested_user))
 
 			# Return the data
-			result = requested_user.attributes.except("email_confirmation_token", 
-																	"password_confirmation_token", 
-																	"new_password", 
-																	"password_digest",
-																	"stripe_customer_id")
+			result = Hash.new
+			[
+				"id", 
+				"email", 
+				"username", 
+				"confirmed", 
+				"created_at", 
+				"updated_at", 
+				"plan"
+			].each do |key|
+				result[key] = requested_user[key]
+			end
 
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
 			result["avatar"] = avatar_info[0]
@@ -472,7 +476,16 @@ class UsersController < ApplicationController
 			end
 
 			result["apps"] = users_apps
-			result["archives"] = user.archives
+
+			if dev == Dev.first
+				result["old_email"] = requested_user.old_email
+				result["new_email"] = requested_user.new_email
+				result["archives"] = requested_user.archives
+				result["period_end"] = requested_user.period_end
+				result["subscription_status"] = requested_user.subscription_status
+				result["stripe_customer_id"] = requested_user.stripe_customer_id
+			end
+
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -497,11 +510,21 @@ class UsersController < ApplicationController
 			dev = Dev.find_by_id(dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			result = user.attributes.except("email_confirmation_token", 
-														"password_confirmation_token", 
-														"new_password", 
-														"password_digest",
-														"stripe_customer_id")
+			# Return the data
+			result = Hash.new
+			[
+				"id", 
+				"email", 
+				"username", 
+				"confirmed", 
+				"created_at", 
+				"updated_at", 
+				"plan", 
+				"total_storage",
+				"used_storage"
+			].each do |key|
+				result[key] = user[key]
+			end
 
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
 			result["avatar"] = avatar_info[0]
@@ -515,8 +538,18 @@ class UsersController < ApplicationController
 				app_hash["used_storage"] = users_app.used_storage
 				users_apps.push(app_hash)
 			end
+
 			result["apps"] = users_apps
-			result["archives"] = user.archives
+			
+			if dev == Dev.first
+				result["old_email"] = user.old_email
+				result["new_email"] = user.new_email
+				result["archives"] = user.archives
+				result["period_end"] = user.period_end
+				result["subscription_status"] = user.subscription_status
+				result["stripe_customer_id"] = user.stripe_customer_id
+			end
+
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
