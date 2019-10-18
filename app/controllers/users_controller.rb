@@ -786,20 +786,22 @@ class UsersController < ApplicationController
 	end
 
 	def create_stripe_customer_for_user
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
-		user_id = params["id"]
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 
 		begin
-			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
-			api_key = auth.split(",")[0]
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
 
-			dev = Dev.find_by(api_key: api_key)
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			user = User.find_by_id(user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			# Check if the user already has a stripe customer
 			if user.stripe_customer_id
@@ -810,7 +812,6 @@ class UsersController < ApplicationController
 					# Throw exception if the stripe customer exists
 					ValidationService.raise_validation_error(ValidationService.validate_user_is_not_stripe_customer(user))
 				rescue Stripe::InvalidRequestError => e
-
 				end
 			end
 

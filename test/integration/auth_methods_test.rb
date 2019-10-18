@@ -1464,51 +1464,37 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	
 	# create_stripe_customer_for_user tests
 	test "Missing fields in create_stripe_customer_for_user" do
-		matt = users(:matt)
-
-		post "/v1/auth/user/#{matt.id}/stripe"
+		post "/v1/auth/user/stripe"
 		resp = JSON.parse(response.body)
 
 		assert_response 401
-		assert_equal(2101, resp["errors"][0][0])
+		assert_equal(2102, resp["errors"][0][0])
 	end
 
-	test "Can't create stripe customer for user with invalid auth" do
-		matt = users(:matt)
-
-		post "/v1/auth/user/#{matt.id}/stripe", headers: {Authorization: 'blablabla'}
+	test "Can't create stripe customer for user with invalid jwt" do
+		post "/v1/auth/user/stripe", headers: {Authorization: 'blablabla'}
 		resp = JSON.parse(response.body)
 
 		assert_response 401
-		assert_equal(1101, resp["errors"][0][0])
+		assert_equal(1302, resp["errors"][0][0])
 	end
 
 	test "Can't create stripe customer for user from outside the website" do
-		auth = generate_auth_token(devs(:matt))
 		matt = users(:matt)
+		jwt = (JSON.parse(login_user(matt, "schachmatt", devs(:matt)).body))["jwt"]
 
-		post "/v1/auth/user/#{matt.id}/stripe", headers: {Authorization: auth}
+		post "/v1/auth/user/stripe", headers: {Authorization: jwt}
 		resp = JSON.parse(response.body)
 
 		assert_response 403
 		assert_equal(1102, resp["errors"][0][0])
 	end
 
-	test "Can't create stripe customer for user that does not exist" do
-		auth = generate_auth_token(devs(:sherlock))
-
-		post "/v1/auth/user/-12/stripe", headers: {Authorization: auth}
-		resp = JSON.parse(response.body)
-
-		assert_response 404
-		assert_equal(2801, resp["errors"][0][0])
-	end
-
 	test "Can't create stripe customer for user that already is stripe customer" do
-		auth = generate_auth_token(devs(:sherlock))
 		torera = users(:torera)
+		jwt = (JSON.parse(login_user(torera, "Geld", devs(:sherlock)).body))["jwt"]
 
-		post "/v1/auth/user/#{torera.id}/stripe", headers: {Authorization: auth}
+		post "/v1/auth/user/stripe", headers: {Authorization: jwt}
 		resp = JSON.parse(response.body)
 
 		assert_response 400
@@ -1516,12 +1502,12 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can create stripe customer for user with stripe customer that does not exist" do
-		auth = generate_auth_token(devs(:sherlock))
 		matt = users(:matt)
+		jwt = (JSON.parse(login_user(matt, "schachmatt", devs(:sherlock)).body))["jwt"]
 		matt.stripe_customer_id = "blablabla"
 		matt.save
 
-		post "/v1/auth/user/#{matt.id}/stripe", headers: {Authorization: auth}
+		post "/v1/auth/user/stripe", headers: {Authorization: jwt}
 		resp = JSON.parse(response.body)
 
 		assert_response 201
@@ -1536,10 +1522,10 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can create stripe customer for user" do
-		auth = generate_auth_token(devs(:sherlock))
 		matt = users(:matt)
+		jwt = (JSON.parse(login_user(matt, "schachmatt", devs(:sherlock)).body))["jwt"]
 
-		post "/v1/auth/user/#{matt.id}/stripe", headers: {Authorization: auth}
+		post "/v1/auth/user/stripe", headers: {Authorization: jwt}
 		resp = JSON.parse(response.body)
 
 		assert_response 201
