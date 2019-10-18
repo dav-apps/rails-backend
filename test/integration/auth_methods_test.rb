@@ -1460,7 +1460,99 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert(avatar_etag != avatar_etag2)
    end
-   # End update_user tests
+	# End update_user tests
+	
+	# create_stripe_customer_for_user tests
+	test "Missing fields in create_stripe_customer_for_user" do
+		matt = users(:matt)
+
+		post "/v1/auth/user/#{matt.id}/stripe"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't create stripe customer for user with invalid auth" do
+		matt = users(:matt)
+
+		post "/v1/auth/user/#{matt.id}/stripe", headers: {Authorization: 'blablabla'}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(1101, resp["errors"][0][0])
+	end
+
+	test "Can't create stripe customer for user from outside the website" do
+		auth = generate_auth_token(devs(:matt))
+		matt = users(:matt)
+
+		post "/v1/auth/user/#{matt.id}/stripe", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create stripe customer for user that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		post "/v1/auth/user/-12/stripe", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
+
+	test "Can't create stripe customer for user that already is stripe customer" do
+		auth = generate_auth_token(devs(:sherlock))
+		torera = users(:torera)
+
+		post "/v1/auth/user/#{torera.id}/stripe", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(1115, resp["errors"][0][0])
+	end
+
+	test "Can create stripe customer for user with stripe customer that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+		matt.stripe_customer_id = "blablabla"
+		matt.save
+
+		post "/v1/auth/user/#{matt.id}/stripe", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+
+		# Get the user and check if the stripe_customer_id matches the stripe_customer_id in the result
+		matt = User.find_by_id(matt.id)
+		assert_equal(matt.stripe_customer_id, resp["stripe_customer_id"])
+
+		# Get the stripe customer and delete it
+		customer = Stripe::Customer.retrieve(matt.stripe_customer_id)
+		customer.delete
+	end
+
+	test "Can create stripe customer for user" do
+		auth = generate_auth_token(devs(:sherlock))
+		matt = users(:matt)
+
+		post "/v1/auth/user/#{matt.id}/stripe", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+
+		# Get the user and check if the stripe_customer_id matches the stripe_customer_id in the result
+		matt = User.find_by_id(matt.id)
+		assert_equal(matt.stripe_customer_id, resp["stripe_customer_id"])
+
+		# Get the stripe customer and delete it
+		customer = Stripe::Customer.retrieve(matt.stripe_customer_id)
+		customer.delete
+	end
+	# End create_stripe_customer_for_user tests
    
    # delete_user tests
    test "Missing fields in delete_user" do

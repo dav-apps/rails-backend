@@ -785,6 +785,50 @@ class UsersController < ApplicationController
 		end
 	end
 
+	def create_stripe_customer_for_user
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		user_id = params["id"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+			api_key = auth.split(",")[0]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			# Check if the user already has a stripe customer
+			if user.stripe_customer_id
+				# Try to get the stripe customer
+				begin
+					customer = Stripe::Customer.retrieve(user.stripe_customer_id)
+
+					# Throw exception if the stripe customer exists
+					ValidationService.raise_validation_error(ValidationService.validate_user_is_not_stripe_customer(user))
+				rescue Stripe::InvalidRequestError => e
+
+				end
+			end
+
+			# Create a new stripe customer
+			customer = Stripe::Customer.create(
+				email: user.email
+			)
+
+			user.stripe_customer_id = customer.id
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
+
+			render json: {stripe_customer_id: user.stripe_customer_id}, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
+
 	def delete_user
 		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
 		user_id = params["id"]

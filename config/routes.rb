@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   match '/v1/auth/user/:id', to: 'users#get_user', via: 'get'
   match '/v1/auth/user', to: 'users#get_user_by_jwt', via: 'get'
   match '/v1/auth/user', to: 'users#update_user', via: 'put'
+  match '/v1/auth/user/:id/stripe', to: 'users#create_stripe_customer_for_user', via: 'post'
   match '/v1/auth/user/:id', to: 'users#delete_user', via: 'delete'
   match '/v1/auth/app/:id', to: 'users#remove_app', via: 'delete'
   

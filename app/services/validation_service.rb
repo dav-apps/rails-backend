@@ -194,6 +194,11 @@ class ValidationService
 		!users_app ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
+	def self.validate_user_is_not_stripe_customer(user)
+		error_code = 1115
+		user.stripe_customer_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.authenticate_user(user, password)
 		error_code = 1201
 		!user.authenticate(password) ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
@@ -639,6 +644,8 @@ class ValidationService
 			"Please add your payment information"
 		when 1114
 			"The User is not a user of this app"
+		when 1115
+			"User is already a stripe customer"
 		when 1201
 			"Password is incorrect"
 		when 1202
