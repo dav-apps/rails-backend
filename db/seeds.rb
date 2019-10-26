@@ -24,7 +24,8 @@ apps = App.create([
    {dev: devs.second, name: "davClassLibraryTestApp", description: "This is the test app for davClassLibrary", published: false},
 	{dev: devs.first, name: "UniversalSoundboard", description: "UniversalSoundboard is a customizable soundboard and music player", published: true},
    {dev: devs.first, name: "Calendo", description: "Manage your todos and appointments: Calendo is the best app to organize your life", published: true},
-   {dev: devs.first, name: "PocketLib", description: "PocketLib is the library in your pocket", published: true}
+	{dev: devs.first, name: "PocketLib", description: "PocketLib is the library in your pocket", published: true},
+	{dev: devs.first, name: "dav Website", description: "This is the app for the dav website", published: false}
 ])
 
 tables = Table.create([
