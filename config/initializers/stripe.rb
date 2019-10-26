@@ -16,6 +16,10 @@ StripeEvent.configure do |events|
 		StripeWebhooksService.InvoicePaymentFailedEvent(event)
 	end
 
+	events.subscribe 'customer.subscription.created' do |event|
+		StripeWebhooksService.CustomerSubscriptionCreatedEvent(event)
+	end
+
 	events.subscribe 'customer.subscription.updated' do |event|
 		StripeWebhooksService.CustomerSubscriptionUpdatedEvent(event)
 	end

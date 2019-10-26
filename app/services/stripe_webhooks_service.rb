@@ -1,17 +1,17 @@
 class StripeWebhooksService
-
-   def self.InvoicePaymentSucceededEvent(event)
-      # Find the user by the customer id
-      customer_id = event.data.object.customer
-      user = User.find_by(stripe_customer_id: customer_id)
+	def self.InvoicePaymentSucceededEvent(event)
+		customer_id = event.data.object.customer
+		period_end = event.data.object.period_end
+		period_end = event.data.object.lines.data[0].period.end if event.data.object.lines.data.count > 0
+		product_id = event.data.object.lines.data[0].plan.product if event.data.object.lines.data.count > 0
+		
+		if customer_id
+			user = User.find_by(stripe_customer_id: customer_id)
+		end
 
       if user
-         # Get the plan of the invoice
          # Update the user with new period_end and plan value
-         period_end = event.data.object.period_end
-         product_id = event.data.object.lines.data[0].plan.product
-
-         user.period_end = Time.at(period_end)
+         user.period_end = Time.at(period_end) if period_end
          user.subscription_status = 0
          
          case product_id
@@ -36,8 +36,11 @@ class StripeWebhooksService
 
       if !paid && !next_payment_attempt
          # Change the plan to free
-         customer_id = event.data.object.customer
-         user = User.find_by(stripe_customer_id: customer_id)
+			customer_id = event.data.object.customer
+			
+			if customer_id
+				user = User.find_by(stripe_customer_id: customer_id)
+			end
          
          if user
             user.plan = 0
@@ -51,16 +54,48 @@ class StripeWebhooksService
       end
 
       200
-   end
+	end
+	
+	def self.CustomerSubscriptionCreatedEvent(event)
+		period_end = event.data.object.current_period_end
+		product_id = event.data.object.items.data[0].plan.product if event.data.object.items.data.count > 0
+		customer_id = event.data.object.customer
+		
+		if customer_id
+			user = User.find_by(stripe_customer_id: customer_id)
+		end
+		
+		if user
+			user.subscription_status = 0
 
-   def self.CustomerSubscriptionUpdatedEvent(event)
-      # If the subscription was cancelled, change the status of the subscription to ending
+			if period_end
+				user.period_end = Time.at(period_end)
+			end
+
+			case product_id
+         when ENV['STRIPE_DAV_PLUS_PRODUCT_ID']
+            user.plan = 1
+         when ENV['STRIPE_DAV_PRO_PRODUCT_ID']
+            user.plan = 2
+         else
+            user.plan = 0
+			end
+			
+			user.save
+		end
+
+		200
+	end
+
+	def self.CustomerSubscriptionUpdatedEvent(event)
       cancelled = event.data.object.cancel_at_period_end
-      period_end = event.data.object.current_period_end
-      customer_id = event.data.object.customer
-      if customer_id
-         user = User.find_by(stripe_customer_id: customer_id)
-      end
+		period_end = event.data.object.current_period_end
+		product_id = event.data.object.items.data[0].plan.product if event.data.object.items.data.count > 0
+		customer_id = event.data.object.customer
+		
+		if customer_id
+			user = User.find_by(stripe_customer_id: customer_id)
+		end
 
       if user
          if cancelled
@@ -71,7 +106,16 @@ class StripeWebhooksService
          
          if period_end
             user.period_end = Time.at(period_end)
-         end
+			end
+			
+			case product_id
+			when ENV['STRIPE_DAV_PLUS_PRODUCT_ID']
+				user.plan = 1
+			when ENV['STRIPE_DAV_PRO_PRODUCT_ID']
+				user.plan = 2
+			else
+				user.plan = 0
+			end
 
          user.save
       end
@@ -80,7 +124,8 @@ class StripeWebhooksService
    end
 
    def self.CustomerSubscriptionDeletedEvent(event)
-      customer_id = event.data.object.customer
+		customer_id = event.data.object.customer
+		
       if customer_id
          user = User.find_by(stripe_customer_id: customer_id)
       end
@@ -94,5 +139,5 @@ class StripeWebhooksService
       end
 
       200
-   end
+	end
 end
