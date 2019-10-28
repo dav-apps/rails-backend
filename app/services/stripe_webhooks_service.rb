@@ -1,7 +1,6 @@
 class StripeWebhooksService
 	def self.InvoicePaymentSucceededEvent(event)
 		customer_id = event.data.object.customer
-		period_end = event.data.object.period_end
 		period_end = event.data.object.lines.data[0].period.end if event.data.object.lines.data.count > 0
 		product_id = event.data.object.lines.data[0].plan.product if event.data.object.lines.data.count > 0
 		
@@ -19,8 +18,6 @@ class StripeWebhooksService
             user.plan = 1
          when ENV['STRIPE_DAV_PRO_PRODUCT_ID']
             user.plan = 2
-         else
-            user.plan = 0
          end
          
          user.save
@@ -77,8 +74,6 @@ class StripeWebhooksService
             user.plan = 1
          when ENV['STRIPE_DAV_PRO_PRODUCT_ID']
             user.plan = 2
-         else
-            user.plan = 0
 			end
 			
 			user.save
@@ -113,8 +108,6 @@ class StripeWebhooksService
 				user.plan = 1
 			when ENV['STRIPE_DAV_PRO_PRODUCT_ID']
 				user.plan = 2
-			else
-				user.plan = 0
 			end
 
          user.save
