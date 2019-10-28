@@ -72,7 +72,8 @@ class AnalyticsController < ApplicationController
 
 				begin
 					country_key = "country"
-					country_code = JSON.parse(IpinfoIo::lookup(ip).body)["country"]
+					handler = IPinfo::create(ENV["IPINFO_ACCESS_TOKEN"])
+					country_code = handler.details(ip).all[:country]
 
 					ip_property = EventLogProperty.new(event_log_id: event_log.id, name: country_key, value: country_code)
 					if ip_property.save
