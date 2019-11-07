@@ -472,12 +472,29 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
 				params: {link_play: link_play, link_windows: link_windows}.to_json,
 				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
+      resp = JSON.parse(response.body)
 
       assert_response 400
-      assert_same(2403, resp["errors"][0][0])
-      assert_same(2404, resp["errors"][1][0])
-   end
+      assert_equal(2403, resp["errors"][0][0])
+      assert_equal(2404, resp["errors"][1][0])
+	end
+	
+	test "Can update published value of app" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		new_published = true
+		app_id = apps(:TestApp).id
+		
+		put "/v1/apps/app/#{app_id}",
+				params: {published: new_published}.to_json,
+				headers: {Authorization: jwt, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		
+		app = App.find_by_id(app_id)
+		assert_equal(new_published, app.published)
+	end
    # End update_app tests
    
    # delete_app tests

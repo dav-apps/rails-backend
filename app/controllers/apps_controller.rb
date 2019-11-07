@@ -255,6 +255,12 @@ class AppsController < ApplicationController
 				app.description = desc
 			end
 
+			published = object["published"]
+			# Check if published is given and if it's a boolean
+			if !!published == published
+				app.published = published
+			end
+
 			link_web = object["link_web"]
 			if link_web
 				validations.push(ValidationService.validate_link_web_not_valid(link_web))
