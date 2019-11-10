@@ -1,170 +1,166 @@
 require 'test_helper'
 
 class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
-
    setup do
       save_users_and_devs
    end
    
-   # create_event_log tests
-   test "Missing fields in create_event_log" do
-      post "/v1/analytics/event"
-      resp = JSON.parse response.body
-      
-      assert(response.status == 400 || response.status ==  401)
-      assert_equal(2118, resp["errors"][0][0])
-      assert_equal(2111, resp["errors"][1][0])
-      assert_equal(2110, resp["errors"][2][0])
-   end
-   
-   test "Can't create event with too short event name" do
-      api_key = devs(:matt).api_key
-      
-      post "/v1/analytics/event?api_key=#{api_key}&name=n&app_id=#{apps(:TestApp).id}"
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2203, resp["errors"][0][0])
-   end
-   
-   test "Can't create event with too long event name" do
-      api_key = devs(:matt).api_key
-      
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{"n"*65100}&app_id=#{apps(:TestApp).id}"
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2303, resp["errors"][0][0])
-   end
-   
-   test "Can create new event when event does not yet exist" do
-      api_key = devs(:matt).api_key
-      
-      post "/v1/analytics/event?api_key=#{api_key}&name=NewEvent&app_id=#{apps(:TestApp).id}"
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      assert_equal(Event.find_by(name: "NewEvent").id, resp["event_id"])
-   end
+	# create_event_log tests
+	test "Missing fields in create_event_log" do
+		post "/v1/analytics/event", headers: {'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
 
-   test "Can't create event log for the event of another dev" do
-      api_key = devs(:sherlock).api_key
+		assert_response 400
+		assert_equal(2118, resp["errors"][0][0])
+		assert_equal(2110, resp["errors"][1][0])
+		assert_equal(2111, resp["errors"][2][0])
+		assert_equal(2128, resp["errors"][3][0])
+		assert_equal(2129, resp["errors"][4][0])
+		assert_equal(2130, resp["errors"][5][0])
+		assert_equal(2131, resp["errors"][6][0])
+	end
 
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}"
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
+	test "Can't create event log without content type json" do
+		post "/v1/analytics/event"
+		resp = JSON.parse(response.body)
 
-   test "Can create event log without properties" do
-		api_key = devs(:matt).api_key
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't create event log for the event of another dev" do
+		api_key = devs(:sherlock).api_key
+		app_id = apps(:TestApp).id
 		name = events(:LoginMobile).name
-      
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}"
-		resp = JSON.parse response.body
+		browser_name = "Microsoft Edge"
+		browser_version = "80"
+		os_name = "Windows"
+		os_version = "10"
+		country = "DE"
+
+		post "/v1/analytics/event",
+			headers: {'Content-Type': 'application/json'},
+			params: {api_key: api_key, app_id: app_id, name: name, browser_name: browser_name, browser_version: browser_version, os_name: os_name, os_version: os_version, country: country}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create event log for event of dev that does not exist" do
+		api_key = "blablabla"
+		app_id = apps(:TestApp).id
+		name = events(:Login).name
+		browser_name = "Microsoft Edge"
+		browser_version = "80"
+		os_name = "Windows"
+		os_version = "10"
+		country = "DE"
+
+		post "/v1/analytics/event",
+			headers: {'Content-Type': 'application/json'},
+			params: {api_key: api_key, app_id: app_id, name: name, browser_name: browser_name, browser_version: browser_version, os_name: os_name, os_version: os_version, country: country}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2802, resp["errors"][0][0])
+	end
+
+	test "Can't create event log for app that does not exist" do
+		api_key = devs(:sherlock).api_key
+		app_id = -123
+		name = events(:OpenApp).name
+		browser_name = "Microsoft Edge"
+		browser_version = "80"
+		os_name = "Windows"
+		os_version = "10"
+		country = "DE"
+
+		post "/v1/analytics/event",
+			headers: {'Content-Type': 'application/json'},
+			params: {api_key: api_key, app_id: app_id, name: name, browser_name: browser_name, browser_version: browser_version, os_name: os_name, os_version: os_version, country: country}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2803, resp["errors"][0][0])
+	end
+
+	test "Can't create event by creating event log with too long name" do
+		api_key = devs(:sherlock).api_key
+		app_id = apps(:Cards).id
+		name = "NewTestEventBlablablablablabla"
+		browser_name = "Microsoft Edge"
+		browser_version = "80"
+		os_name = "Windows"
+		os_version = "10"
+		country = "DE"
+
+		post "/v1/analytics/event",
+			headers: {'Content-Type': 'application/json'},
+			params: {api_key: api_key, app_id: app_id, name: name, browser_name: browser_name, browser_version: browser_version, os_name: os_name, os_version: os_version, country: country}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2303, resp["errors"][0][0])
+	end
+
+	test "Can't create event by creating event log with too short name" do
+		api_key = devs(:sherlock).api_key
+		app_id = apps(:Cards).id
+		name = "A"
+		browser_name = "Microsoft Edge"
+		browser_version = "80"
+		os_name = "Windows"
+		os_version = "10"
+		country = "DE"
+
+		post "/v1/analytics/event",
+			headers: {'Content-Type': 'application/json'},
+			params: {api_key: api_key, app_id: app_id, name: name, browser_name: browser_name, browser_version: browser_version, os_name: os_name, os_version: os_version, country: country}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2203, resp["errors"][0][0])
+	end
+
+	test "Can create event by creating event log" do
+		api_key = devs(:sherlock).api_key
+		app_id = apps(:Cards).id
+		name = "NewTestEvent"
+		browser_name = "Microsoft Edge"
+		browser_version = "80"
+		os_name = "Windows"
+		os_version = "10"
+		country = "DE"
+
+		post "/v1/analytics/event",
+			headers: {'Content-Type': 'application/json'},
+			params: {api_key: api_key, app_id: app_id, name: name, browser_name: browser_name, browser_version: browser_version, os_name: os_name, os_version: os_version, country: country}.to_json
+		resp = JSON.parse(response.body)
 
 		assert_response 201
-		log = EventLog.find_by_id(resp["id"])
-		assert_equal(name, log.event.name)
-   end
 
-   test "Can create event log with properties" do
-      api_key = devs(:matt).api_key
-      name = events(:LoginMobile).name
-      firstPropertyName = "test1"
-      secondPropertyName = "test2"
-      firstPropertyValue = "bla"
-      secondPropertyValue = "blabla"
-      data = {"#{firstPropertyName}": firstPropertyValue, "#{secondPropertyName}": secondPropertyValue}
-      
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", 
-            params: data.to_json, 
-            headers: {"Content-Type" => "application/json"}
-      resp = JSON.parse response.body
+		event = Event.find_by_id(resp["event_id"])
+		assert_not_nil(event)
+	end
 
-      assert_response 201
-      log = EventLog.find_by_id(resp["id"])
-      assert_equal(name, log.event.name)
-      assert_equal(firstPropertyName, log.event_log_properties[0].name)
-      assert_equal(firstPropertyValue, log.event_log_properties[0].value)
-      assert_equal(secondPropertyName, log.event_log_properties[1].name)
-      assert_equal(secondPropertyValue, log.event_log_properties[1].value)
-   end
+	test "Can create event log" do
+		api_key = devs(:sherlock).api_key
+		app_id = apps(:Cards).id
+		name = events(:OpenApp).name
+		browser_name = "Microsoft Edge"
+		browser_version = "80"
+		os_name = "Windows"
+		os_version = "10"
+		country = "DE"
 
-   test "Can't create event log with too long property name" do
-      api_key = devs(:matt).api_key
+		post "/v1/analytics/event",
+			headers: {'Content-Type': 'application/json'},
+			params: {api_key: api_key, app_id: app_id, name: name, browser_name: browser_name, browser_version: browser_version, os_name: os_name, os_version: os_version, country: country}.to_json
+		resp = JSON.parse(response.body)
 
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", 
-            params: {"#{'n' * 240}": "test"}.to_json,
-            headers: {"Content-Type" => "application/json"}
-      resp = JSON.parse response.body
-
-      assert_response 400
-      assert_equal(2306, resp["errors"][0][0])
-   end
-   
-   test "Can't create event log with too long property value" do
-      api_key = devs(:matt).api_key
-
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{events(:LoginMobile).name}&app_id=#{apps(:TestApp).id}", 
-            params: {test: "#{'t' * 65100}"}.to_json,
-            headers: {"Content-Type" => "application/json"}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2307, resp["errors"][0][0])
-   end
-
-   test "create_event_log with save_country should create a property with the country code" do
-      api_key = devs(:matt).api_key
-      name = events(:LoginMobile).name
-
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}&save_country=true"
-      resp = JSON.parse response.body
-
-      assert_response 201
-      log = EventLog.find_by_id(resp["id"])
-      assert_equal("country", log.event_log_properties[0].name)
-   end
-
-   test "create_event_log with save_country and properties should create a property with the country code" do
-      api_key = devs(:matt).api_key
-      name = events(:LoginMobile).name
-      propertyName = "test"
-      propertyValue = "blabla"
-      data = {"#{propertyName}": propertyValue}
-
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}&save_country=true", 
-            params: data.to_json,
-            headers: {"Content-Type": "application/json"}
-      
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      log = EventLog.find_by_id(resp["id"])
-      assert_equal(propertyName, log.event_log_properties[0].name)
-      assert_equal(propertyValue, log.event_log_properties[0].value)
-      assert_equal("country", log.event_log_properties[1].name)
-   end
-
-   test "create_event_log should not create a property when the property has no value" do
-      api_key = devs(:matt).api_key
-      name = events(:LoginMobile).name
-      first_property_name = "test"
-      second_property_name = "test2"
-      data = {"#{first_property_name}": "", "#{second_property_name}": "content"}
-
-      post "/v1/analytics/event?api_key=#{api_key}&name=#{name}&app_id=#{apps(:TestApp).id}", 
-            params: data.to_json, 
-            headers: {"Content-Type" => "application/json"}
-      resp = JSON.parse response.body
-
-      assert_response 201
-      log = EventLog.find_by_id(resp["id"])
-      assert_equal(1, log.event_log_properties.count)
-      assert_equal(second_property_name, log.event_log_properties.first.name)
-   end
+		assert_response 201
+	end
    # End create_event_log tests
    
    # get_event tests

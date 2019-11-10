@@ -382,7 +382,27 @@ class ValidationService
    def self.validate_device_os_missing(device_os)
       error_code = 2127
       !device_os || device_os.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
-   end
+	end
+	
+	def self.validate_browser_name_missing(browser_name)
+		error_code = 2128
+		!browser_name || browser_name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_browser_version_missing(browser_version)
+		error_code = 2129
+		!browser_version || browser_version.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_os_name_missing(os_name)
+		error_code = 2130
+		!os_name || os_name.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_os_version_missing(os_version)
+		error_code = 2131
+		!os_version || os_version.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
 
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
@@ -713,7 +733,15 @@ class ValidationService
       when 2126
          "Missing field: device_type"
       when 2127
-         "Missing field: device_os"
+			"Missing field: device_os"
+		when 2128
+			"Missing field: browser_name"
+		when 2129
+			"Missing field: browser_version"
+		when 2130
+			"Missing field: os_name"
+		when 2131
+			"Missing field: os_version"
 		when 2201
 			"Field too short: username"
 		when 2202
