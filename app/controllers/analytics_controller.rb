@@ -1,17 +1,28 @@
 class AnalyticsController < ApplicationController
 	def create_event_log
-		api_key = params["api_key"]
-		name = params["name"]
-		app_id = params["app_id"]
-		save_country = params["save_country"] == "true"
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			body = ValidationService.parse_json(request.body.string)
 
-      begin
-         ValidationService.raise_multiple_validation_errors([
-            ValidationService.validate_api_key_missing(api_key),
-            ValidationService.validate_name_missing(name),
-            ValidationService.validate_app_id_missing(app_id)
-         ])
+			api_key = body["api_key"]
+			app_id = body["app_id"]
+			name = body["name"]
+			browser_name = body["browser_name"]
+			browser_version = body["browser_version"]
+			os_name = body["os_name"]
+			os_version = body["os_version"]
+			country = body["country"]
 
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_api_key_missing(api_key),
+				ValidationService.validate_app_id_missing(app_id),
+				ValidationService.validate_name_missing(name),
+				ValidationService.validate_browser_name_missing(browser_name),
+				ValidationService.validate_browser_version_missing(browser_version),
+				ValidationService.validate_os_name_missing(os_name),
+				ValidationService.validate_os_version_missing(os_version)
+			])
+			
 			dev = Dev.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
@@ -19,8 +30,16 @@ class AnalyticsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
-			if request.body.string.length > 0
-				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			# If no country is given, get the country by the IP address of the client
+			if !country
+				ip = request.remote_ip
+
+				begin
+					handler = IPinfo::create(ENV["IPINFO_ACCESS_TOKEN"])
+					country = handler.details(ip).all[:country]
+				rescue StandardError => e
+					puts e
+				end
 			end
 
 			# Check if the event with the name already exists
@@ -28,66 +47,28 @@ class AnalyticsController < ApplicationController
 
 			if !event
 				# Validate properties of the new event
-				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_long(name))
 				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_short(name))
+				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_long(name))
 
 				# Create the new event
 				event = Event.new(name: name, app_id: app_id)
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(event.save))
 			end
 
-			object = ValidationService.parse_json(request.body.string)
-			object.each do |key, value|
-				if value
-               if value.length > 0
-                  ValidationService.raise_multiple_validation_errors([
-                     ValidationService.validate_property_name_too_short(key),
-                     ValidationService.validate_property_value_too_short(value),
-                     ValidationService.validate_property_name_too_long(key),
-                     ValidationService.validate_property_value_too_long(value)
-                  ])
-					end
-				end
-			end
+			# Create the event log
+			event_log = StandardEventLog.new(
+				event_id: event.id, 
+				browser_name: browser_name,
+				browser_version: browser_version,
+				os_name: os_name,
+				os_version: os_version,
+				country: country
+			)
 
-			# Create the event logs
-			event_log = EventLog.new(event_id: event.id)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(event_log.save))
 
-			properties = Hash.new
-
-			object.each do |key, value|
-				if value
-					if value.length > 0
-						event_log_property = EventLogProperty.new(event_log_id: event_log.id, name: key, value: value)
-						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(event_log_property.save))
-						properties[key] = value
-					end
-				end
-			end
-
-			if save_country
-				# Get the country code and save it as event_log_property
-				ip = request.remote_ip
-
-				begin
-					country_key = "country"
-					handler = IPinfo::create(ENV["IPINFO_ACCESS_TOKEN"])
-					country_code = handler.details(ip).all[:country]
-
-					ip_property = EventLogProperty.new(event_log_id: event_log.id, name: country_key, value: country_code)
-					if ip_property.save
-						properties[country_key] = country_code
-					end
-				rescue StandardError => e
-					puts e
-				end
-			end
-
-			result = event_log.attributes
-			result["properties"] = properties
-
-			render json: result, status: 201
+			# Return the event log
+			render json: event_log.attributes, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
