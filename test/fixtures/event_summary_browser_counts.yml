@@ -1,0 +1,83 @@
+LoginSummaryHourBrowserCount1:
+  standard_event_summary: LoginSummaryHour
+  name: Microsoft Edge
+  version: 80
+  count: 1
+
+LoginSummaryHourBrowserCount2:
+  standard_event_summary: LoginSummaryHour
+  name: Firefox
+  version: 81
+  count: 2
+
+LoginSummaryDayBrowserCount1:
+  standard_event_summary: LoginSummaryDay
+  name: Firefox
+  version: 80
+  count: 2
+
+LoginSummaryDayBrowserCount2:
+  standard_event_summary: LoginSummaryDay
+  name: Microsoft Edge
+  version: 79
+  count: 6
+
+LoginSummaryMonthBrowserCount1:
+  standard_event_summary: LoginSummaryMonth
+  name: Opera
+  version: 78
+  count: 8
+
+LoginSummaryMonthBrowserCount2:
+  standard_event_summary: LoginSummaryMonth
+  name: Microsoft Edge
+  version: 80
+  count: 8
+
+LoginSummaryMonthBrowserCount3:
+  standard_event_summary: LoginSummaryMonth
+  name: Firefox
+  version: 80
+  count: 2
+
+LoginSummaryYearBrowserCount1:
+  standard_event_summary: LoginSummaryYear
+  name: Microsoft Edge
+  version: 80
+  count: 9
+
+LoginSummaryYearBrowserCount2:
+  standard_event_summary: LoginSummaryYear
+  name: Firefox
+  version: 81
+  count: 2
+
+LoginSummaryYearBrowserCount3:
+  standard_event_summary: LoginSummaryYear
+  name: Firefox
+  version: 80
+  count: 4
+
+LoginSummaryYearBrowserCount4:
+  standard_event_summary: LoginSummaryYear
+  name: Microsoft Edge
+  version: 79
+  count: 6
+
+LoginSummaryYearBrowserCount5:
+  standard_event_summary: LoginSummaryYear
+  name: Opera
+  version: 78
+  count: 8
+
+LoginSummaryLastMonthBrowserCount1:
+  standard_event_summary: LoginSummaryLastMonth
+  name: Microsoft Edge
+  version: 85
+  count: 3
+
+LoginSummaryLastMonthBrowserCount2:
+  standard_event_summary: LoginSummaryLastMonth
+  name: Google Chrome
+  version: 84
+  count: 5

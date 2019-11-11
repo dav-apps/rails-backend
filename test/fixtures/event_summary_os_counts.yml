@@ -1,0 +1,65 @@
+LoginSummaryHourOsCount1:
+  standard_event_summary: LoginSummaryHour
+  name: Windows
+  version: 10
+  count: 2
+
+LoginSummaryHourOsCount2:
+  standard_event_summary: LoginSummaryHour
+  name: Ubuntu
+  version: 20.04
+  count: 1
+
+LoginSummaryDayOsCount1:
+  standard_event_summary: LoginSummaryDay
+  name: Windows
+  version: 7
+  count: 3
+
+LoginSummaryDayOsCount2:
+  standard_event_summary: LoginSummaryDay
+  name: Windows
+  version: 10
+  count: 5
+
+LoginSummaryMonthOsCount1:
+  standard_event_summary: LoginSummaryMonth
+  name: Ubuntu
+  version: 20.04
+  count: 2
+
+LoginSummaryMonthOsCount2:
+  standard_event_summary: LoginSummaryMonth
+  name: Windows
+  version: 10
+  count: 16
+
+LoginSummaryYearOsCount1:
+  standard_event_summary: LoginSummaryYear
+  name: Windows
+  version: 10
+  count: 23
+
+LoginSummaryYearOsCount2:
+  standard_event_summary: LoginSummaryYear
+  name: Windows
+  version: 7
+  count: 3
+
+LoginSummaryYearOsCount3:
+  standard_event_summary: LoginSummaryYear
+  name: Ubuntu
+  version: 20.04
+  count: 3
+
+LoginSummaryLastMonthOsCount1:
+  standard_event_summary: LoginSummaryLastMonth
+  name: Windows
+  version: 10
+  count: 4
+
+LoginSummaryLastMonthOsCount2:
+  standard_event_summary: LoginSummaryLastMonth
+  name: Windows
+  version: 7
+  count: 4

@@ -163,130 +163,330 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 	end
    # End create_event_log tests
    
-   # get_event tests
-   test "Missing fields in get_event" do
-      get "/v1/analytics/event/1"
-      resp = JSON.parse response.body
+	# get_event tests
+	test "Missing fields in get_event" do
+		get "/v1/analytics/event/1"
+		resp = JSON.parse(response.body)
 
-      assert(response.status == 400 || response.status ==  401)
-      assert_equal(2102, resp["errors"][0][0])
-   end
-
-   test "get_event returns the log summaries of an event from within the last month" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-
-      # Update the event summaries with new dates
-		first_event_summary = event_summaries(:LoginSummaryDay1)
-		second_event_summary = event_summaries(:LoginSummaryDay2)
-		first_event_summary.time = Time.now - 2.days
-		second_event_summary.time = Time.now - 10.days
-		first_event_summary.save
-		second_event_summary.save
-      
-      get "/v1/analytics/event/#{events(:Login).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(event_summaries(:LoginSummaryDay1).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
-      assert_equal(event_summaries(:LoginSummaryDay1).total, resp["logs"][0]["total"])
-
-      # First event summary; first property count
-      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).name, resp["logs"][0]["properties"][0]["name"])
-      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).value, resp["logs"][0]["properties"][0]["value"])
-		assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount1).count, resp["logs"][0]["properties"][0]["count"])
-
-      # First event summary; second property count
-      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).name, resp["logs"][0]["properties"][1]["name"])
-      assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).value, resp["logs"][0]["properties"][1]["value"])
-		assert_equal(event_summary_property_counts(:LoginSummaryDay1PropertyCount2).count, resp["logs"][0]["properties"][1]["count"])
-		
-		# Second event summary; first property count
-		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).name, resp["logs"][1]["properties"][0]["name"])
-      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).value, resp["logs"][1]["properties"][0]["value"])
-		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).count, resp["logs"][1]["properties"][0]["count"])
-   end
-
-   test "get_event returns the log summaries of the specified timeframe" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      start_timestamp = 1529020800  # 15.6.2018
-      end_timestamp = 1531612800    # 15.7.2018
-
-      get "/v1/analytics/event/#{events(:Login).id}?start=#{start_timestamp}&end=#{end_timestamp}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 200
-
-		# Only LoginSummaryDay2 should be returned
-      assert_equal(1, resp["logs"].length)
-		assert_equal(event_summaries(:LoginSummaryDay2).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
-      assert_equal(event_summaries(:LoginSummaryDay2).total, resp["logs"][0]["total"])
-
-		# First property count
-		assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).name, resp["logs"][0]["properties"][0]["name"])
-      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).value, resp["logs"][0]["properties"][0]["value"])
-      assert_equal(event_summary_property_counts(:LoginSummaryDay2PropertyCount1).count, resp["logs"][0]["properties"][0]["count"])
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
 	end
-	
-	test "get_event returns the log summaries of the given sort" do
+
+	test "Can't get event from outside the website" do
 		matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		event = events(:Login)
 
-		# Update the event summary with a new date
-		event_summary = event_summaries(:LoginSummaryMonth)
-		event_summary.time = Time.now - 2.days
-		event_summary.save
-      
-      get "/v1/analytics/event/#{events(:Login).id}?sort=month", headers: {'Authorization' => jwt}
-		resp = JSON.parse response.body
-		
-		assert_response 200
-      assert_equal(event_summaries(:LoginSummaryMonth).time.to_i, DateTime.parse(resp["logs"][0]["time"]).to_i)
-		assert_equal(event_summaries(:LoginSummaryMonth).total, resp["logs"][0]["total"])
-		
-		# Second property count
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).name, resp["logs"][0]["properties"][0]["name"])
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).value, resp["logs"][0]["properties"][0]["value"])
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount2).count, resp["logs"][0]["properties"][0]["count"])
+		get "/v1/analytics/event/#{event.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
 
-		# First property count
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).name, resp["logs"][0]["properties"][1]["name"])
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).value, resp["logs"][0]["properties"][1]["value"])
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount1).count, resp["logs"][0]["properties"][1]["count"])
-
-		# Fourth property count
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).name, resp["logs"][0]["properties"][2]["name"])
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).value, resp["logs"][0]["properties"][2]["value"])
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount4).count, resp["logs"][0]["properties"][2]["count"])
-
-		# Third property count
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).name, resp["logs"][0]["properties"][3]["name"])
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).value, resp["logs"][0]["properties"][3]["value"])
-		assert_equal(event_summary_property_counts(:LoginSummaryMonthPropertyCount3).count, resp["logs"][0]["properties"][3]["count"])
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
 	end
-   
-   test "get_event can't be called from outside the website" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      get "/v1/analytics/event/#{events(:Login).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
-   
-   test "get_event can't return the event of the app of another dev" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      get "/v1/analytics/event/#{events(:CreateCard).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
+
+	test "Can't get event of the app of another dev" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		event = events(:OpenApp)
+
+		get "/v1/analytics/event/#{event.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get event with the log summaries of the last month" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		event = events(:Login)
+		summary = standard_event_summaries(:LoginSummaryLastMonth)
+
+		os_count1 = event_summary_os_counts(:LoginSummaryLastMonthOsCount1)
+		os_count2 = event_summary_os_counts(:LoginSummaryLastMonthOsCount2)
+
+		browser_count1 = event_summary_browser_counts(:LoginSummaryLastMonthBrowserCount2)
+		browser_count2 = event_summary_browser_counts(:LoginSummaryLastMonthBrowserCount1)
+		
+		country_count1 = event_summary_country_counts(:LoginSummaryLastMonthCountryCount2)
+		country_count2 = event_summary_country_counts(:LoginSummaryLastMonthCountryCount1)
+
+		get "/v1/analytics/event/#{event.id}?period=2", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(event.id, resp["id"])
+		assert_equal(event.app_id, resp["app_id"])
+		assert_equal(event.name, resp["name"])
+		assert_equal(summary.period, resp["period"])
+
+		assert_equal(summary.time, resp["summaries"][0]["time"])
+		assert_equal(summary.total, resp["summaries"][0]["total"])
+
+		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+
+		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+
+		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+
+		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+	end
+
+	test "Can get event with the log summaries within specified timeframe" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		start_timestamp = DateTime.parse("2018-06-05T00:00:00.000Z").to_i
+		end_timestamp = DateTime.parse("2018-06-15T00:00:00.000Z").to_i
+
+		event = events(:Login)
+		summary = standard_event_summaries(:LoginSummaryDay)
+
+		os_count1 = event_summary_os_counts(:LoginSummaryDayOsCount1)
+		os_count2 = event_summary_os_counts(:LoginSummaryDayOsCount2)
+
+		browser_count1 = event_summary_browser_counts(:LoginSummaryDayBrowserCount1)
+		browser_count2 = event_summary_browser_counts(:LoginSummaryDayBrowserCount2)
+
+		country_count1 = event_summary_country_counts(:LoginSummaryDayCountryCount1)
+		country_count2 = event_summary_country_counts(:LoginSummaryDayCountryCount2)
+
+		get "/v1/analytics/event/#{event.id}?start=#{start_timestamp}&end=#{end_timestamp}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(event.id, resp["id"])
+		assert_equal(event.app_id, resp["app_id"])
+		assert_equal(event.name, resp["name"])
+		assert_equal(summary.period, resp["period"])
+
+		assert_equal(summary.time, resp["summaries"][0]["time"])
+		assert_equal(summary.total, resp["summaries"][0]["total"])
+
+		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+
+		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+
+		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+
+		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+	end
+
+	test "Can get event with log summaries sorted by hour" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		start_timestamp = DateTime.parse("2018-06-09T00:00:00.000Z").to_i
+		end_timestamp = DateTime.parse("2018-06-11T00:00:00.000Z").to_i
+
+		event = events(:Login)
+		summary = standard_event_summaries(:LoginSummaryHour)
+
+		os_count1 = event_summary_os_counts(:LoginSummaryHourOsCount1)
+		os_count2 = event_summary_os_counts(:LoginSummaryHourOsCount2)
+
+		browser_count1 = event_summary_browser_counts(:LoginSummaryHourBrowserCount2)
+		browser_count2 = event_summary_browser_counts(:LoginSummaryHourBrowserCount1)
+
+		country_count1 = event_summary_country_counts(:LoginSummaryHourCountryCount2)
+		country_count2 = event_summary_country_counts(:LoginSummaryHourCountryCount1)
+
+		get "/v1/analytics/event/#{event.id}?start=#{start_timestamp}&end=#{end_timestamp}&period=0", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(event.id, resp["id"])
+		assert_equal(event.app_id, resp["app_id"])
+		assert_equal(event.name, resp["name"])
+		assert_equal(summary.period, resp["period"])
+
+		assert_equal(summary.time, resp["summaries"][0]["time"])
+		assert_equal(summary.total, resp["summaries"][0]["total"])
+
+		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+
+		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+
+		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+
+		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+	end
+
+	test "Can get event with log summaries sorted by month" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		start_timestamp = DateTime.parse("2018-04-20T00:00:00.000Z").to_i
+		end_timestamp = DateTime.parse("2018-05-02T00:00:00.000Z").to_i
+
+		event = events(:Login)
+		summary = standard_event_summaries(:LoginSummaryMonth)
+
+		os_count1 = event_summary_os_counts(:LoginSummaryMonthOsCount1)
+		os_count2 = event_summary_os_counts(:LoginSummaryMonthOsCount2)
+
+		browser_count1 = event_summary_browser_counts(:LoginSummaryMonthBrowserCount3)
+		browser_count2 = event_summary_browser_counts(:LoginSummaryMonthBrowserCount1)
+		browser_count3 = event_summary_browser_counts(:LoginSummaryMonthBrowserCount2)
+
+		country_count1 = event_summary_country_counts(:LoginSummaryMonthCountryCount1)
+		country_count2 = event_summary_country_counts(:LoginSummaryMonthCountryCount2)
+
+		get "/v1/analytics/event/#{event.id}?start=#{start_timestamp}&end=#{end_timestamp}&period=2", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(event.id, resp["id"])
+		assert_equal(event.app_id, resp["app_id"])
+		assert_equal(event.name, resp["name"])
+		assert_equal(summary.period, resp["period"])
+
+		assert_equal(summary.time, resp["summaries"][0]["time"])
+		assert_equal(summary.total, resp["summaries"][0]["total"])
+
+		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+
+		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+
+		assert_equal(browser_count3.name, resp["summaries"][0]["browser"][2]["name"])
+		assert_equal(browser_count3.version, resp["summaries"][0]["browser"][2]["version"])
+		assert_equal(browser_count3.count, resp["summaries"][0]["browser"][2]["count"])
+
+		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+
+		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+	end
+
+	test "Can get event with log summaries sorted by year" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		start_timestamp = DateTime.parse("2017-12-30T00:00:00.000Z").to_i
+		end_timestamp = DateTime.parse("2018-01-02T00:00:00.000Z").to_i
+
+		event = events(:Login)
+		summary = standard_event_summaries(:LoginSummaryYear)
+
+		os_count1 = event_summary_os_counts(:LoginSummaryYearOsCount2)
+		os_count2 = event_summary_os_counts(:LoginSummaryYearOsCount1)
+		os_count3 = event_summary_os_counts(:LoginSummaryYearOsCount3)
+
+		browser_count1 = event_summary_browser_counts(:LoginSummaryYearBrowserCount2)
+		browser_count2 = event_summary_browser_counts(:LoginSummaryYearBrowserCount1)
+		browser_count3 = event_summary_browser_counts(:LoginSummaryYearBrowserCount5)
+		browser_count4 = event_summary_browser_counts(:LoginSummaryYearBrowserCount4)
+		browser_count5 = event_summary_browser_counts(:LoginSummaryYearBrowserCount3)
+
+		country_count1 = event_summary_country_counts(:LoginSummaryYearCountryCount2)
+		country_count2 = event_summary_country_counts(:LoginSummaryYearCountryCount1)
+		country_count3 = event_summary_country_counts(:LoginSummaryYearCountryCount3)
+
+		get "/v1/analytics/event/#{event.id}?start=#{start_timestamp}&end=#{end_timestamp}&period=3", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(event.id, resp["id"])
+		assert_equal(event.app_id, resp["app_id"])
+		assert_equal(event.name, resp["name"])
+		assert_equal(summary.period, resp["period"])
+
+		assert_equal(summary.time, resp["summaries"][0]["time"])
+		assert_equal(summary.total, resp["summaries"][0]["total"])
+
+		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+
+		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+
+		assert_equal(os_count3.name, resp["summaries"][0]["os"][2]["name"])
+		assert_equal(os_count3.version, resp["summaries"][0]["os"][2]["version"])
+		assert_equal(os_count3.count, resp["summaries"][0]["os"][2]["count"])
+
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+
+		assert_equal(browser_count3.name, resp["summaries"][0]["browser"][2]["name"])
+		assert_equal(browser_count3.version, resp["summaries"][0]["browser"][2]["version"])
+		assert_equal(browser_count3.count, resp["summaries"][0]["browser"][2]["count"])
+
+		assert_equal(browser_count4.name, resp["summaries"][0]["browser"][3]["name"])
+		assert_equal(browser_count4.version, resp["summaries"][0]["browser"][3]["version"])
+		assert_equal(browser_count4.count, resp["summaries"][0]["browser"][3]["count"])
+
+		assert_equal(browser_count5.name, resp["summaries"][0]["browser"][4]["name"])
+		assert_equal(browser_count5.version, resp["summaries"][0]["browser"][4]["version"])
+		assert_equal(browser_count5.count, resp["summaries"][0]["browser"][4]["count"])
+
+		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+
+		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+
+		assert_equal(country_count3.country, resp["summaries"][0]["country"][2]["country"])
+		assert_equal(country_count3.count, resp["summaries"][0]["country"][2]["count"])
+	end
    # End get_event tests
 
    # get_event_by_name tests

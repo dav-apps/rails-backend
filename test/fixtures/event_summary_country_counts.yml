@@ -1,0 +1,54 @@
+LoginSummaryHourCountryCount1:
+  standard_event_summary: LoginSummaryHour
+  country: DE
+  count: 1
+
+LoginSummaryHourCountryCount2:
+  standard_event_summary: LoginSummaryHour
+  country: US
+  count: 2
+
+LoginSummaryDayCountryCount1:
+  standard_event_summary: LoginSummaryDay
+  country: FR
+  count: 4
+
+LoginSummaryDayCountryCount2:
+  standard_event_summary: LoginSummaryDay
+  country: DE
+  count: 4
+
+LoginSummaryMonthCountryCount1:
+  standard_event_summary: LoginSummaryMonth
+  country: US
+  count: 10
+
+LoginSummaryMonthCountryCount2:
+  standard_event_summary: LoginSummaryMonth
+  country: FR
+  count: 8
+
+LoginSummaryYearCountryCount1:
+  standard_event_summary: LoginSummaryYear
+  country: DE
+  count: 5
+
+LoginSummaryYearCountryCount2:
+  standard_event_summary: LoginSummaryYear
+  country: US
+  count: 12
+
+LoginSummaryYearCountryCount3:
+  standard_event_summary: LoginSummaryYear
+  country: FR
+  count: 12
+
+LoginSummaryLastMonthCountryCount1:
+  standard_event_summary: LoginSummaryLastMonth
+  country: DE
+  count: 3
+
+LoginSummaryLastMonthCountryCount2:
+  standard_event_summary: LoginSummaryLastMonth
+  country: US
+  count: 5

@@ -1,0 +1,29 @@
+LoginSummaryHour:
+  event: Login
+  time: <%= DateTime.parse("2018-06-10T00:00:00.000Z").beginning_of_hour.to_s(:db) %>
+  period: 0
+  total: 3
+
+LoginSummaryDay:
+  event: Login
+  time: <%= DateTime.parse("2018-06-12T00:00:00.000Z").beginning_of_day.to_s(:db) %>
+  period: 1
+  total: 8
+
+LoginSummaryMonth:
+  event: Login
+  time: <%= DateTime.parse("2018-05-01T00:00:00.000Z").beginning_of_month.to_s(:db) %>
+  period: 2
+  total: 18
+
+LoginSummaryYear:
+  event: Login
+  time: <%= DateTime.parse("2018-01-01T00:00:00.000Z").beginning_of_year.to_s(:db) %>
+  period: 3
+  total: 29
+
+LoginSummaryLastMonth:
+  event: Login
+  time: <%= DateTime.now.beginning_of_month.to_s(:db) %>
+  period: 2
+  total: 7
