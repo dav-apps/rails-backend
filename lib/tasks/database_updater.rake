@@ -61,6 +61,7 @@ namespace :database_updater do
 
 	desc "Create EventSummaries with the count of the values"
 	task create_event_summaries: :environment do
+		# Create summaries of event logs
 		EventLog.where(processed: [false, nil]).limit(100).each do |log|
 			[period_hour, period_day, period_month, period_year].each do |period|
 				case period
@@ -93,6 +94,59 @@ namespace :database_updater do
 					sum_prop.count += 1
 					sum_prop.save
 				end
+			end
+
+			log.processed = true
+			log.save
+		end
+
+		# Create summaries of standard event logs
+		StandardEventLog.where(processed: false).limit(100).each do |log|
+			# Process the event log for each period
+			[period_hour, period_day, period_month, period_year].each do |period|
+				case period
+				when period_day
+					time = log.created_at.beginning_of_day
+				when period_month
+					time = log.created_at.beginning_of_month
+				when period_year
+					time = log.created_at.beginning_of_year
+				else
+					time = log.created_at.beginning_of_hour
+				end
+
+				# Find the appropriate StandardEventSummary or create it
+				summary = StandardEventSummary.find_by(event_id: log.event_id, period: period, time: time)
+				if !summary
+					# Create the StandardEventSummary
+					summary = StandardEventSummary.create(event_id: log.event_id, period: period, time: time)
+				end
+				summary.total += 1
+				summary.save
+
+				# Find or create the count for os
+				os_count = EventSummaryOsCount.find_by(standard_event_summary_id: summary.id, name: log.os_name, version: log.os_version)
+				if !os_count
+					os_count = EventSummaryOsCount.create(standard_event_summary_id: summary.id, name: log.os_name, version: log.os_version)
+				end
+				os_count.count += 1
+				os_count.save
+
+				# Find or create the count for browser
+				browser_count = EventSummaryBrowserCount.find_by(standard_event_summary_id: summary.id, name: log.browser_name, version: log.browser_version)
+				if !browser_count
+					browser_count = EventSummaryBrowserCount.create(standard_event_summary_id: summary.id, name: log.browser_name, version: log.browser_version)
+				end
+				browser_count.count += 1
+				browser_count.save
+
+				# Find or create the count for country
+				country_count = EventSummaryCountryCount.find_by(standard_event_summary_id: summary.id, country: log.country)
+				if !country_count
+					country_count = EventSummaryCountryCount.create(standard_event_summary_id: summary.id, country: log.country)
+				end
+				country_count.count += 1
+				country_count.save
 			end
 
 			log.processed = true
