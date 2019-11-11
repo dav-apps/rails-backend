@@ -101,7 +101,6 @@ class AnalyticsController < ApplicationController
 
 			app = App.find_by_id(event.app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
-
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
 			if period < 0
@@ -163,18 +162,20 @@ class AnalyticsController < ApplicationController
 		end
 	end
 
-   def get_event_old
-      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		event_id = params["id"]
+	def get_event_by_name
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		name = params["name"]
+		app_id = params["app_id"]
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s') : (Time.now - 1.month)
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s') : Time.now
-		sort = params["sort"]
+		period = params["period"] ? params["period"].to_i : 1
 
-      begin
-         ValidationService.raise_multiple_validation_errors([
-            ValidationService.validate_jwt_missing(jwt),
-            ValidationService.validate_id_missing(event_id)
-         ])
+		begin
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_jwt_missing(jwt),
+				ValidationService.validate_name_missing(name),
+				ValidationService.validate_app_id_missing(app_id)
+			])
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -187,133 +188,65 @@ class AnalyticsController < ApplicationController
 			dev = Dev.find_by_id(dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(ValidationService.validate_dev_does_not_exist(dev)))
 
-			event = Event.find_by(id: event_id)
-			ValidationService.raise_validation_error(ValidationService.validate_event_does_not_exist(event))
-
-			app = App.find_by_id(event.app_id)
-			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
-
-			# Make sure this is called from the website
-			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
-
-			# Return the data
-			result = event.attributes
-			logs = Array.new
-
-			case sort
-			when "hour"
-				period = 0
-			when "month"
-				period = 2
-			when "year"
-				period = 3
-			else # day
-				period = 1
-			end
-
-			# Go through each EventSummary with the given period
-			event.event_summaries.where("period = ? AND time > ? AND time < ?", period, start_timestamp, end_timestamp).each do |summary|
-				# Add the EventSummary to the array
-				log = Hash.new
-				properties = Array.new
-
-				log["time"] = summary.time
-				log["total"] = summary.total
-
-				summary.event_summary_property_counts.each do |sum_prop|
-					property = Hash.new
-					property["name"] = sum_prop.name
-					property["value"] = sum_prop.value
-					property["count"] = sum_prop.count
-					properties.push(property)
-				end
-
-				log["properties"] = properties
-				logs.push(log)
-			end
-
-			result["period"] = period
-			result["logs"] = logs
-			render json: result, status: 200
-		rescue RuntimeError => e
-			validations = JSON.parse(e.message)
-			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
-		end
-	end
-
-   def get_event_by_name
-      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		name = params["name"]
-		app_id = params["app_id"]
-		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s') : (Time.now - 1.month)
-		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s') : Time.now
-		sort = params["sort"]
-
-		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_jwt_missing(jwt),
-				ValidationService.validate_app_id_missing(app_id),
-				ValidationService.validate_name_missing(name)
-			])
-
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
-			ValidationService.raise_validation_error(jwt_signature_validation[0])
-			user_id = jwt_signature_validation[1][0]["user_id"]
-			dev_id = jwt_signature_validation[1][0]["dev_id"]
-
-			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
-
-			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-
 			app = App.find_by_id(app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
 			event = Event.find_by(name: name, app: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_event_does_not_exist(event))
 
-			# Make sure this is called from the website
-			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
+			if period < 0
+				period = 0
+			elsif period > 3
+				period = 3
+			end
 
 			# Return the data
 			result = event.attributes
-			logs = Array.new
+			summaries = Array.new
 
-			case sort
-			when "hour"
-				period = 0
-			when "month"
-				period = 2
-			when "year"
-				period = 3
-			else # day
-				period = 1
-			end
+			event.standard_event_summaries.where("period = ? AND time > ? AND time < ?", period, start_timestamp, end_timestamp).each do |summary|
+				# Add the summary to the array
+				log = {
+					time: summary.time,
+					total: summary.total
+				}
 
-			# Go through each EventSummary with the given period
-			event.event_summaries.where("period = ? AND time > ? AND time < ?", period, start_timestamp, end_timestamp).each do |summary|
-				# Add the EventSummary to the array
-				log = Hash.new
-				properties = Array.new
-
-				log["time"] = summary.time
-				log["total"] = summary.total
-
-				summary.event_summary_property_counts.each do |sum_prop|
-					property = Hash.new
-					property["name"] = sum_prop.name
-					property["value"] = sum_prop.value
-					property["count"] = sum_prop.count
-					properties.push(property)
+				os = Array.new
+				summary.event_summary_os_counts.each do |obj|
+					os.push({
+						name: obj.name,
+						version: obj.version,
+						count: obj.count
+					})
 				end
 
-				log["properties"] = properties
-				logs.push(log)
+				browser = Array.new
+				summary.event_summary_browser_counts.each do |obj|
+					browser.push({
+						name: obj.name,
+						version: obj.version,
+						count: obj.count
+					})
+				end
+
+				country = Array.new
+				summary.event_summary_country_counts.each do |obj|
+					country.push({
+						country: obj.country,
+						count: obj.count
+					})
+				end
+
+				log["os"] = os
+				log["browser"] = browser
+				log["country"] = country
+				summaries.push(log)
 			end
 
 			result["period"] = period
-			result["logs"] = logs
+			result["summaries"] = summaries
+
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
