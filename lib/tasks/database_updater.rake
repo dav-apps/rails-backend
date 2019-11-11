@@ -152,6 +152,32 @@ namespace :database_updater do
 			log.processed = true
 			log.save
 		end
+
+		# Convert event logs to standard event logs
+		EventLog.where(processed: true).limit(500).each do |log|
+			new_log = StandardEventLog.new(event_id: log.event_id, created_at: log.created_at)
+
+			# Get the properties of the log
+			log.event_log_properties.each do |prop|
+				case prop.name
+				when "os_name"
+					new_log.os_name = prop.value
+				when "os_version"
+					new_log.os_version = prop.value
+				when "browser_name"
+					new_log.browser_name = prop.value
+				when "browser_version"
+					new_log.browser_version = prop.value
+				when "country"
+					new_log.country = prop.value
+				end
+			end
+
+			new_log.save
+
+			# Delete the old event log
+			log.destroy!
+		end
 	end
 
 	desc "Get the current active users and create the active user objects in the database"
