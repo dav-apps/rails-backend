@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_11_09_155543) do
+ActiveRecord::Schema.define(version: 2019_11_10_180420) do
 
   create_table "access_tokens", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
     t.string "token"
@@ -67,23 +67,6 @@ ActiveRecord::Schema.define(version: 2019_11_09_155543) do
     t.string "uuid"
   end
 
-  create_table "event_browser_summaries", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
-    t.integer "event_id"
-    t.datetime "time"
-    t.integer "period"
-    t.integer "count", default: 0
-    t.string "browser_name"
-    t.string "browser_version"
-  end
-
-  create_table "event_country_summaries", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
-    t.integer "event_id"
-    t.datetime "time"
-    t.integer "period"
-    t.integer "count", default: 0
-    t.string "country"
-  end
-
   create_table "event_log_properties", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
     t.integer "event_log_id"
     t.string "name"
@@ -96,20 +79,31 @@ ActiveRecord::Schema.define(version: 2019_11_09_155543) do
     t.boolean "processed", default: false
   end
 
-  create_table "event_os_summaries", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
-    t.integer "event_id"
-    t.datetime "time"
-    t.integer "period"
-    t.integer "count", default: 0
-    t.string "os_name"
-    t.string "os_version"
-  end
-
   create_table "event_summaries", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
     t.integer "event_id"
     t.integer "period"
     t.datetime "time"
     t.integer "total", default: 0
+  end
+
+  create_table "event_summary_browser_counts", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
+    t.integer "standard_event_summary_id"
+    t.string "name"
+    t.string "version"
+    t.integer "count", default: 0
+  end
+
+  create_table "event_summary_country_counts", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
+    t.integer "standard_event_summary_id"
+    t.string "country"
+    t.integer "count", default: 0
+  end
+
+  create_table "event_summary_os_counts", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
+    t.integer "standard_event_summary_id"
+    t.string "name"
+    t.string "version"
+    t.integer "count", default: 0
   end
 
   create_table "event_summary_property_counts", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
@@ -166,6 +160,13 @@ ActiveRecord::Schema.define(version: 2019_11_09_155543) do
     t.string "os_version"
     t.string "country"
     t.datetime "created_at"
+  end
+
+  create_table "standard_event_summaries", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
+    t.integer "event_id"
+    t.datetime "time"
+    t.integer "period"
+    t.integer "total", default: 0
   end
 
   create_table "table_objects", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
