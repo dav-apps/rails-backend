@@ -224,27 +224,27 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 	end
 
 	test "Can get event with log summaries within specified timeframe" do
@@ -277,27 +277,27 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 	end
 
 	test "Can get event with log summaries sorted by hour" do
@@ -330,27 +330,27 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 	end
 
 	test "Can get event with log summaries sorted by month" do
@@ -384,31 +384,31 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(browser_count3.name, resp["summaries"][0]["browser"][2]["name"])
-		assert_equal(browser_count3.version, resp["summaries"][0]["browser"][2]["version"])
-		assert_equal(browser_count3.count, resp["summaries"][0]["browser"][2]["count"])
+		assert_equal(browser_count3.name, resp["summaries"][0]["browser_counts"][2]["name"])
+		assert_equal(browser_count3.version, resp["summaries"][0]["browser_counts"][2]["version"])
+		assert_equal(browser_count3.count, resp["summaries"][0]["browser_counts"][2]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 	end
 
 	test "Can get event with log summaries sorted by year" do
@@ -446,46 +446,46 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(os_count3.name, resp["summaries"][0]["os"][2]["name"])
-		assert_equal(os_count3.version, resp["summaries"][0]["os"][2]["version"])
-		assert_equal(os_count3.count, resp["summaries"][0]["os"][2]["count"])
+		assert_equal(os_count3.name, resp["summaries"][0]["os_counts"][2]["name"])
+		assert_equal(os_count3.version, resp["summaries"][0]["os_counts"][2]["version"])
+		assert_equal(os_count3.count, resp["summaries"][0]["os_counts"][2]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(browser_count3.name, resp["summaries"][0]["browser"][2]["name"])
-		assert_equal(browser_count3.version, resp["summaries"][0]["browser"][2]["version"])
-		assert_equal(browser_count3.count, resp["summaries"][0]["browser"][2]["count"])
+		assert_equal(browser_count3.name, resp["summaries"][0]["browser_counts"][2]["name"])
+		assert_equal(browser_count3.version, resp["summaries"][0]["browser_counts"][2]["version"])
+		assert_equal(browser_count3.count, resp["summaries"][0]["browser_counts"][2]["count"])
 
-		assert_equal(browser_count4.name, resp["summaries"][0]["browser"][3]["name"])
-		assert_equal(browser_count4.version, resp["summaries"][0]["browser"][3]["version"])
-		assert_equal(browser_count4.count, resp["summaries"][0]["browser"][3]["count"])
+		assert_equal(browser_count4.name, resp["summaries"][0]["browser_counts"][3]["name"])
+		assert_equal(browser_count4.version, resp["summaries"][0]["browser_counts"][3]["version"])
+		assert_equal(browser_count4.count, resp["summaries"][0]["browser_counts"][3]["count"])
 
-		assert_equal(browser_count5.name, resp["summaries"][0]["browser"][4]["name"])
-		assert_equal(browser_count5.version, resp["summaries"][0]["browser"][4]["version"])
-		assert_equal(browser_count5.count, resp["summaries"][0]["browser"][4]["count"])
+		assert_equal(browser_count5.name, resp["summaries"][0]["browser_counts"][4]["name"])
+		assert_equal(browser_count5.version, resp["summaries"][0]["browser_counts"][4]["version"])
+		assert_equal(browser_count5.count, resp["summaries"][0]["browser_counts"][4]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 
-		assert_equal(country_count3.country, resp["summaries"][0]["country"][2]["country"])
-		assert_equal(country_count3.count, resp["summaries"][0]["country"][2]["count"])
+		assert_equal(country_count3.country, resp["summaries"][0]["country_counts"][2]["country"])
+		assert_equal(country_count3.count, resp["summaries"][0]["country_counts"][2]["count"])
 	end
    # End get_event tests
 
@@ -552,27 +552,27 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 	end
 
 	test "Can get event by name with log summaries within specified timeframe" do
@@ -605,27 +605,27 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 	end
 
 	test "Can get event by name with log summaries sorted by hour" do
@@ -658,27 +658,27 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 	end
 
 	test "Can get event by name with log summaries sorted by month" do
@@ -712,31 +712,31 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(browser_count3.name, resp["summaries"][0]["browser"][2]["name"])
-		assert_equal(browser_count3.version, resp["summaries"][0]["browser"][2]["version"])
-		assert_equal(browser_count3.count, resp["summaries"][0]["browser"][2]["count"])
+		assert_equal(browser_count3.name, resp["summaries"][0]["browser_counts"][2]["name"])
+		assert_equal(browser_count3.version, resp["summaries"][0]["browser_counts"][2]["version"])
+		assert_equal(browser_count3.count, resp["summaries"][0]["browser_counts"][2]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 	end
 
 	test "Can get event by name with log summaries sorted by year" do
@@ -774,46 +774,46 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(summary.time, resp["summaries"][0]["time"])
 		assert_equal(summary.total, resp["summaries"][0]["total"])
 
-		assert_equal(os_count1.name, resp["summaries"][0]["os"][0]["name"])
-		assert_equal(os_count1.version, resp["summaries"][0]["os"][0]["version"])
-		assert_equal(os_count1.count, resp["summaries"][0]["os"][0]["count"])
+		assert_equal(os_count1.name, resp["summaries"][0]["os_counts"][0]["name"])
+		assert_equal(os_count1.version, resp["summaries"][0]["os_counts"][0]["version"])
+		assert_equal(os_count1.count, resp["summaries"][0]["os_counts"][0]["count"])
 
-		assert_equal(os_count2.name, resp["summaries"][0]["os"][1]["name"])
-		assert_equal(os_count2.version, resp["summaries"][0]["os"][1]["version"])
-		assert_equal(os_count2.count, resp["summaries"][0]["os"][1]["count"])
+		assert_equal(os_count2.name, resp["summaries"][0]["os_counts"][1]["name"])
+		assert_equal(os_count2.version, resp["summaries"][0]["os_counts"][1]["version"])
+		assert_equal(os_count2.count, resp["summaries"][0]["os_counts"][1]["count"])
 
-		assert_equal(os_count3.name, resp["summaries"][0]["os"][2]["name"])
-		assert_equal(os_count3.version, resp["summaries"][0]["os"][2]["version"])
-		assert_equal(os_count3.count, resp["summaries"][0]["os"][2]["count"])
+		assert_equal(os_count3.name, resp["summaries"][0]["os_counts"][2]["name"])
+		assert_equal(os_count3.version, resp["summaries"][0]["os_counts"][2]["version"])
+		assert_equal(os_count3.count, resp["summaries"][0]["os_counts"][2]["count"])
 
-		assert_equal(browser_count1.name, resp["summaries"][0]["browser"][0]["name"])
-		assert_equal(browser_count1.version, resp["summaries"][0]["browser"][0]["version"])
-		assert_equal(browser_count1.count, resp["summaries"][0]["browser"][0]["count"])
+		assert_equal(browser_count1.name, resp["summaries"][0]["browser_counts"][0]["name"])
+		assert_equal(browser_count1.version, resp["summaries"][0]["browser_counts"][0]["version"])
+		assert_equal(browser_count1.count, resp["summaries"][0]["browser_counts"][0]["count"])
 
-		assert_equal(browser_count2.name, resp["summaries"][0]["browser"][1]["name"])
-		assert_equal(browser_count2.version, resp["summaries"][0]["browser"][1]["version"])
-		assert_equal(browser_count2.count, resp["summaries"][0]["browser"][1]["count"])
+		assert_equal(browser_count2.name, resp["summaries"][0]["browser_counts"][1]["name"])
+		assert_equal(browser_count2.version, resp["summaries"][0]["browser_counts"][1]["version"])
+		assert_equal(browser_count2.count, resp["summaries"][0]["browser_counts"][1]["count"])
 
-		assert_equal(browser_count3.name, resp["summaries"][0]["browser"][2]["name"])
-		assert_equal(browser_count3.version, resp["summaries"][0]["browser"][2]["version"])
-		assert_equal(browser_count3.count, resp["summaries"][0]["browser"][2]["count"])
+		assert_equal(browser_count3.name, resp["summaries"][0]["browser_counts"][2]["name"])
+		assert_equal(browser_count3.version, resp["summaries"][0]["browser_counts"][2]["version"])
+		assert_equal(browser_count3.count, resp["summaries"][0]["browser_counts"][2]["count"])
 
-		assert_equal(browser_count4.name, resp["summaries"][0]["browser"][3]["name"])
-		assert_equal(browser_count4.version, resp["summaries"][0]["browser"][3]["version"])
-		assert_equal(browser_count4.count, resp["summaries"][0]["browser"][3]["count"])
+		assert_equal(browser_count4.name, resp["summaries"][0]["browser_counts"][3]["name"])
+		assert_equal(browser_count4.version, resp["summaries"][0]["browser_counts"][3]["version"])
+		assert_equal(browser_count4.count, resp["summaries"][0]["browser_counts"][3]["count"])
 
-		assert_equal(browser_count5.name, resp["summaries"][0]["browser"][4]["name"])
-		assert_equal(browser_count5.version, resp["summaries"][0]["browser"][4]["version"])
-		assert_equal(browser_count5.count, resp["summaries"][0]["browser"][4]["count"])
+		assert_equal(browser_count5.name, resp["summaries"][0]["browser_counts"][4]["name"])
+		assert_equal(browser_count5.version, resp["summaries"][0]["browser_counts"][4]["version"])
+		assert_equal(browser_count5.count, resp["summaries"][0]["browser_counts"][4]["count"])
 
-		assert_equal(country_count1.country, resp["summaries"][0]["country"][0]["country"])
-		assert_equal(country_count1.count, resp["summaries"][0]["country"][0]["count"])
+		assert_equal(country_count1.country, resp["summaries"][0]["country_counts"][0]["country"])
+		assert_equal(country_count1.count, resp["summaries"][0]["country_counts"][0]["count"])
 
-		assert_equal(country_count2.country, resp["summaries"][0]["country"][1]["country"])
-		assert_equal(country_count2.count, resp["summaries"][0]["country"][1]["count"])
+		assert_equal(country_count2.country, resp["summaries"][0]["country_counts"][1]["country"])
+		assert_equal(country_count2.count, resp["summaries"][0]["country_counts"][1]["count"])
 
-		assert_equal(country_count3.country, resp["summaries"][0]["country"][2]["country"])
-		assert_equal(country_count3.count, resp["summaries"][0]["country"][2]["count"])
+		assert_equal(country_count3.country, resp["summaries"][0]["country_counts"][2]["country"])
+		assert_equal(country_count3.count, resp["summaries"][0]["country_counts"][2]["count"])
 	end
    # End get_event_by_name tests
    

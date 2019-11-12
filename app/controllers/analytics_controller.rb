@@ -146,9 +146,9 @@ class AnalyticsController < ApplicationController
 					})
 				end
 
-				log["os"] = os
-				log["browser"] = browser
-				log["country"] = country
+				log["os_counts"] = os
+				log["browser_counts"] = browser
+				log["country_counts"] = country
 				summaries.push(log)
 			end
 			
@@ -238,9 +238,9 @@ class AnalyticsController < ApplicationController
 					})
 				end
 
-				log["os"] = os
-				log["browser"] = browser
-				log["country"] = country
+				log["os_counts"] = os
+				log["browser_counts"] = browser
+				log["country_counts"] = country
 				summaries.push(log)
 			end
 
