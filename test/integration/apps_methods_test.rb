@@ -1734,95 +1734,141 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 	end
    # End delete_object tests
    
-   # create_table tests
-   test "Missing fields in create_table" do
-      post "/v1/apps/table"
-      resp = JSON.parse response.body
-      
-      assert(response.status == 400 || response.status ==  401)
-      assert_same(2102, resp["errors"][0][0])
-      assert_same(2110, resp["errors"][1][0])
-      assert_same(2113, resp["errors"][2][0])
-   end
-   
-   test "Can't create a table for the app of another dev" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      post "/v1/apps/table?table_name=NewTable&app_id=#{apps(:davApp).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_same(1102, resp["errors"][0][0])
-   end
-   
-   test "Can create a table for an app that the dev owns" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      post "/v1/apps/table?table_name=NewTable&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      assert_same(apps(:TestApp).id, resp["app_id"])
-      assert_not_nil(resp["name"])
-      assert_not_nil(resp["id"])
-   end
-   
-   test "Can create a table from the website" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      post "/v1/apps/table?table_name=NewTable&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      assert_same(apps(:TestApp).id, resp["app_id"])
-   end
-   
-   test "Can't create a table for an app of the first dev" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      post "/v1/apps/table?table_name=NewTable&app_id=#{apps(:Cards).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_same(1102, resp["errors"][0][0])
-   end
-   
-   test "Can't create a table with too long name" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      post "/v1/apps/table?table_name=#{"n"*220}&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_same(2305, resp["errors"][0][0])
-   end
-   
-   test "Can't create a table with too short name" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      post "/v1/apps/table?table_name=n&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2205, resp["errors"][0][0])
-   end
-   
-   test "Can't create a table with invalid name" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      post "/v1/apps/table?table_name=Hello World&app_id=#{apps(:TestApp).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2501, resp["errors"][0][0])
-   end
+	# create_table tests
+	test "Missing fields in create_table" do
+		post "/v1/apps/1/table", headers: {'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
+	end
+
+	test "Can't create table without content type json" do
+		matt = users(:matt)
+		app = apps(:TestApp)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/#{app.id}/table", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't create table for the app of another dev from the website" do
+		matt = users(:matt)
+		app = apps(:davApp)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		
+		post "/v1/apps/#{app.id}/table",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: "Blabla"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create table for the app of another dev from outside the website" do
+		matt = users(:matt)
+		app = apps(:davApp)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		post "/v1/apps/#{app.id}/table",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: "Blabla"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create table with the name of an existing table" do
+		matt = users(:matt)
+		app = apps(:TestApp)
+		table = tables(:note)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/#{app.id}/table",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: table.name}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 409
+		assert_equal(2904, resp["errors"][0][0])
+	end
+
+	test "Can't create table with too short name" do
+		matt = users(:matt)
+		app = apps(:TestApp)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/#{app.id}/table",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: 'a'}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2205, resp["errors"][0][0])
+	end
+
+	test "Can't create table with too long name" do
+		matt = users(:matt)
+		app = apps(:TestApp)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/#{app.id}/table",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: 'a' * 220}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2305, resp["errors"][0][0])
+	end
+
+	test "Can't create table with invalid name" do
+		matt = users(:matt)
+		app = apps(:TestApp)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/#{app.id}/table",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: 'Hello World'}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2501, resp["errors"][0][0])
+	end
+
+	test "Can create table from the website" do
+		matt = users(:matt)
+		app = apps(:TestApp)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		name = "Test"
+
+		post "/v1/apps/#{app.id}/table",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: name}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		assert_equal(name, resp["name"])
+	end
+
+	test "Can create table from outside the website" do
+		matt = users(:matt)
+		app = apps(:TestApp)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		name = "Test"
+
+		post "/v1/apps/#{app.id}/table",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: name}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		assert_equal(name, resp["name"])
+	end
    # End create_table tests
    
    # get_table tests

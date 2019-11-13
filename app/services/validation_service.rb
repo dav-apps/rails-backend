@@ -509,11 +509,6 @@ class ValidationService
 		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
 	end
 
-	def self.validate_payment_token_not_valid(payment_token)
-		error_code = 2405
-
-	end
-
 	def self.validate_table_name_contains_not_allowed_characters(table_name)
 		error_code = 2501
 		table_name.include?(" ") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}

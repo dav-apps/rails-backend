@@ -982,17 +982,13 @@ class AppsController < ApplicationController
 	end
    
 	# Table methods
-   def create_table
-      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		table_name = params["table_name"]
-      app_id = params["app_id"]
-		
+	def create_table
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		app_id = params["app_id"]
+
 		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_jwt_missing(jwt),
-				ValidationService.validate_app_id_missing(app_id),
-				ValidationService.validate_table_name_missing(table_name)
-			])
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1007,24 +1003,29 @@ class AppsController < ApplicationController
 
 			app = App.find_by_id(app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
-
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev_or_user_is_dev(user, dev, app))
 
-			table = Table.find_by(name: table_name, app_id: app.id)
+			# Get the table name from the body
+			body = ValidationService.parse_json(request.body.string)
+			name = body["name"]
+
+			ValidationService.raise_validation_error(ValidationService.validate_name_missing(name))
+
+			table = Table.find_by(name: name, app_id: app.id)
 			ValidationService.raise_validation_error(ValidationService.validate_table_already_exists(table))
 
-			# Validate the properties
+			# Validate the name
 			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_table_name_too_short(table_name),
-				ValidationService.validate_table_name_too_long(table_name),
-				ValidationService.validate_table_name_contains_not_allowed_characters(table_name)
+				ValidationService.validate_table_name_too_short(name),
+				ValidationService.validate_table_name_too_long(name),
+				ValidationService.validate_table_name_contains_not_allowed_characters(name)
 			])
 
 			# Create the table and return the data
-			table = Table.new(name: (table_name[0].upcase + table_name[1..-1]), app_id: app.id)
+			table = Table.new(name: (name[0].upcase + name[1..-1]), app_id: app.id)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(table.save))
-			result = table
-			render json: result, status: 201
+
+			render json: table.attributes, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
