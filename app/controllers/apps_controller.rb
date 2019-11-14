@@ -2,18 +2,10 @@ class AppsController < ApplicationController
 	# App methods
 	def create_app
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		name = params["name"]
-      desc = params["desc"]
-      link_web = params["link_web"]
-      link_play = params["link_play"]
-      link_windows = params["link_windows"]
-		
-      begin
-         ValidationService.raise_multiple_validation_errors([
-            ValidationService.validate_jwt_missing(jwt),
-            ValidationService.validate_name_missing(name),
-            ValidationService.validate_desc_missing(desc)
-         ])
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -25,59 +17,54 @@ class AppsController < ApplicationController
 
 			dev = Dev.find_by_id(dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-         # Validate properties
+			# Get the properties from the body
+			body = ValidationService.parse_json(request.body.string)
+			name = body["name"]
+			description = body["description"]
+			link_web = body["link_web"]
+			link_play = body["link_play"]
+			link_windows = body["link_windows"]
+
+			# Make sure name and description are present
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_name_missing(name),
+            ValidationService.validate_desc_missing(description)
+			])
+
+			# Validate name and description
          ValidationService.raise_multiple_validation_errors([
             ValidationService.validate_name_for_app_too_short(name),
             ValidationService.validate_name_for_app_too_long(name),
-            ValidationService.validate_desc_too_short(desc),
-            ValidationService.validate_desc_too_long(desc)
+            ValidationService.validate_desc_too_short(description),
+            ValidationService.validate_desc_too_long(description)
          ])
 
 			# Validate the links
          validations = Array.new
 
-			if link_web
-            validations.push(ValidationService.validate_link_web_not_valid(link_web))
-			end
-
-			if link_play
-            validations.push(ValidationService.validate_link_play_not_valid(link_play))
-			end
-
-			if link_windows
-            validations.push(ValidationService.validate_link_windows_not_valid(link_windows))
-         end
+			validations.push(ValidationService.validate_link_web_not_valid(link_web)) if link_web
+			validations.push(ValidationService.validate_link_play_not_valid(link_play)) if link_play
+			validations.push(ValidationService.validate_link_windows_not_valid(link_windows)) if link_windows
          
-         ValidationService.raise_multiple_validation_errors(validations)
-
+			ValidationService.raise_multiple_validation_errors(validations)
+			
 			# Create the app
-			app = App.new(name: name, description: desc, dev_id: user.dev.id)
+			app = App.new(name: name, description: description, dev_id: user.dev.id)
 
-			# Save existing links
-			if link_web
-				app.link_web = link_web
-			end
-
-			if link_play
-				app.link_play = link_play
-			end
-
-			if link_windows
-				app.link_windows = link_windows
-			end
+			app.link_web = link_web if link_web
+			app.link_play = link_play if link_play
+			app.link_windows = link_windows if link_windows
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(app.save))
-			result = app
-			render json: result, status: 201
+			render json: app.attributes, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
-
+	
 	def get_app
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
 		app_id = params["id"]

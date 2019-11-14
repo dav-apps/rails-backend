@@ -5,128 +5,147 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       save_users_and_devs
    end
    
-   # Tests for create_app
-   test "Missing fields in create_app" do
-      post "/v1/apps/app"
-      resp = JSON.parse response.body
-      
-      assert(response.status == 400 || response.status ==  401)
-      assert_same(resp["errors"].length, 3)
-   end
-   
-   test "Dev does not exist in create_app" do
-      matt = users(:matt)
-      
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      sherlock = devs(:sherlock)
-      sherlock.destroy!
-      
-      post "/v1/apps/app?name=Test&desc=Hello World", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 404
-      assert_same(resp["errors"][0][0], 2802)
-   end
-   
-   test "Can't create an app from outside the website" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-      post "/v1/apps/app?name=Test&desc=Hello World", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_same(resp["errors"][0][0], 1102)
-   end
-   
-   test "Can't create an app with too short name and description" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      post "/v1/apps/app?name=s&desc=s", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_same(resp["errors"].length, 2)
-      assert_same(resp["errors"][0][0], 2203)
-      assert_same(resp["errors"][1][0], 2204)
-   end
-   
-   test "Can't create an app with too long name and description" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      post "/v1/apps/app?name=#{"o"*35}&desc=" + "o"*510, headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_same(resp["errors"].length, 2)
-      assert_same(resp["errors"][0][0], 2303)
-      assert_same(resp["errors"][1][0], 2304)
-   end
-   
-   test "Can create and delete app from website" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-      testapp_name = "testapp1231"
-      testapp_desc = "asdasdasdasdasd"
-      
-      post "/v1/apps/app?name=#{testapp_name}&desc=#{testapp_desc}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      assert_equal(testapp_name, resp["name"])
-      assert_equal(testapp_desc, resp["description"])
-      
-      delete "/v1/apps/app/#{resp["id"]}", headers: {'Authorization' => jwt}
-      resp2 = JSON.parse response.body
-      
-      assert_response 200
-   end
+	# Tests for create_app
+	test "Missing fields in create_app" do
+		post "/v1/apps/app"
+		resp = JSON.parse(response.body)
 
-   test "Can create app with links" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
+	end
 
-      testapp_name = "testapp11231"
-      testapp_desc = "asdasdasdasd"
-      link_web = "http://dav-apps.tech"
-      link_play = "http://dav-apps.tech"
+	test "Can't create app without content type json" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
-      post "/v1/apps/app?name=#{testapp_name}&desc=#{testapp_desc}&link_web=#{link_web}&link_play=#{link_play}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
+		post "/v1/apps/app", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
 
-      assert_response 201
-      assert_equal(testapp_name, resp["name"])
-      assert_equal(testapp_desc, resp["description"])
-      assert_equal(link_web, resp["link_web"])
-      assert_equal(link_play, resp["link_play"])
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
 
-      delete "/v1/apps/app/#{resp["id"]}", headers: {'Authorization' => jwt}
-      resp2 = JSON.parse response.body
-      
-      assert_response 200
-   end
+	test "Can't create app with invalid jwt" do
+		jwt = "adpjsgdsdf"
 
-   test "Can't create app with invalid link" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		post "/v1/apps/app", headers: {Authorization: jwt, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
 
-      testapp_name = "testapp11231"
-      testapp_desc = "asdasdasdasd"
-      link_web = "blablabla"
-      link_windows = "alert('Hello')"
+		assert_response 401
+		assert_equal(1302, resp["errors"][0][0])
+	end
 
-      post "/v1/apps/app?name=#{testapp_name}&desc=#{testapp_desc}&link_web=#{link_web}&link_windows=#{link_windows}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
+	test "Can't create app from outside the website" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-      assert_response 400
-      assert_equal(resp["errors"].length, 2)
-      assert_equal(resp["errors"][0][0], 2402)
-      assert_equal(resp["errors"][1][0], 2404)
-   end
+		post "/v1/apps/app", 
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: "Test", description: "Hello World"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create app without name and description" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/app", headers: {Authorization: jwt, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2111, resp["errors"][0][0])
+		assert_equal(2112, resp["errors"][1][0])
+	end
+
+	test "Can't create app with too short name and description" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/app", 
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: "a", description: "a"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2203, resp["errors"][0][0])
+		assert_equal(2204, resp["errors"][1][0])
+	end
+
+	test "Can't create app with too long name and description" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		post "/v1/apps/app", 
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: "a" * 50, description: "a" * 510}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2303, resp["errors"][0][0])
+		assert_equal(2304, resp["errors"][1][0])
+	end
+
+	test "Can't create app with invalid links" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		link_web = "helloworld"
+		link_play = "blablabla"
+		link_windows = "testtest"
+
+		post "/v1/apps/app", 
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: "Test", description: "Hello World", link_web: link_web, link_play: link_play, link_windows: link_windows}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2402, resp["errors"][0][0])
+		assert_equal(2403, resp["errors"][1][0])
+		assert_equal(2404, resp["errors"][2][0])
+	end
+
+	test "Can create app" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		name = "RailsTest"
+		description = "This is a test app for tests in Rails"
+
+		post "/v1/apps/app",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: name, description: description}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		assert_equal(name, resp["name"])
+		assert_equal(description, resp["description"])
+		assert_nil(resp["link_web"])
+		assert_nil(resp["link_play"])
+		assert_nil(resp["link_windows"])
+	end
+
+	test "Can create app with links" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		name = "RailsTest"
+		description = "This is a test app for tests in Rails"
+		link_web = "https://testapp.dav-apps.tech"
+		link_play = "https://play.google.com"
+		link_windows = "https://store.microsoft.com"
+
+		post "/v1/apps/app",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {name: name, description: description, link_web: link_web, link_play: link_play, link_windows: link_windows}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		assert_equal(name, resp["name"])
+		assert_equal(description, resp["description"])
+		assert_equal(link_web, resp["link_web"])
+		assert_equal(link_play, resp["link_play"])
+		assert_equal(link_windows, resp["link_windows"])
+	end
    # End create_app tests
    
    # Tests for get_app
