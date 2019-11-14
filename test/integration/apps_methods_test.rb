@@ -1809,7 +1809,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse(response.body)
 
 		assert_response 400
-		assert_equal(2205, resp["errors"][0][0])
+		assert_equal(2203, resp["errors"][0][0])
 	end
 
 	test "Can't create table with too long name" do
@@ -1823,7 +1823,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse(response.body)
 
 		assert_response 400
-		assert_equal(2305, resp["errors"][0][0])
+		assert_equal(2303, resp["errors"][0][0])
 	end
 
 	test "Can't create table with invalid name" do
@@ -1837,7 +1837,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse(response.body)
 
 		assert_response 400
-		assert_equal(2501, resp["errors"][0][0])
+		assert_equal(2502, resp["errors"][0][0])
 	end
 
 	test "Can create table from the website" do

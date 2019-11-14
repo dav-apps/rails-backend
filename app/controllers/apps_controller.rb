@@ -30,8 +30,8 @@ class AppsController < ApplicationController
 
          # Validate properties
          ValidationService.raise_multiple_validation_errors([
-            ValidationService.validate_app_name_too_short(name),
-            ValidationService.validate_app_name_too_long(name),
+            ValidationService.validate_name_for_app_too_short(name),
+            ValidationService.validate_name_for_app_too_long(name),
             ValidationService.validate_desc_too_short(desc),
             ValidationService.validate_desc_too_long(desc)
          ])
@@ -238,8 +238,8 @@ class AppsController < ApplicationController
 			name = object["name"]
 			if name
 				validations.push(
-					ValidationService.validate_app_name_too_short(name), 
-					ValidationService.validate_app_name_too_long(name)
+					ValidationService.validate_name_for_app_too_short(name), 
+					ValidationService.validate_name_for_app_too_long(name)
 				)
 
 				app.name = name
@@ -1016,9 +1016,9 @@ class AppsController < ApplicationController
 
 			# Validate the name
 			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_table_name_too_short(name),
-				ValidationService.validate_table_name_too_long(name),
-				ValidationService.validate_table_name_contains_not_allowed_characters(name)
+				ValidationService.validate_name_for_table_too_short(name),
+				ValidationService.validate_name_for_table_too_long(name),
+				ValidationService.validate_name_contains_not_allowed_characters(name)
 			])
 
 			# Create the table and return the data

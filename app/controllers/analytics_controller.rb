@@ -47,8 +47,8 @@ class AnalyticsController < ApplicationController
 
 			if !event
 				# Validate properties of the new event
-				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_short(name))
-				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_long(name))
+				ValidationService.raise_validation_error(ValidationService.validate_name_for_event_too_short(name))
+				ValidationService.raise_validation_error(ValidationService.validate_name_for_event_too_long(name))
 
 				# Create the new event
 				event = Event.new(name: name, app_id: app_id)
@@ -291,8 +291,8 @@ class AnalyticsController < ApplicationController
 			name = object["name"]
 
 			if name
-				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_short(name))
-				ValidationService.raise_validation_error(ValidationService.validate_event_name_too_long(name))
+				ValidationService.raise_validation_error(ValidationService.validate_name_for_event_too_short(name))
+				ValidationService.raise_validation_error(ValidationService.validate_name_for_event_too_long(name))
 				ValidationService.raise_validation_error(ValidationService.validate_event_name_taken(name, event.name, app.id))
 			end
 

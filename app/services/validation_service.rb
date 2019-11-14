@@ -414,14 +414,19 @@ class ValidationService
 		password.length < min_password_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	define_singleton_method :validate_event_name_too_short do |name|
+	define_singleton_method :validate_name_for_event_too_short do |name|
 		error_code = 2203
 		name.length < min_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	define_singleton_method :validate_app_name_too_short do |name|
+	define_singleton_method :validate_name_for_app_too_short do |name|
 		error_code = 2203
 		name.length < min_app_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_name_for_table_too_short do |name|
+		error_code = 2203
+		name.length < min_table_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_desc_too_short do |desc|
@@ -454,14 +459,19 @@ class ValidationService
 		password.length > max_password_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	define_singleton_method :validate_event_name_too_long do |name|
+	define_singleton_method :validate_name_for_event_too_long do |name|
 		error_code = 2303
 		name.length > max_event_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	define_singleton_method :validate_app_name_too_long do |name|
+	define_singleton_method :validate_name_for_app_too_long do |name|
 		error_code = 2303
 		name.length > max_app_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_name_for_table_too_long do |name|
+		error_code = 2303
+		name.length > max_table_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_desc_too_long do |desc|
@@ -512,6 +522,11 @@ class ValidationService
 	def self.validate_table_name_contains_not_allowed_characters(table_name)
 		error_code = 2501
 		table_name.include?(" ") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_name_contains_not_allowed_characters(name)
+		error_code = 2502
+		name.include?(" ") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_new_email_empty(new_email)
@@ -777,6 +792,8 @@ class ValidationService
 			"Field not valid: payment_token"
 		when 2501
 			"Field contains not allowed characters: table_name"
+		when 2502
+			"Field contains not allowed characters: name"
 		when 2601
 			"Field is empty: new_email"
 		when 2602
