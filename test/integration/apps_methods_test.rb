@@ -210,13 +210,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
    # End get_app tests
 
-   # get_active_users_of_app tests
-   test "Missing fields in get_active_users_of_app" do
+   # get_active_app_users tests
+   test "Missing fields in get_active_app_users" do
       get "/v1/apps/app/1/active_users"
-      resp = JSON.parse response.body
+      resp = JSON.parse(response.body)
 
-      assert(response.status == 400 || response.status ==  401)
-      assert_equal(1, resp["errors"].length)
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
 	end
 	
 	test "Can't get active app users from outside the website" do
@@ -224,42 +224,46 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
 		get "/v1/apps/app/#{apps(:TestApp).id}/active_users", headers: {'Authorization' => jwt}
-		resp = JSON.parse response.body
+		resp = JSON.parse(response.body)
 
 		assert_response 403
 		assert_same(1102, resp["errors"][0][0])
 	end
 
-	test "Can't get the active app users of the app of another dev" do
+	test "Can't get active app users of the app of another dev" do
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		get "/v1/apps/app/#{apps(:Cards).id}/active_users", headers: {'Authorization' => jwt}
-		resp = JSON.parse response.body
+		resp = JSON.parse(response.body)
 
 		assert_response 403
 		assert_equal(1102, resp["errors"][0][0])
 	end
 
-	test "Can get the active app users" do
+	test "Can get active app users" do
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		app = apps(:TestApp)
 
 		# Create active app users
-		first_active_user = ActiveAppUser.create(app: app,
-										time: (Time.now - 1.days).beginning_of_day,
-										count_daily: 1, 
-										count_monthly: 5,
-										count_yearly: 17)
-		second_active_user = ActiveAppUser.create(app: app,
-									time: (Time.now - 3.days).beginning_of_day,
-									count_daily: 6, 
-									count_monthly: 9,
-									count_yearly: 20)
+		first_active_user = ActiveAppUser.create(
+			app: app,
+			time: (Time.now - 1.days).beginning_of_day,
+			count_daily: 1, 
+			count_monthly: 5,
+			count_yearly: 17
+		)
+		second_active_user = ActiveAppUser.create(
+			app: app,
+			time: (Time.now - 3.days).beginning_of_day,
+			count_daily: 6, 
+			count_monthly: 9,
+			count_yearly: 20
+		)
 
 		get "/v1/apps/app/#{app.id}/active_users", headers: {'Authorization' => jwt}
-		resp = JSON.parse response.body
+		resp = JSON.parse(response.body)
 
 		assert_response 200
 		assert_equal(2, resp["days"].count)
@@ -275,7 +279,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(second_active_user.count_yearly, resp["days"][1]["count_yearly"])
 	end
 
-	test "Can get active app users in the specified timeframe" do
+	test "Can get active app users of the specified timeframe" do
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		app = apps(:TestApp)
@@ -286,7 +290,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_active_user = active_app_users(:second_active_testapp_user)
 
 		get "/v1/apps/app/#{app.id}/active_users?start=#{start_timestamp}&end=#{end_timestamp}", headers: {'Authorization' => jwt}
-		resp = JSON.parse response.body
+		resp = JSON.parse(response.body)
 
 		assert_response 200
 		assert_equal(2, resp["days"].count)
@@ -301,7 +305,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(first_active_user.count_monthly, resp["days"][1]["count_monthly"])
 		assert_equal(first_active_user.count_yearly, resp["days"][1]["count_yearly"])
 	end
-   # End get_active_users_of_app tests
+   # End get_active_app_users tests
 
    # Tests for get_all_apps
    test "Missing fields in get_all_apps" do

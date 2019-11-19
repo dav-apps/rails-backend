@@ -113,9 +113,9 @@ class AppsController < ApplicationController
 		end
 	end
 
-	def get_active_users_of_app
+	def get_active_app_users
 		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		app_id = params["id"]
+		id = params["id"]
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s').beginning_of_day : (Time.now - 1.month).beginning_of_day
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s').beginning_of_day : Time.now.beginning_of_day
 
@@ -133,25 +133,21 @@ class AppsController < ApplicationController
 			dev = Dev.find_by_id(dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			app = App.find_by_id(app_id)
+			app = App.find_by_id(id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
-
-			# Make sure this is called from the website and by the dev of the app
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
 			days = Array.new
 			ActiveAppUser.where("app_id = ? AND time >= ? AND time <= ?", app.id, start_timestamp, end_timestamp).each do |active_user|
-				day = Hash.new
-				day["time"] = active_user.time.to_s
-				day["count_daily"] = active_user.count_daily
-				day["count_monthly"] = active_user.count_monthly
-				day["count_yearly"] = active_user.count_yearly
-				days.push(day)
+				days.push({
+					time: active_user.time.to_s,
+					count_daily: active_user.count_daily,
+					count_monthly: active_user.count_monthly,
+					count_yearly: active_user.count_yearly
+				})
 			end
 
-			result = Hash.new
-			result["days"] = days
-			render json: result, status: 200
+			render json: {days: days}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
