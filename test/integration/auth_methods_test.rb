@@ -1037,6 +1037,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		].each do |key|
 			assert_equal(matt[key], resp[key])
 		end
+
+		assert(resp["is_dev"])
 	end
 
    test "Can get user with jwt and used storage of apps" do
@@ -1059,7 +1061,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
       delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       assert_response 200
-   end
+	end
    # End get_user_by_jwt tests
    
    # update_user tests
