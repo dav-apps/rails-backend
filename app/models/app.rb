@@ -6,5 +6,6 @@ class App < ApplicationRecord
    has_many :users, through: :users_apps
    has_many :notifications, dependent: :destroy
    has_many :active_app_users, dependent: :destroy
-   has_many :sessions, dependent: :destroy
+	has_many :sessions, dependent: :destroy
+	has_many :apis, dependent: :destroy
 end
