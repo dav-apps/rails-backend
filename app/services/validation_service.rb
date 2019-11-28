@@ -632,7 +632,17 @@ class ValidationService
    def self.validate_session_does_not_exist(session)
 		error_code = 2814
 		!session ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
-   end
+	end
+	
+	def self.validate_api_does_not_exist(api)
+		error_code = 2815
+		!api ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
+	def self.validate_api_endpoint_does_not_exist(api_endpoint)
+		error_code = 2816
+		!api_endpoint ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
 
 	def self.validate_dev_already_exists(dev)
 		error_code = 2902
@@ -836,6 +846,10 @@ class ValidationService
 			"Resource does not exist: WebPushSubscription"
 		when 2814
 			"Resource does not exist: Session"
+		when 2815
+			"Resource does not exist: Api"
+		when 2816
+			"Resource does not exist: ApiEndpoint"
 		when 2901
 			"Resource already exists: User"
 		when 2902

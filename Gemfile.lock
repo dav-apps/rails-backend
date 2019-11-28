@@ -216,6 +216,7 @@ GEM
       tilt
     sendgrid-ruby (6.0.0)
       ruby_http_client (~> 3.3.0)
+    sexpistol (0.0.7)
     sidekiq (5.2.7)
       connection_pool (~> 2.2, >= 2.2.2)
       rack (>= 1.5.0)
@@ -282,6 +283,7 @@ DEPENDENCIES
   rubyzip
   sassc-rails
   sendgrid-ruby
+  sexpistol
   sidekiq
   spring
   stripe
