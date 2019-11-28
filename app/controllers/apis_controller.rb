@@ -48,6 +48,8 @@ class ApisController < ApplicationController
 			add_var(exp)
 		elsif exp[0] == :if && exp[3] == :else
 			resolve_if(exp)
+		elsif exp[0] == :log
+			puts resolve_expression(exp[1])
 		else
 			exp.each do |command|
 				execute_exp(command)
@@ -64,6 +66,7 @@ class ApisController < ApplicationController
 		@vars.each do |var|
 			return var[1] if var[0] == name
 		end
+		nil
 	end
 
 	def resolve_if(exp)
@@ -76,19 +79,21 @@ class ApisController < ApplicationController
 
 	def resolve_expression(exp)
 		if exp.class == Array
-			if exp[1] == "=="
-				exp[0] == exp[2]
-			elsif exp[1] == "!="
-				exp[0] != exp[2]
+			if exp[1] == :==
+				resolve_expression(exp[0]) == resolve_expression(exp[2])
+			elsif exp[1] == :!=
+				resolve_expression(exp[0]) != resolve_expression(exp[2])
 			end
+		elsif !!exp == exp
+			# exp is boolean
+			exp
 		else
-			if !!exp == exp
-				# exp is boolean
-				exp
-			else
-				# Find the variable
-				get_var(exp)
-			end
+			# Find the variable
+			var = get_var(exp)
+			return var if var
+
+			# Return the expression as string
+			exp
 		end
 	end
 end
