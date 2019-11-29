@@ -48,7 +48,7 @@ class ApisController < ApplicationController
 				if !cancelled
 					api_endpoint = endpoint
 					vars.each do |key, value|
-						@vars[key.to_sym] = value
+						@vars[key] = value
 					end
 					break
 				end
@@ -76,7 +76,35 @@ class ApisController < ApplicationController
 		if command.class == Array
 			# Command is a function call
 			if command[0] == :var
-				set_var(command[1], execute_command(command[2]))
+				if command[1].to_s.include?('.')
+					parts = command[1].to_s.split('.')
+					last_part = parts.pop
+					current_var = @vars
+
+					parts.each do |part|
+						current_var = current_var[part]
+						return nil if current_var.class != Hash
+					end
+
+					current_var[last_part] = execute_command(command[2])
+				else
+					set_var(command[1], execute_command(command[2]))
+				end
+			elsif command[0] == :hash
+				if command[1].to_s.include?('.')
+					parts = command[1].to_s.split('.')
+					last_part = parts.pop
+					current_var = @vars
+
+					parts.each do |part|
+						current_var = current_var[part]
+						return nil if current_var.class != Hash
+					end
+
+					current_var[last_part] = Hash.new
+				else
+					set_var(command[1], Hash.new)
+				end
 			elsif command[0] == :if && command[3] == :else
 				resolve_if(command)
 			elsif command[0] == :log
@@ -141,18 +169,16 @@ class ApisController < ApplicationController
 			command
 		elsif command.to_s.include?('.')
 			# Return the value of the hash
-			i = 1
 			parts = command.to_s.split('.')
-			current_var = get_var(parts[0].to_sym)
+			last_part = parts.pop
+			current_var = @vars
 
-			while i < parts.count
+			parts.each do |part|
+				current_var = current_var[part]
 				return nil if current_var.class != Hash
-				current_var = current_var[parts[i]]
-
-				i += 1
 			end
 
-			return current_var
+			return current_var[last_part]
 		else
 			# Find and return the variable
 			var = get_var(command)
@@ -164,13 +190,13 @@ class ApisController < ApplicationController
 	end
 
 	def set_var(name, value)
-		@vars[name] = value
+		@vars[name.to_s] = value
 		return value
 	end
 
 	def get_var(name)
 		@vars.each do |var|
-			return var[1] if var[0] == name
+			return var[1] if var[0] == name.to_s
 		end
 		nil
 	end
