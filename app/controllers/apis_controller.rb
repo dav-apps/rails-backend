@@ -12,7 +12,17 @@ class ApisController < ApplicationController
 			api_endpoint = nil
 			@vars = Hash.new
 
-			api.api_endpoints.each do |endpoint|
+			method = 0
+			case request.method
+			when "POST"
+				method = 1
+			when "PUT"
+				method = 2
+			when "DELETE"
+				method = 3
+			end
+
+			api.api_endpoints.where(method: method).each do |endpoint|
 				path_parts = endpoint.path.split('/')
 				url_parts = path.split('/')
 
@@ -71,11 +81,18 @@ class ApisController < ApplicationController
 			elsif command[0] == :if && command[3] == :else
 				resolve_if(command)
 			elsif command[0] == :log
-				puts execute_command(command[1])
+				result = execute_command(command[1])
+				puts result
+				return result
 			elsif command[0] == :to_int
-				value = get_var(command[1])
-				set_var(command[1], value.to_i) if value
-				return value.to_i
+				return execute_command(command[1]).to_i
+			elsif command[0].to_s == "#"
+				# It's a comment. Ignore this command
+				return nil
+			elsif command[0] == :get_header
+				return request.headers[command[1].to_s]
+			elsif command[0] == :get_param
+				return params[command[1]]
 			elsif command[0] == :render_json
 				render json: execute_command(command[1]), status: execute_command(command[2])
 			
@@ -127,6 +144,7 @@ class ApisController < ApplicationController
 
 	def set_var(name, value)
 		@vars[name] = value
+		return value
 	end
 
 	def get_var(name)
