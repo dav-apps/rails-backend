@@ -25,7 +25,6 @@ class ApisController < ApplicationController
 			api.api_endpoints.where(method: method).each do |endpoint|
 				path_parts = endpoint.path.split('/')
 				url_parts = path.split('/')
-
 				next if path_parts.count != url_parts.count
 
 				vars = Hash.new
@@ -89,10 +88,18 @@ class ApisController < ApplicationController
 			elsif command[0].to_s == "#"
 				# It's a comment. Ignore this command
 				return nil
+			elsif command[0] == :parse_json
+				JSON.parse(execute_command(command[1]))
 			elsif command[0] == :get_header
 				return request.headers[command[1].to_s]
 			elsif command[0] == :get_param
 				return params[command[1]]
+			elsif command[0] == :get_body
+				if request.body.class == StringIO
+					return request.body.string
+				else
+					return request.body
+				end
 			elsif command[0] == :render_json
 				render json: execute_command(command[1]), status: execute_command(command[2])
 			
@@ -130,8 +137,22 @@ class ApisController < ApplicationController
 				end
 			end
 		elsif !!command == command
-			# command is boolean
+			# Command is boolean
 			command
+		elsif command.to_s.include?('.')
+			# Return the value of the hash
+			i = 1
+			parts = command.to_s.split('.')
+			current_var = get_var(parts[0].to_sym)
+
+			while i < parts.count
+				return nil if current_var.class != Hash
+				current_var = current_var[parts[i]]
+
+				i += 1
+			end
+
+			return current_var
 		else
 			# Find and return the variable
 			var = get_var(command)
