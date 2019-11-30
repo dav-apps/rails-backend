@@ -79,7 +79,14 @@ class ApisController < ApplicationController
 	def execute_command(command)
 		if command.class == Array
 			# Command is a function call
-			if command[0] == :var
+			if command[0].class == Array
+				# Command contains commands
+				result = nil
+				command.each do |c|
+					result = execute_command(c)
+				end
+				return result
+			elsif command[0] == :var
 				if command[1].to_s.include?('.')
 					parts = command[1].to_s.split('.')
 					last_part = parts.pop
@@ -111,7 +118,7 @@ class ApisController < ApplicationController
 
 					i = 1
 					while command[i]
-						hash[command[i][0]] = command[i][1]
+						hash[command[i][0]] = execute_command(command[i][1])
 						i += 1
 					end
 					
@@ -127,14 +134,20 @@ class ApisController < ApplicationController
 				end
 
 				return list
-			elsif command[0] == :if && command[3] == :else
-				resolve_if(command)
+			elsif command[0] == :if
+				if execute_command(command[1])
+					execute_command(command[2])
+				elsif command[3] == :else
+					execute_command(command[4])
+				end
 			elsif command[0] == :log
 				result = execute_command(command[1])
 				puts result
 				return result
 			elsif command[0] == :to_int
 				return execute_command(command[1]).to_i
+			elsif command[0] == :is_nil
+				return execute_command(command[1]) == nil
 			elsif command[0].to_s == "#"
 				# It's a comment. Ignore this command
 				return nil
@@ -153,6 +166,21 @@ class ApisController < ApplicationController
 			elsif command[0] == :render_json
 				render json: execute_command(command[1]), status: execute_command(command[2])
 				break_execution
+
+			elsif command[0].to_s.include?('.')
+				# Get the value of the variable
+				var_name, function_name = command[0].to_s.split('.')
+				var = get_var(var_name)
+				
+				if var.class == Array
+					if function_name == "push"
+						i = 1
+						while command[i]
+							var.push(execute_command(command[i]))
+							i += 1
+						end
+					end
+				end
 			
 			# Command is an expression
 			elsif command[1] == :==
@@ -183,7 +211,11 @@ class ApisController < ApplicationController
 				end
 				result
 			else
-				return command
+				result = nil
+				command.each do |c|
+					result = execute_command(c)
+				end
+				return result
 			end
 		elsif !!command == command
 			# Command is boolean
@@ -202,11 +234,10 @@ class ApisController < ApplicationController
 			return current_var[last_part]
 		else
 			# Find and return the variable
-			var = get_var(command)
-			return var if var
+			return get_var(command) if has_var(command)
 
 			# Return the command
-			command
+			return command
 		end
 	end
 
@@ -215,19 +246,12 @@ class ApisController < ApplicationController
 		return value
 	end
 
-	def get_var(name)
-		@vars.each do |var|
-			return var[1] if var[0] == name.to_s
-		end
-		nil
+	def has_var(name)
+		@vars.key?(name.to_s)
 	end
 
-	def resolve_if(exp)
-		if execute_command(exp[1])
-			execute_command(exp[2])
-		else
-			execute_command(exp[4])
-		end
+	def get_var(name)
+		@vars[name.to_s]
 	end
 
 	def break_execution
