@@ -61,7 +61,11 @@ class ApisController < ApplicationController
 			parser.ruby_keyword_literals = true
 			ast = parser.parse_string(api_endpoint.commands)
 
+			# Stop the execution of the program if this is true
+			@execution_stopped = false
+
 			ast.each do |element|
+				break if @execution_stopped
 				execute_command(element)
 			end
 
@@ -103,8 +107,26 @@ class ApisController < ApplicationController
 
 					current_var[last_part] = Hash.new
 				else
-					set_var(command[1], Hash.new)
+					hash = Hash.new
+
+					i = 1
+					while command[i]
+						hash[command[i][0]] = command[i][1]
+						i += 1
+					end
+					
+					return hash
 				end
+			elsif command[0] == :list
+				list = Array.new
+
+				i = 1
+				while command[i]
+					list.push(execute_command(command[i]))
+					i += 1
+				end
+
+				return list
 			elsif command[0] == :if && command[3] == :else
 				resolve_if(command)
 			elsif command[0] == :log
@@ -130,6 +152,7 @@ class ApisController < ApplicationController
 				end
 			elsif command[0] == :render_json
 				render json: execute_command(command[1]), status: execute_command(command[2])
+				break_execution
 			
 			# Command is an expression
 			elsif command[1] == :==
@@ -160,9 +183,7 @@ class ApisController < ApplicationController
 				end
 				result
 			else
-				command.each do |command|
-					execute_command(command)
-				end
+				return command
 			end
 		elsif !!command == command
 			# Command is boolean
@@ -207,5 +228,9 @@ class ApisController < ApplicationController
 		else
 			execute_command(exp[4])
 		end
+	end
+
+	def break_execution
+		@execution_stopped = true
 	end
 end
