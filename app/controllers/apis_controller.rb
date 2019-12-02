@@ -59,9 +59,9 @@ class ApisController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_api_endpoint_does_not_exist(api_endpoint))
 
 			# Parse the endpoint commands
-			parser = Sexpistol.new
-			parser.ruby_keyword_literals = true
-			ast = parser.parse_string(api_endpoint.commands)
+			@parser = Sexpistol.new
+			@parser.ruby_keyword_literals = true
+			ast = @parser.parse_string(api_endpoint.commands)
 
 			# Stop the execution of the program if this is true
 			@execution_stopped = false
@@ -178,15 +178,36 @@ class ApisController < ApplicationController
 					# Add the parameters to the variables
 					i = 0
 					function["parameters"].each do |param|
-						vars[param] = command[2][i]
+						vars[param] = execute_command(command[2][i], vars)
 						i += 1
 					end
 
 					execute_command(function["commands"], vars)
+				else
+					# Try to get the function from the database
+					function = ApiFunction.find_by(api: @api, name: name)
+					
+					if function
+						i = 0
+						function.params.split(',').each do |param|
+							vars[param] = execute_command(command[2][i], vars)
+							i += 1
+						end
+
+						ast = @parser.parse_string(function.commands)
+						result = nil
+						
+						ast.each do |element|
+							break if @execution_stopped
+							result = execute_command(element, vars)
+						end
+
+						return result
+					end
 				end
 			elsif command[0] == :catch
 				# Execute the commands in the first argument
-				execute_command(command[1], vars)
+				result = execute_command(command[1], vars)
 
 				if @errors.length > 0
 					# Add the errors to the variables and execute the commands in the second argument
@@ -197,6 +218,8 @@ class ApisController < ApplicationController
 					end
 
 					execute_command(command[2], vars)
+				else
+					return result
 				end
 			elsif command[0] == :throw_errors
 				# Add the errors to the errors array
@@ -281,21 +304,6 @@ class ApisController < ApplicationController
 			elsif command[0] == :render_json
 				render json: execute_command(command[1], vars), status: execute_command(command[2], vars)
 				break_execution
-
-			elsif command[0].to_s.include?('.')
-				# Get the value of the variable
-				var_name, function_name = command[0].to_s.split('.')
-				var = vars[var_name]
-				
-				if var.class == Array
-					if function_name == "push"
-						i = 1
-						while command[i]
-							var.push(execute_command(command[i], vars))
-							i += 1
-						end
-					end
-				end
 			
 			# Command is an expression
 			elsif command[1] == :==
@@ -325,6 +333,20 @@ class ApisController < ApplicationController
 					i += 2
 				end
 				result
+			elsif command[0].to_s.include?('.')
+				# Get the value of the variable
+				var_name, function_name = command[0].to_s.split('.')
+				var = vars[var_name]
+				
+				if var.class == Array
+					if function_name == "push"
+						i = 1
+						while command[i]
+							var.push(execute_command(command[i], vars))
+							i += 1
+						end
+					end
+				end
 			else
 				result = nil
 				command.each do |c|
