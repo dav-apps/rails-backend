@@ -12,6 +12,7 @@ class ApisController < ApplicationController
 			api_endpoint = nil
 			@vars = Hash.new
 			@functions = Hash.new
+			@errors = Array.new
 
 			method = 0
 			case request.method
@@ -79,6 +80,7 @@ class ApisController < ApplicationController
 	private
 	def execute_command(command, args)
 		return nil if @execution_stopped
+		return nil if @errors.count > 0
 		vars = args.deep_dup
 		if command.class == Array
 			# Command is a function call
@@ -181,6 +183,68 @@ class ApisController < ApplicationController
 					end
 
 					execute_command(function["commands"], vars)
+				end
+			elsif command[0] == :catch
+				# Execute the commands in the first argument
+				execute_command(command[1], vars)
+
+				if @errors.length > 0
+					# Add the errors to the variables and execute the commands in the second argument
+					vars["errors"] = Array.new
+
+					while @errors.length > 0
+						vars["errors"].push(@errors.pop)
+					end
+
+					execute_command(command[2], vars)
+				end
+			elsif command[0] == :throw_errors
+				# Add the errors to the errors array
+				i = 1
+				while command[i] != nil
+					@errors.push(execute_command(command[i], vars))
+					i += 1
+				end
+				return @errors
+			elsif command[0] == :decode_jwt
+				jwt_parts = execute_command(command[1], vars).to_s.split('.')
+				jwt = jwt_parts[0..2].join('.')
+				session_id = jwt_parts[3].to_i
+				
+				secret = ENV["JWT_SECRET"]
+
+				error = Hash.new
+				error["name"] = "decode_jwt"
+				
+				if session_id != 0
+					session = Session.find_by_id(session_id)
+					if !session || session.app_id != @api.app_id
+						# Session does not exist
+						error["code"] = 0
+						@errors.push(error)
+						return @errors
+					end
+
+					secret = session.secret
+				end
+				
+				begin
+					JWT.decode(jwt, secret, true, {algorithm: ENV['JWT_ALGORITHM']})[0]
+				rescue JWT::ExpiredSignature
+					# JWT expired
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				rescue JWT::DecodeError
+					# JWT decode failed
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				rescue Exception
+					# Generic error
+					error["code"] = 3
+					@errors.push(error)
+					return @errors
 				end
 			elsif command[0] == :log
 				result = execute_command(command[1], vars)
