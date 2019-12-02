@@ -338,15 +338,38 @@ class ApisController < ApplicationController
 		elsif command.to_s.include?('.')
 			# Return the value of the hash
 			parts = command.to_s.split('.')
-			last_part = parts.pop
-			current_var = vars
+			var = vars[parts.first]
 
-			parts.each do |part|
-				current_var = current_var[part]
-				return nil if current_var.class != Hash
+			if var.class == Hash
+				last_part = parts.pop
+				current_var = vars
+
+				parts.each do |part|
+					current_var = current_var[part]
+					return nil if current_var.class != Hash
+				end
+
+				return current_var[last_part]
+			elsif var.class == Array
+				if parts[1] == "length"
+					return var.count
+				end
 			end
+		elsif command.to_s.include?('#')
+			parts = command.to_s.split('#')
+			var = vars[parts.first]
 
-			return current_var[last_part]
+			if var.class == Array
+				int = (Integer(parts[1]) rescue nil)
+
+				if int
+					return var[int]
+				elsif vars[parts[1]]
+					return var[vars[parts[1]]]
+				else
+					return nil
+				end
+			end
 		else
 			# Find and return the variable
 			return vars[command.to_s] if vars.key?(command.to_s)
