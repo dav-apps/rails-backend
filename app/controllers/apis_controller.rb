@@ -5,12 +5,13 @@ class ApisController < ApplicationController
 
 		begin
 			# Get the api
-			api = Api.find_by_id(api_id)
-			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
+			@api = Api.find_by_id(api_id)
+			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(@api))
 
 			# Find the correct api endpoint
 			api_endpoint = nil
 			@vars = Hash.new
+			@functions = Hash.new
 
 			method = 0
 			case request.method
@@ -22,7 +23,7 @@ class ApisController < ApplicationController
 				method = 3
 			end
 
-			api.api_endpoints.where(method: method).each do |endpoint|
+			@api.api_endpoints.where(method: method).each do |endpoint|
 				path_parts = endpoint.path.split('/')
 				url_parts = path.split('/')
 				next if path_parts.count != url_parts.count
@@ -66,7 +67,7 @@ class ApisController < ApplicationController
 
 			ast.each do |element|
 				break if @execution_stopped
-				execute_command(element)
+				execute_command(element, @vars)
 			end
 
 		rescue RuntimeError => e
@@ -76,36 +77,38 @@ class ApisController < ApplicationController
 	end
 
 	private
-	def execute_command(command)
+	def execute_command(command, args)
+		return nil if @execution_stopped
+		vars = args.deep_dup
 		if command.class == Array
 			# Command is a function call
 			if command[0].class == Array
 				# Command contains commands
 				result = nil
 				command.each do |c|
-					result = execute_command(c)
+					result = execute_command(c, vars)
 				end
 				return result
 			elsif command[0] == :var
 				if command[1].to_s.include?('.')
 					parts = command[1].to_s.split('.')
 					last_part = parts.pop
-					current_var = @vars
+					current_var = vars
 
 					parts.each do |part|
 						current_var = current_var[part]
 						return nil if current_var.class != Hash
 					end
 
-					current_var[last_part] = execute_command(command[2])
+					current_var[last_part] = execute_command(command[2], vars)
 				else
-					set_var(command[1], execute_command(command[2]))
+					args[command[1].to_s] = execute_command(command[2], vars)
 				end
 			elsif command[0] == :hash
 				if command[1].to_s.include?('.')
 					parts = command[1].to_s.split('.')
 					last_part = parts.pop
-					current_var = @vars
+					current_var = vars
 
 					parts.each do |part|
 						current_var = current_var[part]
@@ -118,7 +121,7 @@ class ApisController < ApplicationController
 
 					i = 1
 					while command[i]
-						hash[command[i][0]] = execute_command(command[i][1])
+						hash[command[i][0]] = execute_command(command[i][1], vars)
 						i += 1
 					end
 					
@@ -129,30 +132,69 @@ class ApisController < ApplicationController
 
 				i = 1
 				while command[i]
-					list.push(execute_command(command[i]))
+					result = execute_command(command[i], vars)
+					list.push(result) if result != nil
 					i += 1
 				end
 
 				return list
 			elsif command[0] == :if
-				if execute_command(command[1])
-					execute_command(command[2])
-				elsif command[3] == :else
-					execute_command(command[4])
+				if execute_command(command[1], vars)
+					execute_command(command[2], vars)
+				else
+					i = 3
+					while command[i] != nil
+						if command[i] == :elseif && execute_command(command[i + 1], vars)
+							return execute_command(command[i + 2], vars)
+						elsif command[i] == :else
+							return execute_command(command[i + 1], vars)
+						end
+						i += 3
+					end
+				end
+			elsif command[0] == :def
+				# Function definition
+				name = command[1].to_s
+				function = Hash.new
+
+				# Get the function parameters
+				parameters = Array.new
+				command[2].each do |parameter|
+					parameters.push(parameter.to_s)
+				end
+
+				function["parameters"] = parameters
+				function["commands"] = command[3]
+				@functions[name] = function
+				return nil
+			elsif command[0] == :func
+				# Function call
+				name = command[1]
+				function = @functions[name.to_s]
+
+				if function
+					# Add the parameters to the variables
+					i = 0
+					function["parameters"].each do |param|
+						vars[param] = command[2][i]
+						i += 1
+					end
+
+					execute_command(function["commands"], vars)
 				end
 			elsif command[0] == :log
-				result = execute_command(command[1])
+				result = execute_command(command[1], vars)
 				puts result
 				return result
 			elsif command[0] == :to_int
-				return execute_command(command[1]).to_i
+				return execute_command(command[1], vars).to_i
 			elsif command[0] == :is_nil
-				return execute_command(command[1]) == nil
+				return execute_command(command[1], vars) == nil
 			elsif command[0].to_s == "#"
 				# It's a comment. Ignore this command
 				return nil
 			elsif command[0] == :parse_json
-				JSON.parse(execute_command(command[1]))
+				JSON.parse(execute_command(command[1], vars))
 			elsif command[0] == :get_header
 				return request.headers[command[1].to_s]
 			elsif command[0] == :get_param
@@ -163,20 +205,29 @@ class ApisController < ApplicationController
 				else
 					return request.body
 				end
+			elsif command[0] == :get_error
+				error = ApiError.find_by(api: @api, code: command[1])
+
+				if error
+					result = Hash.new
+					result["code"] = error.code
+					result["message"] = error.message
+					return result
+				end
 			elsif command[0] == :render_json
-				render json: execute_command(command[1]), status: execute_command(command[2])
+				render json: execute_command(command[1], vars), status: execute_command(command[2], vars)
 				break_execution
 
 			elsif command[0].to_s.include?('.')
 				# Get the value of the variable
 				var_name, function_name = command[0].to_s.split('.')
-				var = get_var(var_name)
+				var = vars[var_name]
 				
 				if var.class == Array
 					if function_name == "push"
 						i = 1
 						while command[i]
-							var.push(execute_command(command[i]))
+							var.push(execute_command(command[i], vars))
 							i += 1
 						end
 					end
@@ -184,26 +235,26 @@ class ApisController < ApplicationController
 			
 			# Command is an expression
 			elsif command[1] == :==
-				execute_command(command[0]) == execute_command(command[2])
+				execute_command(command[0], vars) == execute_command(command[2], vars)
 			elsif command[1] == :!=
-				execute_command(command[0]) != execute_command(command[2])
+				execute_command(command[0], vars) != execute_command(command[2], vars)
 			elsif command[1] == :+ || command[1] == :-
-				if execute_command(command[0]).class == Integer
+				if execute_command(command[0], vars).class == Integer
 					result = 0
-				elsif execute_command(command[0]).class == String
+				elsif execute_command(command[0], vars).class == String
 					result = ""
 				end
 
 				i = 0
 				while command[i]
 					if command[i - 1] == :- && result.class == Integer
-						result -= execute_command(command[i])
+						result -= execute_command(command[i], vars)
 					else
 						# Add the next part to the result
 						if result.class == String
-							result += execute_command(command[i]).to_s
+							result += execute_command(command[i], vars).to_s
 						else
-							result += execute_command(command[i])
+							result += execute_command(command[i], vars)
 						end
 					end
 
@@ -213,7 +264,7 @@ class ApisController < ApplicationController
 			else
 				result = nil
 				command.each do |c|
-					result = execute_command(c)
+					result = execute_command(c, vars)
 				end
 				return result
 			end
@@ -224,7 +275,7 @@ class ApisController < ApplicationController
 			# Return the value of the hash
 			parts = command.to_s.split('.')
 			last_part = parts.pop
-			current_var = @vars
+			current_var = vars
 
 			parts.each do |part|
 				current_var = current_var[part]
@@ -234,24 +285,11 @@ class ApisController < ApplicationController
 			return current_var[last_part]
 		else
 			# Find and return the variable
-			return get_var(command) if has_var(command)
+			return vars[command.to_s] if vars.key?(command.to_s)
 
 			# Return the command
 			return command
 		end
-	end
-
-	def set_var(name, value)
-		@vars[name.to_s] = value
-		return value
-	end
-
-	def has_var(name)
-		@vars.key?(name.to_s)
-	end
-
-	def get_var(name)
-		@vars[name.to_s]
 	end
 
 	def break_execution
