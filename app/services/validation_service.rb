@@ -18,6 +18,8 @@ class ValidationService
 	min_event_name_length = 2
 	max_event_name_length = 15
 	max_event_data_length = 65000
+	min_api_name_length = 5
+	max_api_name_length = 100
 
 	def self.get_errors_of_validations(validations)
 		errors = Array.new
@@ -429,6 +431,11 @@ class ValidationService
 		name.length < min_table_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_name_for_api_too_short do |name|
+		error_code = 2203
+		name.length < min_api_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_desc_too_short do |desc|
 		error_code = 2204
 		desc.length < min_app_desc_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -472,6 +479,11 @@ class ValidationService
 	define_singleton_method :validate_name_for_table_too_long do |name|
 		error_code = 2303
 		name.length > max_table_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_name_for_api_too_long do |name|
+		error_code = 2303
+		name.length > max_api_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_desc_too_long do |desc|

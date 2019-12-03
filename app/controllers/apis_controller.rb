@@ -404,4 +404,46 @@ class ApisController < ApplicationController
 	def break_execution
 		@execution_stopped = true
 	end
+
+	public
+	def create_api
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		app_id = params["id"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
+
+			# Get the properties from the body
+			body = ValidationService.parse_json(request.body.string)
+			name = body["name"]
+
+			ValidationService.raise_validation_error(ValidationService.validate_name_missing(name))
+			ValidationService.raise_validation_error(ValidationService.validate_name_for_api_too_short(name))
+			ValidationService.raise_validation_error(ValidationService.validate_name_for_api_too_long(name))
+
+			# Create the api
+			api = Api.new(app: app, name: name)
+
+			render json: api.attributes, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
 end

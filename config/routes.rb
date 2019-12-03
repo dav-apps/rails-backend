@@ -85,8 +85,9 @@ Rails.application.routes.draw do
   match '/v1/analytics/users', to: 'analytics#get_users', via: 'get'
   match '/v1/analytics/active_users', to: 'analytics#get_active_users', via: 'get'
 
-	# Api routes
-	match '/v1/api/:id/*path', to: 'apis#api_call', via: [:post, :get, :put, :delete]
+  # Api routes
+  match '/v1/api/:id/*path', to: 'apis#api_call', via: [:post, :get, :put, :delete]
+  match '/v1/apps/app/:id/api', to: 'apis#create_api', via: :post
 
   # Stripe Webhooks
   mount StripeEvent::Engine, at: '/v1/payments/stripe'

@@ -56,7 +56,6 @@ ActiveRecord::Schema.define(version: 2019_12_02_215839) do
   create_table "apis", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
     t.integer "app_id"
     t.string "name"
-    t.integer "version", default: 1
   end
 
   create_table "apps", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
