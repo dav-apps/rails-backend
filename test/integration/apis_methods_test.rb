@@ -103,6 +103,7 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse(response.body)
 
 		assert_response 201
+		assert_not_nil(resp["id"])
 		assert_equal(app.id, resp["app_id"])
 		assert_equal(name, resp["name"])
 	end

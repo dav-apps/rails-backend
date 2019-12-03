@@ -439,6 +439,7 @@ class ApisController < ApplicationController
 
 			# Create the api
 			api = Api.new(app: app, name: name)
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(api.save))
 
 			render json: api.attributes, status: 201
 		rescue RuntimeError => e

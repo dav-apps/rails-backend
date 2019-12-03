@@ -102,10 +102,16 @@ class AppsController < ApplicationController
 			app.events.each do |event|
 				events.push(event)
 			end
+
+			apis = Array.new
+			app.apis.each do |api|
+				apis.push(api)
+			end
 			
 			result = app.attributes
 			result["tables"] = tables
 			result["events"] = events
+			result["apis"] = apis
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
