@@ -295,4 +295,111 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(commands, resp["commands"])
 	end
 	# End tests for create_api_endpoint
+
+	# Tests for create_api_error endpoint
+	test "Missing fields in create_api_error" do
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/error"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't create api error without content type json" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/error", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't create api error for api of app of another dev" do
+		auth = generate_auth_token(devs(:sherlock))
+		api = apis(:TestAppApi)
+		code = 1111
+		message = "Test message"
+
+		post "/v1/api/#{api.id}/error",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {code: code, message: message}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create api error without required properties" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/error", headers: {Authorization: auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2135, resp["errors"][0][0])
+		assert_equal(2136, resp["errors"][1][0])
+	end
+
+	test "Can't create api error with too short message" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/error",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {code: 1111, message: "a"}.to_json
+		resp = JSON.parse(response.body)
+		
+		assert_response 400
+		assert_equal(2210, resp["errors"][0][0])
+	end
+
+	test "Can't create api error with too long message" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/error",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {code: 1111, message: "a" * 120}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2310, resp["errors"][0][0])
+	end
+
+	test "Can't create api error with invalid code" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/error",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {code: 12.4, message: "Test error"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2407, resp["errors"][0][0])
+	end
+	
+	test "Can create api error" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+		code = 1234
+		message = "Test error"
+
+		post "/v1/api/#{api.id}/error",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {code: code, message: message}.to_json
+		resp = JSON.parse(response.body)
+		
+		assert_response 201
+		assert_not_nil(resp["id"])
+		assert_equal(api.id, resp["api_id"])
+		assert_equal(code, resp["code"])
+		assert_equal(message, resp["message"])
+	end
+	# End tests for create_api_error endpoint
 end
