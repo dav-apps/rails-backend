@@ -51,6 +51,18 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(1102, resp["errors"][0][0])
 	end
 
+	test "Can't create api for the app of another dev" do
+		sherlock = users(:sherlock)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		app = apps(:TestApp)
+
+		post "/v1/apps/app/#{app.id}/api", headers: {Authorization: jwt, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
 	test "Can't create api without name" do
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
@@ -108,4 +120,65 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(name, resp["name"])
 	end
 	# End tests for create_api
+
+	# Tests for get_api
+	test "Missing fields in get_api" do
+		api = apis(:TestAppApi)
+
+		get "/v1/api/#{api.id}"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
+	end
+
+	test "Can't get api with invalid jwt" do
+		jwt = "sadasdasd"
+		api = apis(:TestAppApi)
+
+		get "/v1/api/#{api.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(1302, resp["errors"][0][0])
+	end
+
+	test "Can't get api from outside the website" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+		api = apis(:TestAppApi)
+
+		get "/v1/api/#{api.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't get api of the app of another dev" do
+		sherlock = users(:sherlock)
+		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
+		api = apis(:TestAppApi)
+
+		get "/v1/api/#{api.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get api" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		api = apis(:TestAppApi)
+
+		get "/v1/api/#{api.id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+		
+		assert_response 200
+		assert_equal(api.id, resp["id"])
+		assert_equal(api.app_id, resp["app_id"])
+		assert_equal(api.name, resp["name"])
+	end
+	# End tests for get_api
 end
