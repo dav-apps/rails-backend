@@ -36,7 +36,7 @@ ActiveRecord::Schema.define(version: 2019_12_02_215839) do
   create_table "api_endpoints", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
     t.integer "api_id"
     t.string "path"
-    t.integer "method"
+    t.string "method"
     t.text "commands"
   end
 

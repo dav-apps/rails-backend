@@ -14,17 +14,7 @@ class ApisController < ApplicationController
 			@functions = Hash.new
 			@errors = Array.new
 
-			method = 0
-			case request.method
-			when "POST"
-				method = 1
-			when "PUT"
-				method = 2
-			when "DELETE"
-				method = 3
-			end
-
-			@api.api_endpoints.where(method: method).each do |endpoint|
+			@api.api_endpoints.where(method: request.method).each do |endpoint|
 				path_parts = endpoint.path.split('/')
 				url_parts = path.split('/')
 				next if path_parts.count != url_parts.count
@@ -473,6 +463,57 @@ class ApisController < ApplicationController
 
 			# Return the api
 			render json: api.attributes, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
+
+	def create_api_endpoint
+		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		api_id = params["id"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			api_key = auth.split(",")[0]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api = Api.find_by_id(api_id)
+			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+
+			# Get the properties from the body
+			body = ValidationService.parse_json(request.body.string)
+
+			path = body["path"]
+			method = body["method"]
+			commands = body["commands"]
+
+			# Validate the properties
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_path_missing(path),
+				ValidationService.validate_method_missing(method),
+				ValidationService.validate_commands_missing(commands)
+			])
+
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_path_too_short(path),
+				ValidationService.validate_path_too_long(path),
+				ValidationService.validate_method_not_valid(method),
+				ValidationService.validate_commands_too_short(commands),
+				ValidationService.validate_commands_too_long(commands)
+			])
+
+			# Create the api endpoint
+			endpoint = ApiEndpoint.new(api: api, path: path, method: method.upcase, commands: commands)
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(endpoint.save))
+
+			render json: endpoint.attributes, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
