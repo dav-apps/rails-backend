@@ -181,4 +181,118 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(api.name, resp["name"])
 	end
 	# End tests for get_api
+
+	# Tests for create_api_endpoint
+	test "Missing fields in create_api_endpoint" do
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/endpoint"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't create api endpoint without content type json" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/endpoint", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't create api endpoint for api of app of another dev" do
+		auth = generate_auth_token(devs(:sherlock))
+		api = apis(:TestAppApi)
+		path = "test"
+		method = "GET"
+		commands = "(log test)"
+
+		post "/v1/api/#{api.id}/endpoint", 
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {path: path, method: method, commands: commands}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create api endpoint without required properties" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/endpoint",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2132, resp["errors"][0][0])
+		assert_equal(2133, resp["errors"][1][0])
+		assert_equal(2134, resp["errors"][2][0])
+	end
+
+	test "Can't create api endpoint with too short properties" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/endpoint", 
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {path: "a", method: "GET", commands: "a"}.to_json
+		resp = JSON.parse(response.body)
+		
+		assert_response 400
+		assert_equal(2208, resp["errors"][0][0])
+		assert_equal(2209, resp["errors"][1][0])
+	end
+
+	test "Can't create api endpoint with too long properties" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/endpoint", 
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {path: "a" * 220, method: "POST", commands: "a" * 65100}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2308, resp["errors"][0][0])
+		assert_equal(2309, resp["errors"][1][0])
+	end
+
+	test "Can't create api endpoint with invalid method" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/endpoint", 
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {path: "test", method: "bla", commands: "(log 'Hello World')"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2406, resp["errors"][0][0])
+	end
+
+	test "Can create api endpoint" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+		path = "test"
+		method = "GET"
+		commands = "(log 'Hello World')"
+
+		post "/v1/api/#{api.id}/endpoint", 
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {path: path, method: method, commands: commands}.to_json
+		resp = JSON.parse(response.body)
+		
+		assert_response 201
+		assert_not_nil(resp["id"])
+		assert_equal(api.id, resp["api_id"])
+		assert_equal(path, resp["path"])
+		assert_equal(method, resp["method"])
+		assert_equal(commands, resp["commands"])
+	end
+	# End tests for create_api_endpoint
 end

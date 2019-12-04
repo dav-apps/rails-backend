@@ -20,6 +20,10 @@ class ValidationService
 	max_event_data_length = 65000
 	min_api_name_length = 5
 	max_api_name_length = 100
+	min_path_length = 2
+	max_path_length = 200
+	min_commands_length = 2
+	max_commands_length = 65000
 
 	def self.get_errors_of_validations(validations)
 		errors = Array.new
@@ -406,6 +410,21 @@ class ValidationService
 		!os_version || os_version.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_path_missing(path)
+		error_code = 2132
+		!path || path.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_method_missing(method)
+		error_code = 2133
+		!method || method.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_commands_missing(commands)
+		error_code = 2134
+		!commands || commands.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
 		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -454,6 +473,16 @@ class ValidationService
 	define_singleton_method :validate_property_value_too_short do |value|
 		error_code = 2207
 		value.length < min_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_path_too_short do |path|
+		error_code = 2208
+		path.length < min_path_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_commands_too_short do |commands|
+		error_code = 2209
+		commands.length < min_commands_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_username_too_long do |username|
@@ -506,6 +535,16 @@ class ValidationService
 		value.length > max_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_path_too_long do |path|
+		error_code = 2308
+		path.length > max_path_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_commands_too_long do |commands|
+		error_code = 2309
+		commands.length > max_commands_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_email_not_valid(email)
 		error_code = 2401
 		!validate_email(email) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -529,6 +568,11 @@ class ValidationService
 	def self.get_payment_token_not_valid_error
 		error_code = 2405
 		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
+	end
+
+	def self.validate_method_not_valid(method)
+		error_code = 2406
+		!["get", "post", "put", "delete"].include?(method.downcase) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_table_name_contains_not_allowed_characters(table_name)
@@ -774,6 +818,12 @@ class ValidationService
 			"Missing field: os_name"
 		when 2131
 			"Missing field: os_version"
+		when 2132
+			"Missing field: path"
+		when 2133
+			"Missing field: method"
+		when 2134
+			"Missing field: commands"
 		when 2201
 			"Field too short: username"
 		when 2202
@@ -788,6 +838,10 @@ class ValidationService
 			"Field too short: Property.name"
 		when 2207
 			"Field too short: Property.value"
+		when 2208
+			"Field too short: path"
+		when 2209
+			"Field too short: commands"
 		when 2301
 			"Field too long: username"
 		when 2302
@@ -802,6 +856,10 @@ class ValidationService
 			"Field too long: Property.name"
 		when 2307
 			"Field too long: Property.value"
+		when 2308
+			"Field too long: path"
+		when 2309
+			"Field too long: commands"
 		when 2401
 			"Field not valid: email"
 		when 2402
@@ -812,6 +870,8 @@ class ValidationService
 			"Field not valid: link_windows"
 		when 2405
 			"Field not valid: payment_token"
+		when 2406
+			"Field not valid: method"
 		when 2501
 			"Field contains not allowed characters: table_name"
 		when 2502
