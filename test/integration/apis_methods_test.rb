@@ -119,7 +119,6 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(app.id, resp["app_id"])
 		assert_equal(name, resp["name"])
 	end
-	# End tests for create_api
 
 	# Tests for get_api
 	test "Missing fields in get_api" do
@@ -180,7 +179,6 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(api.app_id, resp["app_id"])
 		assert_equal(api.name, resp["name"])
 	end
-	# End tests for get_api
 
 	# Tests for create_api_endpoint
 	test "Missing fields in create_api_endpoint" do
@@ -294,7 +292,6 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(method, resp["method"])
 		assert_equal(commands, resp["commands"])
 	end
-	# End tests for create_api_endpoint
 
 	# Tests for create_api_error endpoint
 	test "Missing fields in create_api_error" do
@@ -401,5 +398,121 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(code, resp["code"])
 		assert_equal(message, resp["message"])
 	end
-	# End tests for create_api_error endpoint
+
+	# Tests for create_api_function
+	test "Missing fields in create_api_function" do
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/function"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't create api function without content type json" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/function", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't create api function for api of app of another dev" do
+		auth = generate_auth_token(devs(:sherlock))
+		api = apis(:TestAppApi)
+		name = "testfunction"
+		commands = "(log test)"
+
+		post "/v1/api/#{api.id}/function", 
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {name: name, commands: commands}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create api function without required properties" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/function", headers: {Authorization: auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2111, resp["errors"][0][0])
+		assert_equal(2134, resp["errors"][1][0])
+	end
+
+	test "Can't create api function with too short properties" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/function",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {name: "a", commands: "a"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2203, resp["errors"][0][0])
+		assert_equal(2209, resp["errors"][1][0])
+	end
+
+	test "Can't create api function with too long properties" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		post "/v1/api/#{api.id}/function",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {name: "a" * 120, params: "a" * 220, commands: "a" * 65100}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2303, resp["errors"][0][0])
+		assert_equal(2311, resp["errors"][1][0])
+		assert_equal(2309, resp["errors"][2][0])
+	end
+
+	test "Can create api function" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+		name = "testfunction"
+		params = "test,bla"
+		commands = "(log test)"
+
+		post "/v1/api/#{api.id}/function",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {name: name, params: params, commands: commands}.to_json
+		resp = JSON.parse(response.body)
+		
+		assert_response 201
+		assert_not_nil(resp["id"])
+		assert_equal(api.id, resp["api_id"])
+		assert_equal(name, resp["name"])
+		assert_equal(params, resp["params"])
+		assert_equal(commands, resp["commands"])
+	end
+
+	test "Can create api function without params" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+		name = "testfunction"
+		commands = "(log test)"
+
+		post "/v1/api/#{api.id}/function",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {name: name, commands: commands}.to_json
+		resp = JSON.parse(response.body)
+		
+		assert_response 201
+		assert_not_nil(resp["id"])
+		assert_equal(api.id, resp["api_id"])
+		assert_equal(name, resp["name"])
+		assert_nil(resp["params"])
+		assert_equal(commands, resp["commands"])
+	end
 end
