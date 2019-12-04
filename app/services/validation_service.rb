@@ -24,6 +24,8 @@ class ValidationService
 	max_path_length = 200
 	min_commands_length = 2
 	max_commands_length = 65000
+	min_message_length = 2
+	max_message_length = 100
 
 	def self.get_errors_of_validations(validations)
 		errors = Array.new
@@ -425,6 +427,16 @@ class ValidationService
 		!commands || commands.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_code_missing(code)
+		error_code = 2135
+		!code ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_message_missing(message)
+		error_code = 2136
+		!message || message.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
 		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -483,6 +495,11 @@ class ValidationService
 	define_singleton_method :validate_commands_too_short do |commands|
 		error_code = 2209
 		commands.length < min_commands_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_message_too_short do |message|
+		error_code = 2210
+		message.length < min_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_username_too_long do |username|
@@ -545,6 +562,11 @@ class ValidationService
 		commands.length > max_commands_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_message_too_long do |message|
+		error_code = 2310
+		message.length > max_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_email_not_valid(email)
 		error_code = 2401
 		!validate_email(email) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -573,6 +595,11 @@ class ValidationService
 	def self.validate_method_not_valid(method)
 		error_code = 2406
 		!["get", "post", "put", "delete"].include?(method.downcase) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_code_not_valid(code)
+		error_code = 2407
+		(!code.is_a?(Integer) || code < 0) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_table_name_contains_not_allowed_characters(table_name)
@@ -824,6 +851,10 @@ class ValidationService
 			"Missing field: method"
 		when 2134
 			"Missing field: commands"
+		when 2135
+			"Missing field: code"
+		when 2136
+			"Missing field: message"
 		when 2201
 			"Field too short: username"
 		when 2202
@@ -842,6 +873,8 @@ class ValidationService
 			"Field too short: path"
 		when 2209
 			"Field too short: commands"
+		when 2210
+			"Field too short: message"
 		when 2301
 			"Field too long: username"
 		when 2302
@@ -860,6 +893,8 @@ class ValidationService
 			"Field too long: path"
 		when 2309
 			"Field too long: commands"
+		when 2310
+			"Field too long: message"
 		when 2401
 			"Field not valid: email"
 		when 2402
@@ -872,6 +907,8 @@ class ValidationService
 			"Field not valid: payment_token"
 		when 2406
 			"Field not valid: method"
+		when 2407
+			"Field not valid: code"
 		when 2501
 			"Field contains not allowed characters: table_name"
 		when 2502

@@ -519,4 +519,51 @@ class ApisController < ApplicationController
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
+
+	def create_api_error
+		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		api_id = params["id"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			api_key = auth.split(",")[0]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api = Api.find_by_id(api_id)
+			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+
+			# Get the properties from the body
+			body = ValidationService.parse_json(request.body.string)
+
+			code = body["code"]
+			message = body["message"]
+
+			# Validate properties
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_code_missing(code),
+				ValidationService.validate_message_missing(message)
+			])
+
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_message_too_short(message),
+				ValidationService.validate_message_too_long(message),
+				ValidationService.validate_code_not_valid(code)
+			])
+
+			# Create the api error
+			error = ApiError.new(api: api, code: code, message: message)
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(error.save))
+			
+			render json: error.attributes, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
 end
