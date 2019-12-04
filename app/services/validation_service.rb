@@ -26,6 +26,9 @@ class ValidationService
 	max_commands_length = 65000
 	min_message_length = 2
 	max_message_length = 100
+	min_api_function_name_length = 3
+	max_api_function_name_length = 100
+	max_params_length = 200
 
 	def self.get_errors_of_validations(validations)
 		errors = Array.new
@@ -467,6 +470,11 @@ class ValidationService
 		name.length < min_api_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_name_for_api_function_too_short do |name|
+		error_code = 2203
+		name.length < min_api_function_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_desc_too_short do |desc|
 		error_code = 2204
 		desc.length < min_app_desc_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -532,6 +540,11 @@ class ValidationService
 		name.length > max_api_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_name_for_api_function_too_long do |name|
+		error_code = 2303
+		name.length > max_api_function_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_desc_too_long do |desc|
 		error_code = 2304
 		desc.length > max_app_desc_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -565,6 +578,11 @@ class ValidationService
 	define_singleton_method :validate_message_too_long do |message|
 		error_code = 2310
 		message.length > max_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_params_too_long do |params|
+		error_code = 2311
+		params.length > max_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_email_not_valid(email)
@@ -895,6 +913,8 @@ class ValidationService
 			"Field too long: commands"
 		when 2310
 			"Field too long: message"
+		when 2311
+			"Field too long: params"
 		when 2401
 			"Field not valid: email"
 		when 2402

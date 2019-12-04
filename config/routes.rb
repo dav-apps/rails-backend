@@ -92,6 +92,7 @@ Rails.application.routes.draw do
 
   match '/v1/api/:id/endpoint', to: 'apis#create_api_endpoint', via: :post
   match '/v1/api/:id/error', to: 'apis#create_api_error', via: :post
+  match '/v1/api/:id/function', to: 'apis#create_api_function', via: :post
 
   # Stripe Webhooks
   mount StripeEvent::Engine, at: '/v1/payments/stripe'
