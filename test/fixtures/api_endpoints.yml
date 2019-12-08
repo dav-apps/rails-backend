@@ -1,0 +1,5 @@
+TestAppApiCreateTest:
+  api: TestAppApi
+  path: test
+  method: POST
+  commands: (log 'Blablabla')
