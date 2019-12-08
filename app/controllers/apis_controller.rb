@@ -431,7 +431,12 @@ class ApisController < ApplicationController
 			api = Api.new(app: app, name: name)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(api.save))
 
-			render json: api.attributes, status: 201
+			result = api.attributes
+			result["endpoints"] = []
+			result["functions"] = []
+			result["errors"] = []
+
+			render json: result, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
@@ -462,7 +467,12 @@ class ApisController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, api.app))
 
 			# Return the api
-			render json: api.attributes, status: 200
+			result = api.attributes
+			result["endpoints"] = api.api_endpoints
+			result["functions"] = api.api_functions
+			result["errors"] = api.api_errors
+
+			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
