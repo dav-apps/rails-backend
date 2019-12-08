@@ -1,0 +1,5 @@
+TestAppApiTestFunction:
+  api: TestAppApi
+  name: TestFunction
+  params: test,bla
+  commands: (log (test + bla))
