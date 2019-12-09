@@ -1,0 +1,4 @@
+TestAppApiTestError:
+  api: TestAppApi
+  code: 1000
+  message: "Resource does not exist: Bla"
