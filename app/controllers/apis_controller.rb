@@ -826,4 +826,56 @@ class ApisController < ApplicationController
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
+
+	def set_api_errors
+		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		api_id = params["id"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			api_key = auth.split(",")[0]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api = Api.find_by_id(api_id)
+			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+
+			# Get the properties from the body
+			body = ValidationService.parse_json(request.body.string)
+
+			errors = body["errors"]
+			ValidationService.raise_validation_error(ValidationService.validate_errors_missing(errors))
+
+			errors.each do |error|
+				code = error["code"]
+				message = error["message"]
+
+				next if !ValidationService.validate_code_missing(code)[:success] || !ValidationService.validate_message_missing(message)[:success]
+				next if !ValidationService.validate_message_too_short(message)[:success] || !ValidationService.validate_message_too_long(message)[:success] || !ValidationService.validate_code_not_valid(code)[:success]
+
+				# Try to find the api error by code
+				api_error = ApiError.find_by(api: api, code: code)
+
+				if api_error
+					# Update the existing error
+					api_error.message = message
+				else
+					# Create a new error
+					api_error = ApiError.new(api: api, code: code, message: message)
+				end
+
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(api_error.save))
+			end
+
+			render json: {}, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
 end

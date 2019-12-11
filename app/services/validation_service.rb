@@ -439,6 +439,11 @@ class ValidationService
 		error_code = 2136
 		!message || message.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
+	
+	def self.validate_errors_missing(errors)
+		error_code = 2137
+		!errors ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
 
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
@@ -873,6 +878,8 @@ class ValidationService
 			"Missing field: code"
 		when 2136
 			"Missing field: message"
+		when 2137
+			"Missing field: errors"
 		when 2201
 			"Field too short: username"
 		when 2202
