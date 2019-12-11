@@ -300,6 +300,10 @@ class ApisController < ApplicationController
 				execute_command(command[0], vars) == execute_command(command[2], vars)
 			elsif command[1] == :!=
 				execute_command(command[0], vars) != execute_command(command[2], vars)
+			elsif command[1] == :>
+				execute_command(command[0], vars) > execute_command(command[2], vars)
+			elsif command[1] == :<
+				execute_command(command[0], vars) < execute_command(command[2], vars)
 			elsif command[1] == :+ || command[1] == :-
 				if execute_command(command[0], vars).class == Integer
 					result = 0
@@ -323,6 +327,10 @@ class ApisController < ApplicationController
 					i += 2
 				end
 				result
+			elsif command[1] == :or
+				execute_command(command[0], vars) || execute_command(command[2], vars)
+			elsif command[1] == :and
+				execute_command(command[0], vars) && execute_command(command[2], vars)
 			elsif command[0].to_s.include?('.')
 				# Get the value of the variable
 				var_name, function_name = command[0].to_s.split('.')
@@ -365,6 +373,10 @@ class ApisController < ApplicationController
 			elsif var.class == Array
 				if parts[1] == "length"
 					return var.count
+				end
+			elsif var.class == String
+				if parts[1] == "length"
+					return var.length
 				end
 			end
 		elsif command.to_s.include?('#')
