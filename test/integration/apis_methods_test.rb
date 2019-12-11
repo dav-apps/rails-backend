@@ -888,4 +888,113 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(error.code, resp["code"])
 		assert_equal(message, resp["message"])
 	end
+
+	# Tests for set_api_errors
+	test "Missing fields in set_api_errors" do
+		api = apis(:TestAppApi)
+
+		put "/v1/api/#{api.id}/errors"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't set api errors without content type json" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		put "/v1/api/#{api.id}/errors", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't set api errors for api of app of another dev" do
+		auth = generate_auth_token(devs(:sherlock))
+		api = apis(:TestAppApi)
+		errors = [{
+			code: 1101,
+			message: "Resource does not exist: Bla"
+		}]
+
+		put "/v1/api/#{api.id}/errors",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {errors: errors}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't set api errors without errors property" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		put "/v1/api/#{api.id}/errors", headers: {Authorization: auth, 'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2137, resp["errors"][0][0])
+	end
+
+	test "Can set api errors" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+		test_api_error = api_errors(:TestAppApiTestError)
+		test_api_error_new_message = "Hello World"
+		api_error_count = api.api_errors.count
+
+		valid_code = 2100
+		valid_message = "Resource does not exist: Bla"
+
+		errors = [
+			{
+				code: -12,
+				message: "Blabla"
+			},
+			{
+				code: 2000.20,
+				message: "Test test test"
+			},
+			{
+				code: 1200,
+				message: "a"
+			},
+			{
+				code: 1234,
+				message: "A" * 220
+			},
+			{
+				code: valid_code,
+				message: valid_message
+			},
+			{
+				code: test_api_error.code,
+				message: test_api_error_new_message
+			}
+		]
+
+		put "/v1/api/#{api.id}/errors",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {errors: errors}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+
+		# The api should have one more api error
+		api = Api.find_by_id(api.id)
+		assert_equal(api_error_count + 1, api.api_errors.count)
+
+		# The valid error should be created
+		error = ApiError.find_by(api: api, code: valid_code)
+		assert_not_nil(error)
+		assert_equal(valid_code, error.code)
+		assert_equal(valid_message, error.message)
+
+		# The test api error should be updated
+		test_api_error = ApiError.find_by_id(test_api_error.id)
+		assert_equal(test_api_error_new_message, test_api_error.message)
+	end
 end
