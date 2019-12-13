@@ -13,6 +13,7 @@ class ApisController < ApplicationController
 			@vars = Hash.new
 			@functions = Hash.new
 			@errors = Array.new
+			@ups = Array.new
 
 			@api.api_endpoints.where(method: request.method).each do |endpoint|
 				path_parts = endpoint.path.split('/')
@@ -78,7 +79,7 @@ class ApisController < ApplicationController
 				# Command contains commands
 				result = nil
 				command.each do |c|
-					result = execute_command(c, vars)
+					result = execute_command(c, args)
 				end
 				return result
 			elsif command[0] == :var
@@ -96,29 +97,18 @@ class ApisController < ApplicationController
 				else
 					args[command[1].to_s] = execute_command(command[2], vars)
 				end
+			elsif command[0] == :up
+				@ups.push(command[1].to_s)
 			elsif command[0] == :hash
-				if command[1].to_s.include?('.')
-					parts = command[1].to_s.split('.')
-					last_part = parts.pop
-					current_var = vars
+				hash = Hash.new
 
-					parts.each do |part|
-						current_var = current_var[part]
-						return nil if current_var.class != Hash
-					end
-
-					current_var[last_part] = Hash.new
-				else
-					hash = Hash.new
-
-					i = 1
-					while command[i]
-						hash[command[i][0]] = execute_command(command[i][1], vars)
-						i += 1
-					end
-					
-					return hash
+				i = 1
+				while command[i]
+					hash[command[i][0].to_s] = execute_command(command[i][1], vars)
+					i += 1
 				end
+				
+				return hash
 			elsif command[0] == :list
 				list = Array.new
 
@@ -142,6 +132,22 @@ class ApisController < ApplicationController
 							return execute_command(command[i + 1], vars)
 						end
 						i += 3
+					end
+				end
+			elsif command[0] == :for && command[2] == :in
+				array = execute_command(command[3], vars)
+				return nil if array.class != Array
+				var_name = command[1]
+				commands = command[4]
+
+				array.each do |entry|
+					vars[var_name.to_s] = entry
+					execute_command(commands, vars)
+
+					if @ups.count > 0
+						@ups.each do |up|
+							args[up] = vars[up]
+						end
 					end
 				end
 			elsif command[0] == :def
@@ -334,7 +340,7 @@ class ApisController < ApplicationController
 			elsif command[0].to_s.include?('.')
 				# Get the value of the variable
 				var_name, function_name = command[0].to_s.split('.')
-				var = vars[var_name]
+				var = args[var_name]
 				
 				if var.class == Array
 					if function_name == "push"
@@ -348,7 +354,7 @@ class ApisController < ApplicationController
 			else
 				result = nil
 				command.each do |c|
-					result = execute_command(c, vars)
+					result = execute_command(c, args)
 				end
 				return result
 			end
@@ -358,24 +364,17 @@ class ApisController < ApplicationController
 		elsif command.to_s.include?('.')
 			# Return the value of the hash
 			parts = command.to_s.split('.')
-			var = vars[parts.first]
+			last_part = parts.pop
+			var = execute_command(parts.join('.'), vars)
 
 			if var.class == Hash
-				last_part = parts.pop
-				current_var = vars
-
-				parts.each do |part|
-					current_var = current_var[part]
-					return nil if current_var.class != Hash
-				end
-
-				return current_var[last_part]
+				return var[last_part]
 			elsif var.class == Array
-				if parts[1] == "length"
+				if last_part == "length"
 					return var.count
 				end
 			elsif var.class == String
-				if parts[1] == "length"
+				if last_part == "length"
 					return var.length
 				end
 			end
