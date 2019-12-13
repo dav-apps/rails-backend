@@ -367,7 +367,9 @@ class ApisController < ApplicationController
 			last_part = parts.pop
 			var = execute_command(parts.join('.'), vars)
 
-			if var.class == Hash
+			if last_part == "class"
+				return var.class.to_s
+			elsif var.class == Hash
 				return var[last_part]
 			elsif var.class == Array
 				if last_part == "length"
@@ -398,7 +400,7 @@ class ApisController < ApplicationController
 			return vars[command.to_s] if vars.key?(command.to_s)
 
 			# Return the command
-			return command
+			return command.class == Symbol ? command.to_s : command
 		end
 	end
 
