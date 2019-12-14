@@ -879,4 +879,58 @@ class ApisController < ApplicationController
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
+
+	def set_api_env_vars
+		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		api_id = params["id"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+
+			api_key = auth.split(",")[0]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api = Api.find_by_id(api_id)
+			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+
+			# Get the properties from the body
+			body = ValidationService.parse_json(request.body.string)
+
+			body.each do |key, value|
+				class_name = "string"
+
+				if value.is_a?(TrueClass) || value.is_a?(FalseClass)
+					class_name = "bool"
+				elsif value.is_a?(Integer)
+					class_name = "int"
+				elsif value.is_a?(Float)
+					class_name = "float"
+				end
+
+				# Try to find the api env var by name
+				env = ApiEnvVar.find_by(api: api, name: key)
+
+				if env
+					# Update the existing env var
+					env.value = value.to_s
+					env.class_name = class_name
+				else
+					# Create a new env var
+					env = ApiEnvVar.new(api: api, name: key, value: value.to_s, class_name: class_name)
+				end
+
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(env.save))
+			end
+
+			render json: {}, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
 end
