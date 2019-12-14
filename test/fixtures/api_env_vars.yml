@@ -1,0 +1,4 @@
+TestAppApiTableIdEnvVar:
+  name: TABLE_ID
+  value: 42
+  class_name: "int"

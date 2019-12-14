@@ -997,4 +997,86 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		test_api_error = ApiError.find_by_id(test_api_error.id)
 		assert_equal(test_api_error_new_message, test_api_error.message)
 	end
+
+	# Tests for set_api_env_vars
+	test "Missing fields in set_api_env_vars" do
+		api = apis(:TestAppApi)
+
+		put "/v1/api/#{api.id}/env_vars"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't set api env vars without content type json" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+
+		put "/v1/api/#{api.id}/env_vars", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't set api env vars for api of app of another dev" do
+		auth = generate_auth_token(devs(:sherlock))
+		api = apis(:TestAppApi)
+
+		put "/v1/api/#{api.id}/env_vars",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: {bla: "test"}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can set api env vars" do
+		auth = generate_auth_token(devs(:matt))
+		api = apis(:TestAppApi)
+		test_var = api_env_vars(:TestAppApiTableIdEnvVar)
+
+		string_var_name = "hello"
+		string_var_value = "Hello World"
+		float_var_name = "float"
+		float_var_value = 12.34
+		bool_var_name = "boolean"
+		bool_var_value = true
+		test_var_new_value = 24
+
+		env = Hash.new
+		env[string_var_name] = string_var_value
+		env[float_var_name] = float_var_value
+		env[bool_var_name] = bool_var_value
+		env[test_var.name] = test_var_new_value
+
+		put "/v1/api/#{api.id}/env_vars",
+			headers: {Authorization: auth, 'Content-Type': 'application/json'},
+			params: env.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		
+		string_var = ApiEnvVar.find_by(api: api, name: string_var_name)
+		assert_not_nil(string_var)
+		assert_equal(string_var_value, string_var.value)
+		assert_equal(string_var.class_name, "string")
+
+		float_var = ApiEnvVar.find_by(api: api, name: float_var_name)
+		assert_not_nil(float_var)
+		assert_equal(float_var_value.to_s, float_var.value)
+		assert_equal(float_var.class_name, "float")
+
+		bool_var = ApiEnvVar.find_by(api: api, name: bool_var_name)
+		assert_not_nil(bool_var)
+		assert_equal(bool_var_value.to_s, bool_var.value)
+		assert_equal(bool_var.class_name, "bool")
+
+		test_var = ApiEnvVar.find_by(api: api, name: test_var.name)
+		assert_not_nil(test_var)
+		assert_equal(test_var_new_value.to_s, test_var.value)
+		assert_equal(test_var.class_name, "int")
+	end
 end
