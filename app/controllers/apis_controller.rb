@@ -15,6 +15,22 @@ class ApisController < ApplicationController
 			@errors = Array.new
 			@ups = Array.new
 
+			# Get the environment variables
+			@vars["env"] = Hash.new
+			@api.api_env_vars.each do |env_var|
+				value = env_var.value
+
+				if env_var.class_name == "bool"
+					value = value == "true"
+				elsif env_var.class_name == "int"
+					value = value.to_i
+				elsif env_var.class_name == "float"
+					value = value.to_f
+				end
+
+				@vars["env"][env_var.name] = value
+			end
+
 			@api.api_endpoints.where(method: request.method).each do |endpoint|
 				path_parts = endpoint.path.split('/')
 				url_parts = path.split('/')
