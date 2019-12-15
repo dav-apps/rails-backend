@@ -88,7 +88,8 @@ class ApisController < ApplicationController
 	def execute_command(command, args)
 		return nil if @execution_stopped
 		return nil if @errors.count > 0
-		vars = args.deep_dup
+		vars = Marshal.load(Marshal.dump(args))
+
 		if command.class == Array
 			# Command is a function call
 			if command[0].class == Array
@@ -316,6 +317,32 @@ class ApisController < ApplicationController
 			elsif command[0] == :render_json
 				render json: execute_command(command[1], vars), status: execute_command(command[2], vars)
 				break_execution
+
+			elsif command[0].to_s == "Table.get"
+				table = Table.find_by(id: execute_command(command[1], vars).to_i)
+
+				if table && table.app != @api.app
+					# Action not allowed error
+					error = Hash.new
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				else
+					return table
+				end
+			elsif command[0].to_s == "Table.get_table_objects"
+				table = Table.find_by(id: execute_command(command[1], vars).to_i)
+				return nil if !table
+
+				if table.app != @api.app
+					# Action not allowed error
+					error = Hash.new
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				else
+					return table.table_objects.where(user_id: execute_command(command[2], vars).to_i).to_a
+				end
 			
 			# Command is an expression
 			elsif command[1] == :==
@@ -394,6 +421,12 @@ class ApisController < ApplicationController
 			elsif var.class == String
 				if last_part == "length"
 					return var.length
+				end
+			elsif var.class == Table
+				if last_part == "table_objects"
+					return var.table_objects.to_a
+				else
+					return var[last_part]
 				end
 			end
 		elsif command.to_s.include?('#')
