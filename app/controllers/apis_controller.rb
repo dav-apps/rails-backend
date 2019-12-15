@@ -318,7 +318,7 @@ class ApisController < ApplicationController
 				render json: execute_command(command[1], vars), status: execute_command(command[2], vars)
 				break_execution
 
-			elsif command[0].to_s == "Table.get"
+			elsif command[0].to_s == "Table.get"	# (id)
 				table = Table.find_by(id: execute_command(command[1], vars).to_i)
 
 				if table && table.app != @api.app
@@ -330,7 +330,7 @@ class ApisController < ApplicationController
 				else
 					return table
 				end
-			elsif command[0].to_s == "Table.get_table_objects"
+			elsif command[0].to_s == "Table.get_table_objects"		# (id, user_id)
 				table = Table.find_by(id: execute_command(command[1], vars).to_i)
 				return nil if !table
 
@@ -343,6 +343,45 @@ class ApisController < ApplicationController
 				else
 					return table.table_objects.where(user_id: execute_command(command[2], vars).to_i).to_a
 				end
+			elsif command[0].to_s == "TableObject.create"	# (user_id, table_id, properties, visibility?)
+				# Get the table
+				table = Table.find_by_id(execute_command(command[2], vars))
+				error = Hash.new
+				
+				# Table does not exist error
+				if !table
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table belongs to the same app as the api
+				if table.app != @api.app
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				# Create the table object
+				obj = TableObject.new
+				obj.user_id = execute_command(command[1], vars).to_i
+				obj.table_id = execute_command(command[2], vars).to_i
+				obj.visibility = execute_command(command[4].to_i, vars) if command[4]
+				obj.uuid = SecureRandom.uuid
+				obj.save
+
+				# Create the properties
+				properties = execute_command(command[3], vars)
+				properties.each do |key, value|
+					prop = Property.new
+					prop.table_object_id = obj.id
+					prop.name = key
+					prop.value = value
+					prop.save
+				end
+
+				# Return the table object
+				return obj
 			
 			# Command is an expression
 			elsif command[1] == :==
@@ -428,6 +467,8 @@ class ApisController < ApplicationController
 				else
 					return var[last_part]
 				end
+			elsif var.class == TableObject
+				return var[last_part]
 			end
 		elsif command.to_s.include?('#')
 			parts = command.to_s.split('#')
