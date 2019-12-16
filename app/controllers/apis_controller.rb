@@ -468,7 +468,15 @@ class ApisController < ApplicationController
 					return var[last_part]
 				end
 			elsif var.class == TableObject
-				return var[last_part]
+				if last_part == "properties"
+					return var.properties
+				else
+					return var[last_part]
+				end
+			elsif var.class.to_s == "Property::ActiveRecord_Associations_CollectionProxy"
+				prop = var.where(name: last_part)
+				return prop[0].value if prop.count > 0
+				return nil
 			end
 		elsif command.to_s.include?('#')
 			parts = command.to_s.split('#')
