@@ -254,9 +254,15 @@ class ApisController < ApplicationController
 				
 				if session_id != 0
 					session = Session.find_by_id(session_id)
-					if !session || session.app_id != @api.app_id
+
+					if !session
 						# Session does not exist
 						error["code"] = 0
+						@errors.push(error)
+						return @errors
+					elsif session.app_id != @api.app_id
+						# Action not allowed
+						error["code"] = 1
 						@errors.push(error)
 						return @errors
 					end
@@ -268,17 +274,17 @@ class ApisController < ApplicationController
 					JWT.decode(jwt, secret, true, {algorithm: ENV['JWT_ALGORITHM']})[0]
 				rescue JWT::ExpiredSignature
 					# JWT expired
-					error["code"] = 1
+					error["code"] = 2
 					@errors.push(error)
 					return @errors
 				rescue JWT::DecodeError
 					# JWT decode failed
-					error["code"] = 2
+					error["code"] = 3
 					@errors.push(error)
 					return @errors
 				rescue Exception
 					# Generic error
-					error["code"] = 3
+					error["code"] = 4
 					@errors.push(error)
 					return @errors
 				end
@@ -294,7 +300,9 @@ class ApisController < ApplicationController
 				# It's a comment. Ignore this command
 				return nil
 			elsif command[0] == :parse_json
-				JSON.parse(execute_command(command[1], vars))
+				json = execute_command(command[1], vars)
+				return nil if json.size < 2
+				JSON.parse(json)
 			elsif command[0] == :get_header
 				return request.headers[command[1].to_s]
 			elsif command[0] == :get_param
