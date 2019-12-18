@@ -104,13 +104,37 @@ class ApisController < ApplicationController
 					parts = command[1].to_s.split('.')
 					last_part = parts.pop
 					current_var = vars
+					table_object = nil
 
 					parts.each do |part|
-						current_var = current_var[part]
-						return nil if current_var.class != Hash
+						if current_var.is_a?(Hash)
+							current_var = current_var[part]
+						elsif current_var.is_a?(TableObject) && part == "properties"
+							table_object = current_var
+							current_var = current_var.properties
+						else
+							return nil
+						end
 					end
 
-					current_var[last_part] = execute_command(command[2], vars)
+					if current_var.is_a?(Hash)
+						current_var[last_part] = execute_command(command[2], vars)
+					elsif current_var.class.to_s == "Property::ActiveRecord_Associations_CollectionProxy"
+						props = current_var.where(name: last_part)
+						
+						if props.count == 0 && table_object
+							# Create a new property
+							prop = Property.new(table_object_id: table_object.id, name: last_part, value: execute_command(command[2], vars))
+							prop.save
+							return prop.value
+						else
+							# Update the value of the property
+							prop = props[0]
+							prop.value = execute_command(command[2], vars)
+							prop.save
+							return prop.value
+						end
+					end
 				else
 					args[command[1].to_s] = execute_command(command[2], vars)
 				end
@@ -139,14 +163,20 @@ class ApisController < ApplicationController
 				return list
 			elsif command[0] == :if
 				if execute_command(command[1], vars)
-					execute_command(command[2], vars)
+					result = execute_command(command[2], vars)
+					process_ups(args, vars)
+					return result
 				else
 					i = 3
 					while command[i] != nil
 						if command[i] == :elseif && execute_command(command[i + 1], vars)
-							return execute_command(command[i + 2], vars)
+							result = execute_command(command[i + 2], vars)
+							process_ups(args, vars)
+							return result
 						elsif command[i] == :else
-							return execute_command(command[i + 1], vars)
+							result = execute_command(command[i + 1], vars)
+							process_ups(args, vars)
+							return result
 						end
 						i += 3
 					end
@@ -160,12 +190,7 @@ class ApisController < ApplicationController
 				array.each do |entry|
 					vars[var_name.to_s] = entry
 					execute_command(commands, vars)
-
-					if @ups.count > 0
-						@ups.each do |up|
-							args[up] = vars[up]
-						end
-					end
+					process_ups(args, vars)
 				end
 			elsif command[0] == :def
 				# Function definition
@@ -427,6 +452,8 @@ class ApisController < ApplicationController
 				execute_command(command[0], vars) || execute_command(command[2], vars)
 			elsif command[1] == :and
 				execute_command(command[0], vars) && execute_command(command[2], vars)
+			elsif command[0] == :!
+				return !execute_command(command[1], vars)
 			elsif command[0].to_s.include?('.')
 				# Get the value of the variable
 				var_name, function_name = command[0].to_s.split('.')
@@ -436,7 +463,8 @@ class ApisController < ApplicationController
 					if function_name == "push"
 						i = 1
 						while command[i]
-							var.push(execute_command(command[i], vars))
+							result = execute_command(command[i], vars)
+							var.push(result) if result != nil
 							i += 1
 						end
 					end
@@ -482,8 +510,8 @@ class ApisController < ApplicationController
 					return var[last_part]
 				end
 			elsif var.class.to_s == "Property::ActiveRecord_Associations_CollectionProxy"
-				prop = var.where(name: last_part)
-				return prop[0].value if prop.count > 0
+				props = var.where(name: last_part)
+				return props[0].value if props.count > 0
 				return nil
 			end
 		elsif command.to_s.include?('#')
@@ -512,6 +540,14 @@ class ApisController < ApplicationController
 
 	def break_execution
 		@execution_stopped = true
+	end
+
+	def process_ups(args, vars)
+		if @ups.count > 0
+			@ups.each do |up|
+				args[up] = vars[up]
+			end
+		end
 	end
 
 	public
