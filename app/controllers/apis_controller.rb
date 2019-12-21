@@ -103,7 +103,7 @@ class ApisController < ApplicationController
 				if command[1].to_s.include?('.')
 					parts = command[1].to_s.split('.')
 					last_part = parts.pop
-					current_var = vars
+					current_var = args
 					table_object = nil
 
 					parts.each do |part|
@@ -415,6 +415,8 @@ class ApisController < ApplicationController
 
 				# Return the table object
 				return obj
+			elsif command[0].to_s == "TableObject.get"	# (uuid)
+				return TableObject.find_by(uuid: execute_command(command[1], vars))
 			
 			# Command is an expression
 			elsif command[1] == :==
@@ -467,6 +469,10 @@ class ApisController < ApplicationController
 							var.push(result) if result != nil
 							i += 1
 						end
+					end
+				elsif var.class == String
+					if function_name == "split"
+						return var.split(execute_command(command[1], vars))
 					end
 				end
 			else
