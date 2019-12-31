@@ -92,7 +92,7 @@ class ApisController < ApplicationController
 
 		if command.class == Array
 			# Command is a function call
-			if command[0].class == Array
+			if command[0].class == Array && (!command[1] || command[1].class == Array)
 				# Command contains commands
 				result = nil
 				command.each do |c|
@@ -363,7 +363,7 @@ class ApisController < ApplicationController
 				else
 					return table
 				end
-			elsif command[0].to_s == "Table.get_table_objects"		# (id, user_id)
+			elsif command[0].to_s == "Table.get_table_objects"		# id, user_id
 				table = Table.find_by(id: execute_command(command[1], vars).to_i)
 				return nil if !table
 
@@ -376,12 +376,12 @@ class ApisController < ApplicationController
 				else
 					return table.table_objects.where(user_id: execute_command(command[2], vars).to_i).to_a
 				end
-			elsif command[0].to_s == "TableObject.create"	# (user_id, table_id, properties, visibility?)
+			elsif command[0].to_s == "TableObject.create"	# user_id, table_id, properties, visibility?
 				# Get the table
 				table = Table.find_by_id(execute_command(command[2], vars))
 				error = Hash.new
 				
-				# Table does not exist error
+				# Check if the table exists
 				if !table
 					error["code"] = 0
 					@errors.push(error)
@@ -395,13 +395,27 @@ class ApisController < ApplicationController
 					return @errors
 				end
 
+				# Check if the user exists
+				user = User.find_by_id(execute_command(command[1], vars))
+				if !user
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
 				# Create the table object
 				obj = TableObject.new
-				obj.user_id = execute_command(command[1], vars).to_i
-				obj.table_id = execute_command(command[2], vars).to_i
+				obj.user = user
+				obj.table = table
 				obj.visibility = execute_command(command[4].to_i, vars) if command[4]
 				obj.uuid = SecureRandom.uuid
-				obj.save
+
+				if !obj.save
+					# Unexpected error
+					error["code"] = 3
+					@errors.push(error)
+					return @errors
+				end
 
 				# Create the properties
 				properties = execute_command(command[3], vars)
@@ -415,7 +429,202 @@ class ApisController < ApplicationController
 
 				# Return the table object
 				return obj
-			elsif command[0].to_s == "TableObject.get"	# (uuid)
+			elsif command[0].to_s == "TableObject.create_file"	# user_id, table_id, ext, type, file
+				# Get the table
+				table = Table.find_by_id(execute_command(command[2], vars))
+				error = Hash.new
+
+				# Check if the table exists
+				if !table
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table belongs to the same app as the api
+				if table.app != @api.app
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the user exists
+				user = User.find_by_id(execute_command(command[1], vars))
+				if !user
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
+				# Create the table object
+				obj = TableObject.new
+				obj.user = user
+				obj.table = table
+				obj.uuid = SecureRandom.uuid
+				obj.file = true
+
+				ext = execute_command(command[3], vars)
+				type = execute_command(command[4], vars)
+				file = execute_command(command[5], vars)
+				file_size = file.size
+
+				# Check if the user has enough free storage
+				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
+
+				if free_storage < file_size
+					error["code"] = 3
+					@errors.push(error)
+					return @errors
+				end
+
+				# Save the table object
+				if !obj.save
+					# Unexpected error
+					error["code"] = 4
+					@errors.push(error)
+					return @errors
+				end
+
+				begin
+					# Upload the file
+					blob = BlobOperationsService.upload_blob(table.app_id, obj.id, StringIO.new(file))
+					etag = blob.properties[:etag]
+
+					# Remove the first and the last character of etag, because they are "" for whatever reason
+					etag = etag[1...etag.size-1]
+				rescue Exception => e
+					error["code"] = 5
+					@errors.push(error)
+					return @errors
+				end
+
+				# Save extension as property
+				ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+
+				# Save etag as property
+				etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+
+				# Save the file size as property
+				size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+
+				# Save the content type as property
+				type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
+
+				# Update the used storage
+				update_used_storage(user.id, table.app_id, file_size)
+
+				# Save that user uses the app
+				users_app = UsersApp.find_by(app_id: table.app_id, user_id: user.id)
+				if !users_app
+					users_app = UsersApp.create(app_id: table.app_id, user_id: user.id)
+					users_app.save
+				end
+
+				# Create the properties
+				if !ext_prop.save || !etag_prop.save || !size_prop.save || !type_prop.save
+					error["code"] = 6
+					@errors.push(error)
+					return @errors
+				end
+
+				return obj
+			elsif command[0].to_s == "TableObject.update_file"	# uuid, ext, type, file
+				# Get the table object
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				error = Hash.new
+
+				# Check if the table object exists
+				if !obj
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table object is a file
+				if !obj.file
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
+				# Get the properties
+				ext_prop = Property.find_by(table_object_id: obj.id, name: "ext")
+				etag_prop = Property.find_by(table_object_id: obj.id, name: "etag")
+				size_prop = Property.find_by(table_object_id: obj.id, name: "size")
+				type_prop = Property.find_by(table_object_id: obj.id, name: "type")
+
+				ext = execute_command(command[2], vars)
+				type = execute_command(command[3], vars)
+				file = execute_command(command[4], vars)
+				user = obj.user
+
+				file_size = file.size
+				old_file_size = size_prop ? size_prop.value.to_i : 0
+				file_size_diff = file_size - old_file_size
+				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
+
+				# Check if the user has enough free storage
+				if free_storage < file_size_diff
+					error["code"] = 3
+					@errors.push(error)
+					return @errors
+				end
+
+				begin
+					# Upload the new file
+					blob = BlobOperationsService.upload_blob(obj.table.app_id, obj.id, StringIO.new(file))
+					etag = blob.properties[:etag]
+					etag = etag[1...etag.size-1]
+				rescue Exception => e
+					error["code"] = 4
+					@errors.push(error)
+					return @errors
+				end
+
+				# Update or create the properties
+				if !ext_prop
+					ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+				else
+					ext_prop.value = ext
+				end
+
+				if !etag_prop
+					etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+				else
+					etag_prop.value = etag
+				end
+
+				if !size_prop
+					size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+				else
+					size_prop.value = file_size
+				end
+
+				if !type_prop
+					type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
+				else
+					type_prop.value = type
+				end
+
+				# Update the used storage
+				update_used_storage(obj.user.id, obj.table.app_id, file_size_diff)
+
+				# Save the properties
+				if !ext_prop.save || !etag_prop.save || !size_prop.save || !type_prop.save
+					error["code"] = 5
+					@errors.push(error)
+					return @errors
+				end
+
+				return obj
+			elsif command[0].to_s == "TableObject.get"	# uuid
 				return TableObject.find_by(uuid: execute_command(command[1], vars))
 			
 			# Command is an expression
