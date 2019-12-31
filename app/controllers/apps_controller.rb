@@ -466,26 +466,24 @@ class AppsController < ApplicationController
 				begin
 					blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
 					etag = blob.properties[:etag]
-					# Remove the first and the last character of etag, because they are "" for whatever 
+
+					# Remove the first and the last character of etag, because they are "" for whatever reason
 					etag = etag[1...etag.size-1]
 
 					# Save extension as property
 					ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+
 					# Save etag as property
 					etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
-					# Save the new used_storage
-					update_used_storage(user.id, app.id, file_size)
 
-					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(ext_prop.save))
-					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
-               
-               # Create a property for the file size
+					# Save the file size as property
 					size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
-               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
-               
-               # Create a property for the content type
+					
+					# Save the content type as property
                type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
-               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(type_prop.save))
+
+					# Update the used storage
+					update_used_storage(user.id, app.id, file_size)
 
 					# Save that user uses the app
 					users_app = UsersApp.find_by(app_id: app.id, user_id: user.id)
@@ -493,6 +491,12 @@ class AppsController < ApplicationController
 						users_app = UsersApp.create(app_id: app.id, user_id: user.id)
 						users_app.save
 					end
+
+					# Create the properties
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(ext_prop.save))
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
+               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(type_prop.save))
 
 					# Return the data
 					result = obj.attributes
