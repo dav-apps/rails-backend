@@ -18,17 +18,7 @@ class ApisController < ApplicationController
 			# Get the environment variables
 			@vars["env"] = Hash.new
 			@api.api_env_vars.each do |env_var|
-				value = env_var.value
-
-				if env_var.class_name == "bool"
-					value = value == "true"
-				elsif env_var.class_name == "int"
-					value = value.to_i
-				elsif env_var.class_name == "float"
-					value = value.to_f
-				end
-
-				@vars["env"][env_var.name] = value
+				@vars["env"][env_var.name] = convert_env_value(env_var.class_name, env_var.value)
 			end
 
 			@api.api_endpoints.where(method: request.method).each do |endpoint|
@@ -140,6 +130,8 @@ class ApisController < ApplicationController
 				end
 			elsif command[0] == :up
 				@ups.push(command[1].to_s)
+			elsif command[0] == :return
+				return execute_command(command[1], vars)
 			elsif command[0] == :hash
 				hash = Hash.new
 
@@ -255,10 +247,11 @@ class ApisController < ApplicationController
 						vars["errors"].push(@errors.pop)
 					end
 
-					execute_command(command[2], vars)
-				else
-					return result
+					result = execute_command(command[2], vars)
 				end
+
+				process_ups(args, vars)
+				return result
 			elsif command[0] == :throw_errors
 				# Add the errors to the errors array
 				i = 1
@@ -335,6 +328,8 @@ class ApisController < ApplicationController
 			elsif command[0] == :get_body
 				if request.body.class == StringIO
 					return request.body.string
+				elsif request.body.class == Tempfile
+					return request.body.read
 				else
 					return request.body
 				end
@@ -349,6 +344,15 @@ class ApisController < ApplicationController
 				end
 			elsif command[0] == :render_json
 				render json: execute_command(command[1], vars), status: execute_command(command[2], vars)
+				break_execution
+			elsif command[0] == :render_file
+				result = execute_command(command[1], vars)
+				type = execute_command(command[2], vars)
+				filename = execute_command(command[3], vars)
+				status = execute_command(command[4], vars)
+
+				response.headers['Content-Length'] = result.size.to_s
+				send_data(result, type: type, filename: filename, status: status)
 				break_execution
 
 			elsif command[0].to_s == "Table.get"	# (id)
@@ -626,7 +630,22 @@ class ApisController < ApplicationController
 				return obj
 			elsif command[0].to_s == "TableObject.get"	# uuid
 				return TableObject.find_by(uuid: execute_command(command[1], vars))
-			
+			elsif command[0].to_s == "TableObject.get_file"	# uuid
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				return nil if !obj.file
+
+				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+				filename = "#{obj.table.app.id}/#{obj.id}"
+
+				# Download the file
+				begin
+					client = Azure::Blob::BlobService.new
+					return client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)[1]
+				rescue Exception => e
+					return nil
+				end
+
 			# Command is an expression
 			elsif command[1] == :==
 				execute_command(command[0], vars) == execute_command(command[2], vars)
@@ -667,8 +686,9 @@ class ApisController < ApplicationController
 				return !execute_command(command[1], vars)
 			elsif command[0].to_s.include?('.')
 				# Get the value of the variable
-				var_name, function_name = command[0].to_s.split('.')
-				var = args[var_name]
+				parts = command[0].to_s.split('.')
+				function_name = parts.pop
+				var = parts.size == 1 ? args[parts[0]] : execute_command(parts.join('.'), vars)
 				
 				if var.class == Array
 					if function_name == "push"
@@ -678,6 +698,8 @@ class ApisController < ApplicationController
 							var.push(result) if result != nil
 							i += 1
 						end
+					elsif function_name == "contains"
+						return var.include?(execute_command(command[1], vars))
 					end
 				elsif var.class == String
 					if function_name == "split"
@@ -694,6 +716,8 @@ class ApisController < ApplicationController
 		elsif !!command == command
 			# Command is boolean
 			command
+		elsif command.class == String && command.size == 1
+			return command
 		elsif command.to_s.include?('.')
 			# Return the value of the hash
 			parts = command.to_s.split('.')
@@ -1259,14 +1283,10 @@ class ApisController < ApplicationController
 			body = ValidationService.parse_json(request.body.string)
 
 			body.each do |key, value|
-				class_name = "string"
+				class_name = get_env_class_name(value)
 
-				if value.is_a?(TrueClass) || value.is_a?(FalseClass)
-					class_name = "bool"
-				elsif value.is_a?(Integer)
-					class_name = "int"
-				elsif value.is_a?(Float)
-					class_name = "float"
+				if class_name.start_with?('array')
+					value = value.join(',')
 				end
 
 				# Try to find the api env var by name
@@ -1288,6 +1308,48 @@ class ApisController < ApplicationController
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
+
+	private
+	def get_env_class_name(value)
+		class_name = "string"
+
+		if value.is_a?(TrueClass) || value.is_a?(FalseClass)
+			class_name = "bool"
+		elsif value.is_a?(Integer)
+			class_name = "int"
+		elsif value.is_a?(Float)
+			class_name = "float"
+		elsif value.is_a?(Array)
+			content_class_name = get_env_class_name(value[0])
+			class_name = "array:#{content_class_name}"
+		end
+
+		return class_name
+	end
+
+	def convert_env_value(class_name, value)
+		if class_name == "bool"
+			return value == "true"
+		elsif class_name == "int"
+			return value.to_i
+		elsif class_name == "float"
+			return value.to_f
+		elsif class_name.include?(':')
+			parts = class_name.split(':')
+
+			if parts[0] == "array"
+				array = Array.new
+
+				value.split(',').each do |val|
+					array.push(convert_env_value(parts[1], val))
+				end
+
+				return array
+			else
+				return value
+			end
 		end
 	end
 end
