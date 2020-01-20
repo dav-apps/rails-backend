@@ -13,7 +13,6 @@ class ApisController < ApplicationController
 			@vars = Hash.new
 			@functions = Hash.new
 			@errors = Array.new
-			@ups = Array.new
 
 			# Get the environment variables
 			@vars["env"] = Hash.new
@@ -75,10 +74,9 @@ class ApisController < ApplicationController
 	end
 
 	private
-	def execute_command(command, args)
+	def execute_command(command, vars)
 		return nil if @execution_stopped
 		return nil if @errors.count > 0
-		vars = Marshal.load(Marshal.dump(args))
 
 		if command.class == Array
 			# Command is a function call
@@ -86,14 +84,14 @@ class ApisController < ApplicationController
 				# Command contains commands
 				result = nil
 				command.each do |c|
-					result = execute_command(c, args)
+					result = execute_command(c, vars)
 				end
 				return result
 			elsif command[0] == :var
 				if command[1].to_s.include?('.')
 					parts = command[1].to_s.split('.')
 					last_part = parts.pop
-					current_var = args
+					current_var = vars
 					table_object = nil
 
 					parts.each do |part|
@@ -126,10 +124,8 @@ class ApisController < ApplicationController
 						end
 					end
 				else
-					args[command[1].to_s] = execute_command(command[2], vars)
+					vars[command[1].to_s] = execute_command(command[2], vars)
 				end
-			elsif command[0] == :up
-				@ups.push(command[1].to_s)
 			elsif command[0] == :return
 				return execute_command(command[1], vars)
 			elsif command[0] == :hash
@@ -155,20 +151,14 @@ class ApisController < ApplicationController
 				return list
 			elsif command[0] == :if
 				if execute_command(command[1], vars)
-					result = execute_command(command[2], vars)
-					process_ups(args, vars)
-					return result
+					return execute_command(command[2], vars)
 				else
 					i = 3
 					while command[i] != nil
 						if command[i] == :elseif && execute_command(command[i + 1], vars)
-							result = execute_command(command[i + 2], vars)
-							process_ups(args, vars)
-							return result
+							return execute_command(command[i + 2], vars)
 						elsif command[i] == :else
-							result = execute_command(command[i + 1], vars)
-							process_ups(args, vars)
-							return result
+							return execute_command(command[i + 1], vars)
 						end
 						i += 3
 					end
@@ -182,7 +172,6 @@ class ApisController < ApplicationController
 				array.each do |entry|
 					vars[var_name.to_s] = entry
 					execute_command(commands, vars)
-					process_ups(args, vars)
 				end
 			elsif command[0] == :def
 				# Function definition
@@ -205,34 +194,47 @@ class ApisController < ApplicationController
 				function = @functions[name.to_s]
 
 				if function
-					# Add the parameters to the variables
+					# Clone the vars for the function call
+					args = Marshal.load(Marshal.dump(vars))
+
 					i = 0
 					function["parameters"].each do |param|
-						vars[param] = execute_command(command[2][i], vars)
+						args[param] = execute_command(command[2][i], vars)
 						i += 1
 					end
 
-					execute_command(function["commands"], vars)
+					return execute_command(function["commands"], args)
 				else
 					# Try to get the function from the database
 					function = ApiFunction.find_by(api: @api, name: name)
 					
 					if function
+						# Clone the vars for the function call
+						args = Marshal.load(Marshal.dump(vars))
+						params = Array.new
+
 						i = 0
 						function.params.split(',').each do |param|
-							vars[param] = execute_command(command[2][i], vars)
+							args[param] = execute_command(command[2][i], vars)
+							params.push(param)
 							i += 1
 						end
 
+						ast_parent = Array.new
 						ast = @parser.parse_string(function.commands)
 						result = nil
 						
 						ast.each do |element|
-							break if @execution_stopped
-							result = execute_command(element, vars)
+							ast_parent.push(element)
 						end
 
-						return result
+						# Save the function in the functions variable for later use
+						func = Hash.new
+						func["commands"] = ast_parent
+						func["parameters"] = params
+						@functions[function.name] = func
+
+						return execute_command(ast_parent, args)
 					end
 				end
 			elsif command[0] == :catch
@@ -250,7 +252,6 @@ class ApisController < ApplicationController
 					result = execute_command(command[2], vars)
 				end
 
-				process_ups(args, vars)
 				return result
 			elsif command[0] == :throw_errors
 				# Add the errors to the errors array
@@ -629,10 +630,27 @@ class ApisController < ApplicationController
 
 				return obj
 			elsif command[0].to_s == "TableObject.get"	# uuid
-				return TableObject.find_by(uuid: execute_command(command[1], vars))
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				return nil if !obj
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				return obj
 			elsif command[0].to_s == "TableObject.get_file"	# uuid
 				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
 				return nil if !obj.file
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
 
 				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
 				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
@@ -688,7 +706,7 @@ class ApisController < ApplicationController
 				# Get the value of the variable
 				parts = command[0].to_s.split('.')
 				function_name = parts.pop
-				var = parts.size == 1 ? args[parts[0]] : execute_command(parts.join('.'), vars)
+				var = parts.size == 1 ? vars[parts[0]] : execute_command(parts.join('.'), vars)
 				
 				if var.class == Array
 					if function_name == "push"
@@ -709,20 +727,20 @@ class ApisController < ApplicationController
 			else
 				result = nil
 				command.each do |c|
-					result = execute_command(c, args)
+					result = execute_command(c, vars)
 				end
 				return result
 			end
 		elsif !!command == command
 			# Command is boolean
-			command
+			return command
 		elsif command.class == String && command.size == 1
 			return command
 		elsif command.to_s.include?('.')
 			# Return the value of the hash
 			parts = command.to_s.split('.')
 			last_part = parts.pop
-			var = execute_command(parts.join('.'), vars)
+			var = execute_command(parts.join('.').to_sym, vars)
 
 			if last_part == "class"
 				return var.class.to_s
@@ -769,24 +787,17 @@ class ApisController < ApplicationController
 				end
 			end
 		else
-			# Find and return the variable
-			return vars[command.to_s] if vars.key?(command.to_s)
-
-			# Return the command
-			return command.class == Symbol ? command.to_s : command
+			if command.class == Symbol
+				return vars[command.to_s] if vars.key?(command.to_s)
+				return command.to_s
+			else
+				return command
+			end
 		end
 	end
 
 	def break_execution
 		@execution_stopped = true
-	end
-
-	def process_ups(args, vars)
-		if @ups.count > 0
-			@ups.each do |up|
-				args[up] = vars[up]
-			end
-		end
 	end
 
 	public
