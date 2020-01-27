@@ -466,26 +466,24 @@ class AppsController < ApplicationController
 				begin
 					blob = BlobOperationsService.upload_blob(app.id, obj.id, request.body)
 					etag = blob.properties[:etag]
-					# Remove the first and the last character of etag, because they are "" for whatever 
+
+					# Remove the first and the last character of etag, because they are "" for whatever reason
 					etag = etag[1...etag.size-1]
 
 					# Save extension as property
 					ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+
 					# Save etag as property
 					etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
-					# Save the new used_storage
-					update_used_storage(user.id, app.id, file_size)
 
-					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(ext_prop.save))
-					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
-               
-               # Create a property for the file size
+					# Save the file size as property
 					size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
-               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
-               
-               # Create a property for the content type
+					
+					# Save the content type as property
                type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
-               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(type_prop.save))
+
+					# Update the used storage
+					update_used_storage(user.id, app.id, file_size)
 
 					# Save that user uses the app
 					users_app = UsersApp.find_by(app_id: app.id, user_id: user.id)
@@ -493,6 +491,12 @@ class AppsController < ApplicationController
 						users_app = UsersApp.create(app_id: app.id, user_id: user.id)
 						users_app.save
 					end
+
+					# Create the properties
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(ext_prop.save))
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
+               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(type_prop.save))
 
 					# Return the data
 					result = obj.attributes
@@ -848,32 +852,37 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
 				# Update the properties of the object
-				object = ValidationService.parse_json(request.body.string)
+				body = ValidationService.parse_json(request.body.string)
 
-				object.each do |key, value|
-					if value && value.length > 0
-						ValidationService.raise_multiple_validation_errors([
-							ValidationService.validate_property_name_too_short(key),
-							ValidationService.validate_property_name_too_long(key),
-							ValidationService.validate_property_value_too_short(value),
-							ValidationService.validate_property_value_too_long(value)
-						])
-					end
+				# Validate name and value of each property
+				body.each do |key, value|
+					next if !value || value.length == 0
+
+					ValidationService.raise_multiple_validation_errors([
+						ValidationService.validate_property_name_too_short(key),
+						ValidationService.validate_property_name_too_long(key),
+						ValidationService.validate_property_value_too_short(value),
+						ValidationService.validate_property_value_too_long(value)
+					])
 				end
 
-				object.each do |key, value|
-					prop = Property.find_by(name: key, table_object_id: obj.id)
+				body.each do |key, value|
+					next if !value
+					prop = Property.find_by(table_object_id: obj.id, name: key)
 
-					if value
-						if !prop && value.length > 0		# If the property does not exist and there is a value, create the property
+					if value.length > 0
+						if !prop
+							# Create the property
 							new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
-						elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
-							prop.destroy!
-						elsif value.length > 0		# There is a new value for the property, update the property
+						else
+							# Update the property
 							prop.value = value
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
 						end
+					elsif prop
+						# Delete the property
+						prop.destroy!
 					end
 				end
 

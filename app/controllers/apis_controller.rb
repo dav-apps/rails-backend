@@ -13,22 +13,11 @@ class ApisController < ApplicationController
 			@vars = Hash.new
 			@functions = Hash.new
 			@errors = Array.new
-			@ups = Array.new
 
 			# Get the environment variables
 			@vars["env"] = Hash.new
 			@api.api_env_vars.each do |env_var|
-				value = env_var.value
-
-				if env_var.class_name == "bool"
-					value = value == "true"
-				elsif env_var.class_name == "int"
-					value = value.to_i
-				elsif env_var.class_name == "float"
-					value = value.to_f
-				end
-
-				@vars["env"][env_var.name] = value
+				@vars["env"][env_var.name] = convert_env_value(env_var.class_name, env_var.value)
 			end
 
 			@api.api_endpoints.where(method: request.method).each do |endpoint|
@@ -85,18 +74,17 @@ class ApisController < ApplicationController
 	end
 
 	private
-	def execute_command(command, args)
+	def execute_command(command, vars)
 		return nil if @execution_stopped
 		return nil if @errors.count > 0
-		vars = Marshal.load(Marshal.dump(args))
 
 		if command.class == Array
 			# Command is a function call
-			if command[0].class == Array
+			if command[0].class == Array && (!command[1] || command[1].class == Array)
 				# Command contains commands
 				result = nil
 				command.each do |c|
-					result = execute_command(c, args)
+					result = execute_command(c, vars)
 				end
 				return result
 			elsif command[0] == :var
@@ -104,18 +92,42 @@ class ApisController < ApplicationController
 					parts = command[1].to_s.split('.')
 					last_part = parts.pop
 					current_var = vars
+					table_object = nil
 
 					parts.each do |part|
-						current_var = current_var[part]
-						return nil if current_var.class != Hash
+						if current_var.is_a?(Hash)
+							current_var = current_var[part]
+						elsif current_var.is_a?(TableObject) && part == "properties"
+							table_object = current_var
+							current_var = current_var.properties
+						else
+							return nil
+						end
 					end
 
-					current_var[last_part] = execute_command(command[2], vars)
+					if current_var.is_a?(Hash)
+						current_var[last_part] = execute_command(command[2], vars)
+					elsif current_var.class.to_s == "Property::ActiveRecord_Associations_CollectionProxy"
+						props = current_var.where(name: last_part)
+						
+						if props.count == 0 && table_object
+							# Create a new property
+							prop = Property.new(table_object_id: table_object.id, name: last_part, value: execute_command(command[2], vars))
+							prop.save
+							return prop.value
+						else
+							# Update the value of the property
+							prop = props[0]
+							prop.value = execute_command(command[2], vars)
+							prop.save
+							return prop.value
+						end
+					end
 				else
-					args[command[1].to_s] = execute_command(command[2], vars)
+					vars[command[1].to_s] = execute_command(command[2], vars)
 				end
-			elsif command[0] == :up
-				@ups.push(command[1].to_s)
+			elsif command[0] == :return
+				return execute_command(command[1], vars)
 			elsif command[0] == :hash
 				hash = Hash.new
 
@@ -139,7 +151,7 @@ class ApisController < ApplicationController
 				return list
 			elsif command[0] == :if
 				if execute_command(command[1], vars)
-					execute_command(command[2], vars)
+					return execute_command(command[2], vars)
 				else
 					i = 3
 					while command[i] != nil
@@ -160,12 +172,6 @@ class ApisController < ApplicationController
 				array.each do |entry|
 					vars[var_name.to_s] = entry
 					execute_command(commands, vars)
-
-					if @ups.count > 0
-						@ups.each do |up|
-							args[up] = vars[up]
-						end
-					end
 				end
 			elsif command[0] == :def
 				# Function definition
@@ -188,34 +194,47 @@ class ApisController < ApplicationController
 				function = @functions[name.to_s]
 
 				if function
-					# Add the parameters to the variables
+					# Clone the vars for the function call
+					args = Marshal.load(Marshal.dump(vars))
+
 					i = 0
 					function["parameters"].each do |param|
-						vars[param] = execute_command(command[2][i], vars)
+						args[param] = execute_command(command[2][i], vars)
 						i += 1
 					end
 
-					execute_command(function["commands"], vars)
+					return execute_command(function["commands"], args)
 				else
 					# Try to get the function from the database
 					function = ApiFunction.find_by(api: @api, name: name)
 					
 					if function
+						# Clone the vars for the function call
+						args = Marshal.load(Marshal.dump(vars))
+						params = Array.new
+
 						i = 0
 						function.params.split(',').each do |param|
-							vars[param] = execute_command(command[2][i], vars)
+							args[param] = execute_command(command[2][i], vars)
+							params.push(param)
 							i += 1
 						end
 
+						ast_parent = Array.new
 						ast = @parser.parse_string(function.commands)
 						result = nil
 						
 						ast.each do |element|
-							break if @execution_stopped
-							result = execute_command(element, vars)
+							ast_parent.push(element)
 						end
 
-						return result
+						# Save the function in the functions variable for later use
+						func = Hash.new
+						func["commands"] = ast_parent
+						func["parameters"] = params
+						@functions[function.name] = func
+
+						return execute_command(ast_parent, args)
 					end
 				end
 			elsif command[0] == :catch
@@ -230,10 +249,10 @@ class ApisController < ApplicationController
 						vars["errors"].push(@errors.pop)
 					end
 
-					execute_command(command[2], vars)
-				else
-					return result
+					result = execute_command(command[2], vars)
 				end
+
+				return result
 			elsif command[0] == :throw_errors
 				# Add the errors to the errors array
 				i = 1
@@ -254,9 +273,15 @@ class ApisController < ApplicationController
 				
 				if session_id != 0
 					session = Session.find_by_id(session_id)
-					if !session || session.app_id != @api.app_id
+
+					if !session
 						# Session does not exist
 						error["code"] = 0
+						@errors.push(error)
+						return @errors
+					elsif session.app_id != @api.app_id
+						# Action not allowed
+						error["code"] = 1
 						@errors.push(error)
 						return @errors
 					end
@@ -268,17 +293,17 @@ class ApisController < ApplicationController
 					JWT.decode(jwt, secret, true, {algorithm: ENV['JWT_ALGORITHM']})[0]
 				rescue JWT::ExpiredSignature
 					# JWT expired
-					error["code"] = 1
+					error["code"] = 2
 					@errors.push(error)
 					return @errors
 				rescue JWT::DecodeError
 					# JWT decode failed
-					error["code"] = 2
+					error["code"] = 3
 					@errors.push(error)
 					return @errors
 				rescue Exception
 					# Generic error
-					error["code"] = 3
+					error["code"] = 4
 					@errors.push(error)
 					return @errors
 				end
@@ -294,7 +319,9 @@ class ApisController < ApplicationController
 				# It's a comment. Ignore this command
 				return nil
 			elsif command[0] == :parse_json
-				JSON.parse(execute_command(command[1], vars))
+				json = execute_command(command[1], vars)
+				return nil if json.size < 2
+				JSON.parse(json)
 			elsif command[0] == :get_header
 				return request.headers[command[1].to_s]
 			elsif command[0] == :get_param
@@ -302,6 +329,8 @@ class ApisController < ApplicationController
 			elsif command[0] == :get_body
 				if request.body.class == StringIO
 					return request.body.string
+				elsif request.body.class == Tempfile
+					return request.body.read
 				else
 					return request.body
 				end
@@ -317,6 +346,15 @@ class ApisController < ApplicationController
 			elsif command[0] == :render_json
 				render json: execute_command(command[1], vars), status: execute_command(command[2], vars)
 				break_execution
+			elsif command[0] == :render_file
+				result = execute_command(command[1], vars)
+				type = execute_command(command[2], vars)
+				filename = execute_command(command[3], vars)
+				status = execute_command(command[4], vars)
+
+				response.headers['Content-Length'] = result.size.to_s
+				send_data(result, type: type, filename: filename, status: status)
+				break_execution
 
 			elsif command[0].to_s == "Table.get"	# (id)
 				table = Table.find_by(id: execute_command(command[1], vars).to_i)
@@ -330,7 +368,7 @@ class ApisController < ApplicationController
 				else
 					return table
 				end
-			elsif command[0].to_s == "Table.get_table_objects"		# (id, user_id)
+			elsif command[0].to_s == "Table.get_table_objects"		# id, user_id
 				table = Table.find_by(id: execute_command(command[1], vars).to_i)
 				return nil if !table
 
@@ -343,12 +381,12 @@ class ApisController < ApplicationController
 				else
 					return table.table_objects.where(user_id: execute_command(command[2], vars).to_i).to_a
 				end
-			elsif command[0].to_s == "TableObject.create"	# (user_id, table_id, properties, visibility?)
+			elsif command[0].to_s == "TableObject.create"	# user_id, table_id, properties, visibility?
 				# Get the table
 				table = Table.find_by_id(execute_command(command[2], vars))
 				error = Hash.new
 				
-				# Table does not exist error
+				# Check if the table exists
 				if !table
 					error["code"] = 0
 					@errors.push(error)
@@ -362,13 +400,27 @@ class ApisController < ApplicationController
 					return @errors
 				end
 
+				# Check if the user exists
+				user = User.find_by_id(execute_command(command[1], vars))
+				if !user
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
 				# Create the table object
 				obj = TableObject.new
-				obj.user_id = execute_command(command[1], vars).to_i
-				obj.table_id = execute_command(command[2], vars).to_i
+				obj.user = user
+				obj.table = table
 				obj.visibility = execute_command(command[4].to_i, vars) if command[4]
 				obj.uuid = SecureRandom.uuid
-				obj.save
+
+				if !obj.save
+					# Unexpected error
+					error["code"] = 3
+					@errors.push(error)
+					return @errors
+				end
 
 				# Create the properties
 				properties = execute_command(command[3], vars)
@@ -382,7 +434,284 @@ class ApisController < ApplicationController
 
 				# Return the table object
 				return obj
-			
+			elsif command[0].to_s == "TableObject.create_file"	# user_id, table_id, ext, type, file
+				# Get the table
+				table = Table.find_by_id(execute_command(command[2], vars))
+				error = Hash.new
+
+				# Check if the table exists
+				if !table
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table belongs to the same app as the api
+				if table.app != @api.app
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the user exists
+				user = User.find_by_id(execute_command(command[1], vars))
+				if !user
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
+				# Create the table object
+				obj = TableObject.new
+				obj.user = user
+				obj.table = table
+				obj.uuid = SecureRandom.uuid
+				obj.file = true
+
+				ext = execute_command(command[3], vars)
+				type = execute_command(command[4], vars)
+				file = execute_command(command[5], vars)
+				file_size = file.size
+
+				# Check if the user has enough free storage
+				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
+
+				if free_storage < file_size
+					error["code"] = 3
+					@errors.push(error)
+					return @errors
+				end
+
+				# Save the table object
+				if !obj.save
+					# Unexpected error
+					error["code"] = 4
+					@errors.push(error)
+					return @errors
+				end
+
+				begin
+					# Upload the file
+					blob = BlobOperationsService.upload_blob(table.app_id, obj.id, StringIO.new(file))
+					etag = blob.properties[:etag]
+
+					# Remove the first and the last character of etag, because they are "" for whatever reason
+					etag = etag[1...etag.size-1]
+				rescue Exception => e
+					error["code"] = 5
+					@errors.push(error)
+					return @errors
+				end
+
+				# Save extension as property
+				ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+
+				# Save etag as property
+				etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+
+				# Save the file size as property
+				size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+
+				# Save the content type as property
+				type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
+
+				# Update the used storage
+				update_used_storage(user.id, table.app_id, file_size)
+
+				# Save that user uses the app
+				users_app = UsersApp.find_by(app_id: table.app_id, user_id: user.id)
+				if !users_app
+					users_app = UsersApp.create(app_id: table.app_id, user_id: user.id)
+					users_app.save
+				end
+
+				# Create the properties
+				if !ext_prop.save || !etag_prop.save || !size_prop.save || !type_prop.save
+					error["code"] = 6
+					@errors.push(error)
+					return @errors
+				end
+
+				return obj
+			elsif command[0].to_s == "TableObject.update"	# uuid, properties
+				# Get the table object
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				error = Hash.new
+
+				# Check if the table object exists
+				if !obj
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Make sure the object is not a file
+				if obj.file
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
+				# Update the properties of the table object
+				properties = execute_command(command[2], vars)
+				properties.each do |key, value|
+					next if !value
+					prop = Property.find_by(table_object_id: obj.id, name: key)
+
+					if value.length > 0
+						if !prop
+							# Create the property
+							new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
+						else
+							# Update the property
+							prop.value = value
+							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
+						end
+					elsif prop
+						# Delete the property
+						prop.destroy!
+					end
+				end
+
+			elsif command[0].to_s == "TableObject.update_file"	# uuid, ext, type, file
+				# Get the table object
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				error = Hash.new
+
+				# Check if the table object exists
+				if !obj
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table object is a file
+				if !obj.file
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
+				# Get the properties
+				ext_prop = Property.find_by(table_object_id: obj.id, name: "ext")
+				etag_prop = Property.find_by(table_object_id: obj.id, name: "etag")
+				size_prop = Property.find_by(table_object_id: obj.id, name: "size")
+				type_prop = Property.find_by(table_object_id: obj.id, name: "type")
+
+				ext = execute_command(command[2], vars)
+				type = execute_command(command[3], vars)
+				file = execute_command(command[4], vars)
+				user = obj.user
+
+				file_size = file.size
+				old_file_size = size_prop ? size_prop.value.to_i : 0
+				file_size_diff = file_size - old_file_size
+				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
+
+				# Check if the user has enough free storage
+				if free_storage < file_size_diff
+					error["code"] = 3
+					@errors.push(error)
+					return @errors
+				end
+
+				begin
+					# Upload the new file
+					blob = BlobOperationsService.upload_blob(obj.table.app_id, obj.id, StringIO.new(file))
+					etag = blob.properties[:etag]
+					etag = etag[1...etag.size-1]
+				rescue Exception => e
+					error["code"] = 4
+					@errors.push(error)
+					return @errors
+				end
+
+				# Update or create the properties
+				if !ext_prop
+					ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+				else
+					ext_prop.value = ext
+				end
+
+				if !etag_prop
+					etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+				else
+					etag_prop.value = etag
+				end
+
+				if !size_prop
+					size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+				else
+					size_prop.value = file_size
+				end
+
+				if !type_prop
+					type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
+				else
+					type_prop.value = type
+				end
+
+				# Update the used storage
+				update_used_storage(obj.user.id, obj.table.app_id, file_size_diff)
+
+				# Save the properties
+				if !ext_prop.save || !etag_prop.save || !size_prop.save || !type_prop.save
+					error["code"] = 5
+					@errors.push(error)
+					return @errors
+				end
+
+				return obj
+			elsif command[0].to_s == "TableObject.get"	# uuid
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				return nil if !obj
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				return obj
+			elsif command[0].to_s == "TableObject.get_file"	# uuid
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				return nil if !obj.file
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+				filename = "#{obj.table.app.id}/#{obj.id}"
+
+				# Download the file
+				begin
+					client = Azure::Blob::BlobService.new
+					return client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)[1]
+				rescue Exception => e
+					return nil
+				end
+
 			# Command is an expression
 			elsif command[1] == :==
 				execute_command(command[0], vars) == execute_command(command[2], vars)
@@ -419,35 +748,47 @@ class ApisController < ApplicationController
 				execute_command(command[0], vars) || execute_command(command[2], vars)
 			elsif command[1] == :and
 				execute_command(command[0], vars) && execute_command(command[2], vars)
+			elsif command[0] == :!
+				return !execute_command(command[1], vars)
 			elsif command[0].to_s.include?('.')
 				# Get the value of the variable
-				var_name, function_name = command[0].to_s.split('.')
-				var = args[var_name]
+				parts = command[0].to_s.split('.')
+				function_name = parts.pop
+				var = parts.size == 1 ? vars[parts[0]] : execute_command(parts.join('.'), vars)
 				
 				if var.class == Array
 					if function_name == "push"
 						i = 1
 						while command[i]
-							var.push(execute_command(command[i], vars))
+							result = execute_command(command[i], vars)
+							var.push(result) if result != nil
 							i += 1
 						end
+					elsif function_name == "contains"
+						return var.include?(execute_command(command[1], vars))
+					end
+				elsif var.class == String
+					if function_name == "split"
+						return var.split(execute_command(command[1], vars))
 					end
 				end
 			else
 				result = nil
 				command.each do |c|
-					result = execute_command(c, args)
+					result = execute_command(c, vars)
 				end
 				return result
 			end
 		elsif !!command == command
 			# Command is boolean
-			command
+			return command
+		elsif command.class == String && command.size == 1
+			return command
 		elsif command.to_s.include?('.')
 			# Return the value of the hash
 			parts = command.to_s.split('.')
 			last_part = parts.pop
-			var = execute_command(parts.join('.'), vars)
+			var = execute_command(parts.join('.').to_sym, vars)
 
 			if last_part == "class"
 				return var.class.to_s
@@ -474,8 +815,8 @@ class ApisController < ApplicationController
 					return var[last_part]
 				end
 			elsif var.class.to_s == "Property::ActiveRecord_Associations_CollectionProxy"
-				prop = var.where(name: last_part)
-				return prop[0].value if prop.count > 0
+				props = var.where(name: last_part)
+				return props[0].value if props.count > 0
 				return nil
 			end
 		elsif command.to_s.include?('#')
@@ -494,11 +835,12 @@ class ApisController < ApplicationController
 				end
 			end
 		else
-			# Find and return the variable
-			return vars[command.to_s] if vars.key?(command.to_s)
-
-			# Return the command
-			return command.class == Symbol ? command.to_s : command
+			if command.class == Symbol
+				return vars[command.to_s] if vars.key?(command.to_s)
+				return command.to_s
+			else
+				return command
+			end
 		end
 	end
 
@@ -1000,14 +1342,10 @@ class ApisController < ApplicationController
 			body = ValidationService.parse_json(request.body.string)
 
 			body.each do |key, value|
-				class_name = "string"
+				class_name = get_env_class_name(value)
 
-				if value.is_a?(TrueClass) || value.is_a?(FalseClass)
-					class_name = "bool"
-				elsif value.is_a?(Integer)
-					class_name = "int"
-				elsif value.is_a?(Float)
-					class_name = "float"
+				if class_name.start_with?('array')
+					value = value.join(',')
 				end
 
 				# Try to find the api env var by name
@@ -1029,6 +1367,48 @@ class ApisController < ApplicationController
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
+
+	private
+	def get_env_class_name(value)
+		class_name = "string"
+
+		if value.is_a?(TrueClass) || value.is_a?(FalseClass)
+			class_name = "bool"
+		elsif value.is_a?(Integer)
+			class_name = "int"
+		elsif value.is_a?(Float)
+			class_name = "float"
+		elsif value.is_a?(Array)
+			content_class_name = get_env_class_name(value[0])
+			class_name = "array:#{content_class_name}"
+		end
+
+		return class_name
+	end
+
+	def convert_env_value(class_name, value)
+		if class_name == "bool"
+			return value == "true"
+		elsif class_name == "int"
+			return value.to_i
+		elsif class_name == "float"
+			return value.to_f
+		elsif class_name.include?(':')
+			parts = class_name.split(':')
+
+			if parts[0] == "array"
+				array = Array.new
+
+				value.split(',').each do |val|
+					array.push(convert_env_value(parts[1], val))
+				end
+
+				return array
+			else
+				return value
+			end
 		end
 	end
 end
