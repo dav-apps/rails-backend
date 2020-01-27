@@ -852,32 +852,37 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
 				# Update the properties of the object
-				object = ValidationService.parse_json(request.body.string)
+				body = ValidationService.parse_json(request.body.string)
 
-				object.each do |key, value|
-					if value && value.length > 0
-						ValidationService.raise_multiple_validation_errors([
-							ValidationService.validate_property_name_too_short(key),
-							ValidationService.validate_property_name_too_long(key),
-							ValidationService.validate_property_value_too_short(value),
-							ValidationService.validate_property_value_too_long(value)
-						])
-					end
+				# Validate name and value of each property
+				body.each do |key, value|
+					next if !value || value.length == 0
+
+					ValidationService.raise_multiple_validation_errors([
+						ValidationService.validate_property_name_too_short(key),
+						ValidationService.validate_property_name_too_long(key),
+						ValidationService.validate_property_value_too_short(value),
+						ValidationService.validate_property_value_too_long(value)
+					])
 				end
 
-				object.each do |key, value|
-					prop = Property.find_by(name: key, table_object_id: obj.id)
+				body.each do |key, value|
+					next if !value
+					prop = Property.find_by(table_object_id: obj.id, name: key)
 
-					if value
-						if !prop && value.length > 0		# If the property does not exist and there is a value, create the property
+					if value.length > 0
+						if !prop
+							# Create the property
 							new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
-						elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
-							prop.destroy!
-						elsif value.length > 0		# There is a new value for the property, update the property
+						else
+							# Update the property
 							prop.value = value
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
 						end
+					elsif prop
+						# Delete the property
+						prop.destroy!
 					end
 				end
 
