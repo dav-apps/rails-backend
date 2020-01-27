@@ -533,6 +533,54 @@ class ApisController < ApplicationController
 				end
 
 				return obj
+			elsif command[0].to_s == "TableObject.update"	# uuid, properties
+				# Get the table object
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				error = Hash.new
+
+				# Check if the table object exists
+				if !obj
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Make sure the object is not a file
+				if obj.file
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
+				# Update the properties of the table object
+				properties = execute_command(command[2], vars)
+				properties.each do |key, value|
+					next if !value
+					prop = Property.find_by(table_object_id: obj.id, name: key)
+
+					if value.length > 0
+						if !prop
+							# Create the property
+							new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
+						else
+							# Update the property
+							prop.value = value
+							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
+						end
+					elsif prop
+						# Delete the property
+						prop.destroy!
+					end
+				end
+
 			elsif command[0].to_s == "TableObject.update_file"	# uuid, ext, type, file
 				# Get the table object
 				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
