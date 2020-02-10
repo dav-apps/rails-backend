@@ -9,7 +9,7 @@ class ApisController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(@api))
 
 			# Find the correct api endpoint
-			api_endpoint = nil
+			api_endpoint = @api.api_endpoints.find_by(method: request.method, path: path)
 			@vars = Hash.new
 			@functions = Hash.new
 			@errors = Array.new
@@ -20,35 +20,37 @@ class ApisController < ApplicationController
 				@vars["env"][env_var.name] = convert_env_value(env_var.class_name, env_var.value)
 			end
 
-			@api.api_endpoints.where(method: request.method).each do |endpoint|
-				path_parts = endpoint.path.split('/')
-				url_parts = path.split('/')
-				next if path_parts.count != url_parts.count
+			if !api_endpoint
+				@api.api_endpoints.where(method: request.method).each do |endpoint|
+					path_parts = endpoint.path.split('/')
+					url_parts = path.split('/')
+					next if path_parts.count != url_parts.count
 
-				vars = Hash.new
-				cancelled = false
-				i = -1
+					vars = Hash.new
+					cancelled = false
+					i = -1
 
-				path_parts.each do |part|
-					i += 1
-					
-					if url_parts[i] == part
-						next
-					elsif part[0] == ':'
-						vars[part[1..part.size]] = url_parts[i]
-						next
+					path_parts.each do |part|
+						i += 1
+						
+						if url_parts[i] == part
+							next
+						elsif part[0] == ':'
+							vars[part[1..part.size]] = url_parts[i]
+							next
+						end
+
+						cancelled = true
+						break
 					end
 
-					cancelled = true
-					break
-				end
-
-				if !cancelled
-					api_endpoint = endpoint
-					vars.each do |key, value|
-						@vars[key] = value
+					if !cancelled
+						api_endpoint = endpoint
+						vars.each do |key, value|
+							@vars[key] = value
+						end
+						break
 					end
-					break
 				end
 			end
 
