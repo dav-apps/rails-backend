@@ -17,7 +17,8 @@ class User < ApplicationRecord
 	has_many :archives, dependent: :destroy
 	has_many :notifications, dependent: :destroy
    has_many :web_push_subscriptions, dependent: :destroy
-   has_many :sessions, dependent: :destroy
+	has_many :sessions, dependent: :destroy
+	has_one :provider, dependent: :destroy
 
 	private
 	def delete_avatar

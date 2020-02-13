@@ -6,7 +6,9 @@ class TableObject < ApplicationRecord
    has_many :properties, dependent: :destroy
    validates :uuid, presence: true
    has_many :table_objects_access_token
-   has_many :access_tokens, through: :table_objects_access_token
+	has_many :access_tokens, through: :table_objects_access_token
+	has_many :table_objects_provider
+	has_many :providers, through: :table_objects_provider
 
    private
    def delete_blob
