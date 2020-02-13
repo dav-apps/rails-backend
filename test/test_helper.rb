@@ -34,7 +34,11 @@ class ActiveSupport::TestCase
 
       torera = users(:torera)
       torera.password = "Geld"
-      torera.save
+		torera.save
+		
+		snicket = users(:snicket)
+		snicket.password = "vfd"
+		snicket.save
       
       devs(:dav).save
       devs(:matt).save

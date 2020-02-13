@@ -44,3 +44,8 @@ torera:
   old_email: torera3@dav-apps.tech
   email_confirmation_token: "email_confirmation_token"
   stripe_customer_id: cus_FGV94HqakLuIpc
+
+snicket:
+  username: Snicket
+  confirmed: true
+  email: snicket@dav-apps.tech
