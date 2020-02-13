@@ -38,6 +38,9 @@ Rails.application.routes.draw do
   match '/v1/devs/dev', to: 'devs#delete_dev', via: 'delete'
   match '/v1/devs/generate_new_keys', to: 'devs#generate_new_keys', via: 'post'
   match '/v1/tasks', to: 'devs#tasks', via: 'get'
+
+  # Provider routes
+  match '/v1/provider', to: 'providers#create_provider', via: :post
   
   # Apps routes
   match '/v1/apps/object', to: 'apps#create_object', via: 'post'

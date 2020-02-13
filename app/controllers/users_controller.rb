@@ -467,6 +467,8 @@ class UsersController < ApplicationController
 			result["avatar_etag"] = avatar_info[1]
 			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
+			result["dev"] = user.dev != nil
+			result["provider"] = user.provider != nil
 
 			users_apps = Array.new
 			UsersApp.where(user_id: requested_user.id).each do |users_app|
@@ -531,6 +533,8 @@ class UsersController < ApplicationController
 			result["avatar_etag"] = avatar_info[1]
 			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
+			result["dev"] = user.dev != nil
+			result["provider"] = user.provider != nil
 
 			users_apps = Array.new
 			UsersApp.where(user_id: user.id).each do |users_app|
@@ -652,6 +656,8 @@ class UsersController < ApplicationController
 			result["avatar_etag"] = avatar_info[1]
 			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
+			result["dev"] = user.dev != nil
+			result["provider"] = user.provider != nil
 			result["apps"] = user.apps
 			result["archives"] = user.archives
 			

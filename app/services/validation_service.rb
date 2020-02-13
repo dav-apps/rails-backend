@@ -760,6 +760,11 @@ class ValidationService
 		table ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
 	end
 
+	def self.validate_provider_already_exists(provider)
+		error_code = 2910
+		provider ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
+	end
+
 	define_singleton_method :get_error_message do |code|
 		case code
 		when 1101
@@ -1004,6 +1009,8 @@ class ValidationService
 			"Resource already exists: EventLog"
 		when 2909
 			"Resource already exists: AccessToken"
+		when 2910
+			"Resource already exists: Provider"
 		else
 			raise RuntimeError, "The error code #{code} does not exist!"
 		end
