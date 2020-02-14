@@ -544,7 +544,6 @@ class UsersController < ApplicationController
 			end
 
 			result["apps"] = users_apps
-			result["is_dev"] = user.dev != nil
 			
 			if dev == Dev.first
 				result["old_email"] = user.old_email

@@ -60,4 +60,57 @@ class ProvidersMethodsTest < ActionDispatch::IntegrationTest
 		# Delete the account
 		Stripe::Account.delete(provider.stripe_account_id)
 	end
+
+	# get_provider tests
+	test "Missing fields in get_provider" do
+		get "/v1/provider"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
+	end
+
+	test "Can't get provider with invalid jwt" do
+		get "/v1/provider", headers: {Authorization: "asdasdasd"}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(1302, resp["errors"][0][0])
+	end
+
+	test "Can't get provider from outside the website" do
+		matt = users(:matt)
+		jwt = (JSON.parse(login_user(matt, "schachmatt", devs(:matt)).body))["jwt"]
+
+		get "/v1/provider", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't get provider of user that has no provider" do
+		matt = users(:matt)
+		jwt = (JSON.parse(login_user(matt, "schachmatt", devs(:sherlock)).body))["jwt"]
+
+		get "/v1/provider", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2817, resp["errors"][0][0])
+	end
+
+	test "Can get provider" do
+		provider = providers(:snicket)
+		snicket = users(:snicket)
+		jwt = (JSON.parse(login_user(snicket, "vfd", devs(:sherlock)).body))["jwt"]
+
+		get "/v1/provider", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(provider.id, resp["id"])
+		assert_equal(provider.user_id, resp["user_id"])
+		assert_equal(provider.stripe_account_id, resp["stripe_account_id"])
+	end
 end

@@ -750,6 +750,11 @@ class ValidationService
 		!api_endpoint ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
+	def self.validate_provider_does_not_exist(provider)
+		error_code = 2817
+		!provider ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
 	def self.validate_dev_already_exists(dev)
 		error_code = 2902
 		dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
@@ -991,6 +996,8 @@ class ValidationService
 			"Resource does not exist: Api"
 		when 2816
 			"Resource does not exist: ApiEndpoint"
+		when 2817
+			"Resource does not exist: Provider"
 		when 2901
 			"Resource already exists: User"
 		when 2902
