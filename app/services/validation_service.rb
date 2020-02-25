@@ -210,6 +210,12 @@ class ValidationService
 		user.stripe_customer_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_country_supported(country)
+		error_code = 1116
+		c = country.downcase
+		(c != "de" && c != "us") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.authenticate_user(user, password)
 		error_code = 1201
 		!user.authenticate(password) ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
@@ -443,6 +449,11 @@ class ValidationService
 	def self.validate_errors_missing(errors)
 		error_code = 2137
 		!errors ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_country_missing(country)
+		error_code = 2138
+		!country ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_username_too_short do |username|
@@ -802,6 +813,8 @@ class ValidationService
 			"The User is not a user of this app"
 		when 1115
 			"User is already a stripe customer"
+		when 1116
+			"Country not supported"
 		when 1201
 			"Password is incorrect"
 		when 1202
@@ -890,6 +903,8 @@ class ValidationService
 			"Missing field: message"
 		when 2137
 			"Missing field: errors"
+		when 2138
+			"Missing field: country"
 		when 2201
 			"Field too short: username"
 		when 2202

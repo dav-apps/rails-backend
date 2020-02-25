@@ -4,6 +4,7 @@ class ProvidersController < ApplicationController
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -17,6 +18,16 @@ class ProvidersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
+			# Get the properties from the body
+			body = ValidationService.parse_json(request.body.string)
+			country = body["country"]
+
+			# Make sure the country is present
+			ValidationService.raise_validation_error(ValidationService.validate_country_missing(country))
+
+			# Make sure the country is supported
+			ValidationService.raise_validation_error(ValidationService.validate_country_supported(country))
+
 			# Check if the user already has a provider
 			ValidationService.raise_validation_error(ValidationService.validate_provider_already_exists(user.provider))
 
@@ -26,11 +37,22 @@ class ProvidersController < ApplicationController
 				requested_capabilities: [
 					'card_payments',
 					'transfers'
-				]
+				],
+				business_type: 'individual',
+				email: user.email,
+				country: country,
+				settings: {
+					payouts: {
+						schedule: {
+							interval: "monthly",
+							monthly_anchor: 1
+						}
+					}
+				}
 			})
 
 			# Create the provider
-			provider = Provider.new(user: user, stripe_account_id: account.id)
+			provider = Provider.new(id: user.id, user: user, stripe_account_id: account.id)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(provider.save))
 
 			# Return the provider
