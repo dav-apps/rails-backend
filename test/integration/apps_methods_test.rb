@@ -1924,7 +1924,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can get the table and only the entries of the current user" do
@@ -1935,13 +1935,34 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(apps(:Cards).id, resp["app_id"])
+      assert_equal(apps(:Cards).id, resp["app_id"])
       resp["table_objects"].each do |e|
 			obj = TableObject.find_by_id(e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
 			assert_equal(users(:matt).id, obj.user.id)
       end
+	end
+
+	test "Can get table with table objects of the current user and with access" do
+		cato = users(:cato)
+		jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
+		expected_table_objects = [table_objects(:second), table_objects(:third), table_objects(:sixth)]
+
+		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}",
+			headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+		
+		assert_response 200
+		assert_equal(3, resp["table_objects"].size)
+
+		i = 0
+		expected_table_objects.each do |obj|
+			assert_equal(obj.id, resp["table_objects"][i]["id"])
+			assert_equal(obj.uuid, resp["table_objects"][i]["uuid"])
+			assert_equal(generate_table_object_etag(obj), resp["table_objects"][i]["etag"])
+			i += 1
+		end
 	end
 	
 	test "Can get the table and only the entries of the current user with session jwt" do
@@ -1959,6 +1980,27 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 			assert_equal(generate_table_object_etag(obj), e["etag"])
 			assert_equal(users(:matt).id, obj.user.id)
       end
+	end
+
+	test "Can get table with table objects of the current user and with access with session jwt" do
+		cato = users(:cato)
+		jwt = generate_session_jwt(cato, devs(:sherlock), apps(:Cards).id, "123456")
+		expected_table_objects = [table_objects(:second), table_objects(:third), table_objects(:sixth)]
+
+		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}",
+			headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(3, resp["table_objects"].size)
+
+		i = 0
+		expected_table_objects.each do |obj|
+			assert_equal(obj.id, resp["table_objects"][i]["id"])
+			assert_equal(obj.uuid, resp["table_objects"][i]["uuid"])
+			assert_equal(generate_table_object_etag(obj), resp["table_objects"][i]["etag"])
+			i += 1
+		end
 	end
    
    test "Can get the table of the app of the own dev from the website" do
@@ -2062,8 +2104,28 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
          obj = TableObject.find_by_id(e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
-			assert_same(users(:matt).id, obj.user.id)
+			assert_equal(users(:matt).id, obj.user.id)
       end
+	end
+
+	test "Can get table by id with table objects of the current user and with access" do
+		cato = users(:cato)
+		jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
+		expected_table_objects = [table_objects(:second), table_objects(:third), table_objects(:sixth)]
+
+		get "/v1/apps/table/#{tables(:card).id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(3, resp["table_objects"].size)
+
+		i = 0
+		expected_table_objects.each do |obj|
+			assert_equal(obj.id, resp["table_objects"][i]["id"])
+			assert_equal(obj.uuid, resp["table_objects"][i]["uuid"])
+			assert_equal(generate_table_object_etag(obj), resp["table_objects"][i]["etag"])
+			i += 1
+		end
 	end
 	
 	test "Can get the table by id and only the entries of the current user with session jwt" do
@@ -2079,9 +2141,29 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
          obj = TableObject.find_by_id(e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
-			assert_same(users(:matt).id, obj.user.id)
+			assert_equal(users(:matt).id, obj.user.id)
       end
-   end
+	end
+	
+	test "Can get table by id with table objects of the current user and with access with session jwt" do
+		cato = users(:cato)
+		jwt = generate_session_jwt(cato, devs(:sherlock), apps(:Cards).id, "123456")
+		expected_table_objects = [table_objects(:second), table_objects(:third), table_objects(:sixth)]
+
+		get "/v1/apps/table/#{tables(:card).id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(3, resp["table_objects"].size)
+
+		i = 0
+		expected_table_objects.each do |obj|
+			assert_equal(obj.id, resp["table_objects"][i]["id"])
+			assert_equal(obj.uuid, resp["table_objects"][i]["uuid"])
+			assert_equal(generate_table_object_etag(obj), resp["table_objects"][i]["etag"])
+			i += 1
+		end
+	end
 
    test "Can get the table of the app of the own dev by id from the website" do
       matt = users(:matt)

@@ -1,0 +1,8 @@
+catoAccessThirdTableObject:
+  table_object: third
+  user: cato
+  access_type: rw
+
+catoAccessSixthTableObject:
+  table_object: sixth
+  user: cato

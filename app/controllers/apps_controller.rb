@@ -1088,7 +1088,13 @@ class AppsController < ApplicationController
 			array = Array.new
 
 			if count > 0
-				all_table_objects = table.table_objects.where(user_id: user.id)
+				# Get all table objects of the user
+				all_table_objects = Array.new
+				table.table_objects.where(user_id: user.id).each { |obj| all_table_objects.push(obj) }
+
+				# Get the table objects the user has access to
+				user.table_object_user_access.each { |access| all_table_objects.push(access.table_object) if access.table_object.table_id == table.id }
+
 				array_start = count * (page - 1)
 				array_length = count > all_table_objects.count ? all_table_objects.count : count
 
@@ -1170,7 +1176,13 @@ class AppsController < ApplicationController
 			array = Array.new
 			
 			if count > 0
-				all_table_objects = table.table_objects.where(user_id: user.id)
+				# Get all table objects of the user
+				all_table_objects = Array.new
+				table.table_objects.where(user_id: user.id).each { |obj| all_table_objects.push(obj) }
+
+				# Get the table objects the user has access to
+				user.table_object_user_access.each { |access| all_table_objects.push(access.table_object) if access.table_object.table_id == table.id }
+
 				array_start = count * (page - 1)
 				array_length = count > all_table_objects.count ? all_table_objects.count : count
 
