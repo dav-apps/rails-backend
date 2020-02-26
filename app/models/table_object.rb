@@ -9,6 +9,7 @@ class TableObject < ApplicationRecord
 	has_many :access_tokens, through: :table_objects_access_token
 	has_many :table_objects_provider
 	has_many :providers, through: :table_objects_provider
+	has_many :table_object_user_access, dependent: :destroy
 
    private
    def delete_blob

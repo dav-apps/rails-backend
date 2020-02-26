@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_02_13_001523) do
+ActiveRecord::Schema.define(version: 2020_02_25_225554) do
 
   create_table "access_tokens", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
     t.string "token"
@@ -212,6 +212,13 @@ ActiveRecord::Schema.define(version: 2020_02_13_001523) do
     t.datetime "time"
     t.integer "period"
     t.integer "total", default: 0
+  end
+
+  create_table "table_object_user_accesses", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
+    t.integer "table_object_id"
+    t.integer "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "table_objects", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci", force: :cascade do |t|
