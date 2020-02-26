@@ -358,6 +358,8 @@ class ApisController < ApplicationController
 				send_data(result, type: type, filename: filename, status: status)
 				break_execution
 
+			elsif command[0].to_s == "User.get"		# (id)
+				User.find_by_id(execute_command(command[1], vars).to_i)
 			elsif command[0].to_s == "Table.get"	# (id)
 				table = Table.find_by(id: execute_command(command[1], vars).to_i)
 
@@ -746,10 +748,21 @@ class ApisController < ApplicationController
 					i += 2
 				end
 				result
-			elsif command[1] == :or
-				execute_command(command[0], vars) || execute_command(command[2], vars)
-			elsif command[1] == :and
-				execute_command(command[0], vars) && execute_command(command[2], vars)
+			elsif command[1] == :and || command[1] == :or
+				result = execute_command(command[0], vars)
+				i = 2
+				
+				while command[i]
+					if command[i - 1] == :and
+						result = execute_command(command[i], vars) && result
+					elsif command[i - 1] == :or
+						result = execute_command(command[i], vars) || result
+					end
+
+					i += 2
+				end
+
+				return result
 			elsif command[0] == :!
 				return !execute_command(command[1], vars)
 			elsif command[0].to_s.include?('.')
@@ -804,6 +817,8 @@ class ApisController < ApplicationController
 				if last_part == "length"
 					return var.length
 				end
+			elsif var.class == User
+				return var[last_part]
 			elsif var.class == Table
 				if last_part == "table_objects"
 					return var.table_objects.to_a
