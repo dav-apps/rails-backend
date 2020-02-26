@@ -1038,7 +1038,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 			assert_equal(matt[key], resp[key])
 		end
 
-		assert(resp["is_dev"])
+		assert(resp["dev"])
+		assert(!resp["provider"])
 	end
 
    test "Can get user with jwt and used storage of apps" do

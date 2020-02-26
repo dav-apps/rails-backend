@@ -1462,13 +1462,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		put "/v1/apps/object/#{table_objects(:first).id}?visibility=2", 
 				params: {test: "test"}.to_json,
 				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
+		resp = JSON.parse response.body
       
 		assert_response 200
 		object = TableObject.find_by_id(resp["id"])
 		assert_not_nil(object)
 		assert_equal(generate_table_object_etag(object), resp["etag"])
-      assert_same(2, resp["visibility"])
+      assert_equal(2, resp["visibility"])
    end
    
    test "Can't update an object with invalid visibility" do
@@ -1481,7 +1481,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(0, resp["visibility"])
+      assert_equal(0, resp["visibility"])
    end
 
 	test "Can't update object without content type header" do

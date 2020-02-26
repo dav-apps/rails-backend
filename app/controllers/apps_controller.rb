@@ -866,16 +866,20 @@ class AppsController < ApplicationController
 					])
 				end
 
+				# Get all properties of the table object
+				props = Array.new
+				obj.properties.each { |prop| props.push(prop) }
+
 				body.each do |key, value|
 					next if !value
-					prop = Property.find_by(table_object_id: obj.id, name: key)
+					prop = props.find { |p| p.name == key }
 
 					if value.length > 0
 						if !prop
 							# Create the property
 							new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
-						else
+						elsif prop.value != value
 							# Update the property
 							prop.value = value
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
@@ -885,6 +889,9 @@ class AppsController < ApplicationController
 						prop.destroy!
 					end
 				end
+
+				# Reload the table object
+				obj = TableObject.find_by_id(obj.id)
 
 				# Save that the user was active
 				user.update_column(:last_active, Time.now)
