@@ -583,7 +583,10 @@ class AppsController < ApplicationController
 
 					ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
-					if obj.visibility != 1
+					# Check if there is a TableObjectUserAccess
+					user_access = TableObjectUserAccess.find_by(user: user, table_object: obj)
+
+					if obj.visibility != 1 && !user_access
 						ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
 					end
 
@@ -1244,9 +1247,14 @@ class AppsController < ApplicationController
 			result = table.attributes
 			array = Array.new
 
-			table_objects = table.table_objects.where(user_id: user_id)
+			# Get all table objects of the user
+			all_table_objects = Array.new
+			table.table_objects.where(user_id: user_id).each { |obj| all_table_objects.push(obj) }
 
-			table_objects.each do |obj|
+			# Get the table objects the user has access to
+			TableObjectUserAccess.where(user_id: user_id).each { |access| all_table_objects.push(access.table_object) if access.table_object.table_id == table.id }
+
+			all_table_objects.each do |obj|
 				object = Hash.new
 				object["id"] = obj.id
 				object["uuid"] = obj.uuid

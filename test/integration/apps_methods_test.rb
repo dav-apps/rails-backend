@@ -1041,6 +1041,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_not_nil(resp["properties"]["page1"])
       assert_not_nil(resp["properties"]["page2"])
 	end
+
+	test "Can get object with access" do
+		cato = users(:cato)
+		jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/apps/object/#{table_objects(:third).id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		object = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object)
+		assert_equal(generate_table_object_etag(object), resp["etag"])
+	end
 	
 	test "Can get object with session jwt" do
 		matt = users(:matt)
@@ -1057,6 +1070,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["page1"])
       assert_not_nil(resp["properties"]["page2"])
+	end
+
+	test "Can get object with access with session jwt" do
+		cato = users(:cato)
+		jwt = generate_session_jwt(cato, devs(:sherlock), apps(:Cards).id, "123456")
+
+		get "/v1/apps/object/#{table_objects(:third).id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		object = TableObject.find_by_id(resp["id"])
+		assert_not_nil(object)
+		assert_equal(generate_table_object_etag(object), resp["etag"])
 	end
    
    test "Can't access an object when the user does not own the object" do
