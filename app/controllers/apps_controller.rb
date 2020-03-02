@@ -547,6 +547,7 @@ class AppsController < ApplicationController
 			app = App.find_by_id(table.app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 			can_access = false
+			table_id = obj.table_id
 
 			if obj.visibility != 2
 				if !jwt || jwt.length < 1
@@ -588,6 +589,10 @@ class AppsController < ApplicationController
 
 					if obj.visibility != 1 && !user_access
 						ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
+					end
+
+					if user_access
+						table_id = user_access.table_alias
 					end
 
 					# Save that the user was active
@@ -634,6 +639,7 @@ class AppsController < ApplicationController
 				end
 				result["properties"] = properties
 				result["etag"] = generate_table_object_etag(obj)
+				result["table_id"] = table_id
 
 				render json: result, status: 200
 			end
@@ -1096,7 +1102,7 @@ class AppsController < ApplicationController
 				table.table_objects.where(user_id: user.id).each { |obj| all_table_objects.push(obj) }
 
 				# Get the table objects the user has access to
-				user.table_object_user_access.each { |access| all_table_objects.push(access.table_object) if access.table_object.table_id == table.id }
+				user.table_object_user_access.each { |access| all_table_objects.push(access.table_object) if access.table_alias == table.id }
 
 				array_start = count * (page - 1)
 				array_length = count > all_table_objects.count ? all_table_objects.count : count
@@ -1113,6 +1119,7 @@ class AppsController < ApplicationController
 					selected_table_objects.each do |table_object|
 						object = Hash.new
 						object["id"] = table_object.id
+						object["table_id"] = table_object.table_id
 						object["uuid"] = table_object.uuid
 						object["etag"] = generate_table_object_etag(table_object)
 						
@@ -1184,7 +1191,7 @@ class AppsController < ApplicationController
 				table.table_objects.where(user_id: user.id).each { |obj| all_table_objects.push(obj) }
 
 				# Get the table objects the user has access to
-				user.table_object_user_access.each { |access| all_table_objects.push(access.table_object) if access.table_object.table_id == table.id }
+				user.table_object_user_access.each { |access| all_table_objects.push(access.table_object) if access.table_alias == table.id }
 
 				array_start = count * (page - 1)
 				array_length = count > all_table_objects.count ? all_table_objects.count : count
@@ -1201,6 +1208,7 @@ class AppsController < ApplicationController
 					selected_table_objects.each do |table_object|
 						object = Hash.new
 						object["id"] = table_object.id
+						object["table_id"] = table_object.table_id
 						object["uuid"] = table_object.uuid
 						object["etag"] = generate_table_object_etag(table_object)
 						
@@ -1252,11 +1260,12 @@ class AppsController < ApplicationController
 			table.table_objects.where(user_id: user_id).each { |obj| all_table_objects.push(obj) }
 
 			# Get the table objects the user has access to
-			TableObjectUserAccess.where(user_id: user_id).each { |access| all_table_objects.push(access.table_object) if access.table_object.table_id == table.id }
+			TableObjectUserAccess.where(user_id: user_id).each { |access| all_table_objects.push(access.table_object) if access.table_alias == table.id }
 
 			all_table_objects.each do |obj|
 				object = Hash.new
 				object["id"] = obj.id
+				object["table_id"] = table_object.table_id
 				object["uuid"] = obj.uuid
 				object["etag"] = generate_table_object_etag(obj)
 
