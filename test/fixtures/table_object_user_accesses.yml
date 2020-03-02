@@ -1,7 +1,9 @@
 catoAccessThirdTableObject:
   table_object: third
+  table_alias: <%= Table.find(ActiveRecord::FixtureSet.identify('card')).id %>
   user: cato
 
 catoAccessSixthTableObject:
   table_object: sixth
+  table_alias: <%= Table.find(ActiveRecord::FixtureSet.identify('card')).id %>
   user: cato

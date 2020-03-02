@@ -1985,6 +1985,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		i = 0
 		expected_table_objects.each do |obj|
 			assert_equal(obj.id, resp["table_objects"][i]["id"])
+			assert_equal(obj.table_id, resp["table_objects"][i]["table_id"])
 			assert_equal(obj.uuid, resp["table_objects"][i]["uuid"])
 			assert_equal(generate_table_object_etag(obj), resp["table_objects"][i]["etag"])
 			i += 1
@@ -2023,6 +2024,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		i = 0
 		expected_table_objects.each do |obj|
 			assert_equal(obj.id, resp["table_objects"][i]["id"])
+			assert_equal(obj.table_id, resp["table_objects"][i]["table_id"])
 			assert_equal(obj.uuid, resp["table_objects"][i]["uuid"])
 			assert_equal(generate_table_object_etag(obj), resp["table_objects"][i]["etag"])
 			i += 1
@@ -2148,6 +2150,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		i = 0
 		expected_table_objects.each do |obj|
 			assert_equal(obj.id, resp["table_objects"][i]["id"])
+			assert_equal(obj.table_id, resp["table_objects"][i]["table_id"])
 			assert_equal(obj.uuid, resp["table_objects"][i]["uuid"])
 			assert_equal(generate_table_object_etag(obj), resp["table_objects"][i]["etag"])
 			i += 1
@@ -2185,6 +2188,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		i = 0
 		expected_table_objects.each do |obj|
 			assert_equal(obj.id, resp["table_objects"][i]["id"])
+			assert_equal(obj.table_id, resp["table_objects"][i]["table_id"])
 			assert_equal(obj.uuid, resp["table_objects"][i]["uuid"])
 			assert_equal(generate_table_object_etag(obj), resp["table_objects"][i]["etag"])
 			i += 1
