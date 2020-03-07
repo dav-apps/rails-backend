@@ -354,7 +354,7 @@ class ApisController < ApplicationController
 				filename = execute_command(command[3], vars)
 				status = execute_command(command[4], vars)
 
-				response.headers['Content-Length'] = result.size.to_s
+				response.headers['Content-Length'] = result.size.to_s if result
 				send_data(result, type: type, filename: filename, status: status)
 				break_execution
 
@@ -537,6 +537,40 @@ class ApisController < ApplicationController
 				end
 
 				return obj
+			elsif command[0].to_s == "TableObject.get"	# uuid
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				return nil if !obj
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				return obj
+			elsif command[0].to_s == "TableObject.get_file"	# uuid
+				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+				return nil if !obj.file
+
+				# Check if the table of the table object belongs to the same app as the api
+				if obj.table.app != @api.app
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
+				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
+				filename = "#{obj.table.app.id}/#{obj.id}"
+
+				# Download the file
+				begin
+					client = Azure::Blob::BlobService.new
+					return client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)[1]
+				rescue Exception => e
+					return nil
+				end
 			elsif command[0].to_s == "TableObject.update"	# uuid, properties
 				# Get the table object
 				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
@@ -584,7 +618,6 @@ class ApisController < ApplicationController
 						prop.destroy!
 					end
 				end
-
 			elsif command[0].to_s == "TableObject.update_file"	# uuid, ext, type, file
 				# Get the table object
 				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
@@ -681,40 +714,56 @@ class ApisController < ApplicationController
 				end
 
 				return obj
-			elsif command[0].to_s == "TableObject.get"	# uuid
-				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
-				return nil if !obj
+			elsif command[0].to_s == "TableObjectUserAccess.create"	# table_object_id, user_id, table_alias
+				# Check if there is already an TableObjectUserAccess object
+				error = Hash.new
+				table_object_id = execute_command(command[1], vars)
+				user_id = execute_command(command[2], vars)
+				table_alias = execute_command(command[3], vars)
 
-				# Check if the table of the table object belongs to the same app as the api
-				if obj.table.app != @api.app
-					error["code"] = 0
+				if table_object_id.is_a?(String)
+					# Get the id of the table object
+					obj = TableObject.find_by(uuid: table_object_id)
+
+					if !obj
+						error["code"] = 0
+						@errors.push(error)
+						return @errors
+					end
+
+					table_object_id = obj.id
+				end
+
+				# Try to find the table
+				table = Table.find_by_id(table_alias)
+				if !table
+					error["code"] = 1
 					@errors.push(error)
 					return @errors
 				end
 
-				return obj
-			elsif command[0].to_s == "TableObject.get_file"	# uuid
-				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
-				return nil if !obj.file
+				# Find the access and return it
+				access = TableObjectUserAccess.find_by(table_object_id: table_object_id, user_id: user_id, table_alias: table_alias)
 
-				# Check if the table of the table object belongs to the same app as the api
-				if obj.table.app != @api.app
-					error["code"] = 0
-					@errors.push(error)
-					return @errors
+				if !access
+					access = TableObjectUserAccess.new(table_object_id: table_object_id, user_id: user_id, table_alias: table_alias)
+					access.save
 				end
 
-				Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-				Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-				filename = "#{obj.table.app.id}/#{obj.id}"
+				return access
+			elsif command[0].to_s == "TableObject.find_by_property"	# user_id, table_id, property_name, property_value
+				user_id = execute_command(command[1], vars)
+				table_id = execute_command(command[2], vars)
+				property_name = execute_command(command[3], vars)
+				property_value = execute_command(command[4], vars)
 
-				# Download the file
-				begin
-					client = Azure::Blob::BlobService.new
-					return client.get_blob(ENV["AZURE_FILES_CONTAINER_NAME"], filename)[1]
-				rescue Exception => e
-					return nil
+				objects = Array.new
+				TableObject.where(user_id: user_id, table_id: table_id).each do |table_object|
+					property = Property.find_by(table_object: table_object, name: property_name, value: property_value)
+					objects.push(table_object) if property
 				end
+
+				return objects
 
 			# Command is an expression
 			elsif command[1] == :==
