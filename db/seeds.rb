@@ -4,7 +4,8 @@ users = User.create([
    {email: "nutzer@testemail.com", password: "blablablablabla", username: "nutzer", confirmed: false},
    {email: "normalo@helloworld.net", password: "schoeneheilewelt", username: "normalo", confirmed: true},
 	{email: "davClassLibraryTest@dav-apps.tech", password: "davClassLibrary", username: "davClassLibraryTestUser", confirmed: true},
-	{email: "author@dav-apps.tech", password: "books", username: "PocketLib Author tester", confirmed: true}
+	{email: "author@dav-apps.tech", password: "books", username: "PocketLib Author tester", confirmed: true},
+	{email: "klaus.baudelaire@dav-apps.tech", password: "isadora", username: "Klaus", confirmed: true, plan: 2}
 ])
 
 devs = Dev.create([
@@ -45,6 +46,7 @@ tables = Table.create([
    {name: "EpubBookmark", app: apps[5]},
 	{name: "Settings", app: apps[5]},
 	{name: "Author", app: apps[5]},
+	{name: "AuthorBio", app: apps[5]},
 	{name: "AuthorProfileImage", app: apps[5]},
 	{name: "StoreBookCollection", app: apps[5]},
 	{name: "StoreBookCollectionName", app: apps[5]},
@@ -56,51 +58,88 @@ tables = Table.create([
 table_objects = TableObject.create([
 	{table: tables[2], user: users[4], uuid: "642e6407-f357-4e03-b9c2-82f754931161", file: false},
    {table: tables[2], user: users[4], uuid: "8d29f002-9511-407b-8289-5ebdcb5a5559", file: false},
-	{table: tables[3], user: users[4], uuid: "4c8513e8-67c3-4067-8d80-bc2ed0459918", file: false},
+	{table: tables[3], user: users[4], uuid: "4c8513e8-67c3-4067-8d80-bc2ed0459918", file: true},
+	# Books
+	{table: tables[13], user: users[6], uuid: "916b7ba2-db45-4c49-bef6-a90280efc686", file: false},
 	# Authors
 	{table: tables[18], user: users[5], uuid: "099fbfa5-a6f1-41c1-99e9-0d02d8364f2d", file: false},
 	{table: tables[18], user: users[0], uuid: "622ad623-b9a4-415d-92ee-a66f8a7f3c51", file: false},
 	{table: tables[18], user: users[0], uuid: "1dd980fd-ae20-4566-b842-a25e241bfb46", file: false},
+	# AuthorBios
+		# First bio of the first author
+	{table: tables[19], user: users[5], uuid: "0d13e998-1b34-46be-90af-76c401f10fe2", file: false},
+		# Second bio of the first author
+	{table: tables[19], user: users[5], uuid: "51e8135e-7ba7-4d59-8f93-2eda6141dfc8", file: false},
+		# First bio of the second author
+	{table: tables[19], user: users[0], uuid: "8d394726-6398-4915-a042-33520f5f68cc", file: false},
+		# First bio of the third author
+	{table: tables[19], user: users[0], uuid: "cd940d1d-4006-4aff-a680-0cfa58ed63f1", file: false},
 	# AuthorProfileImages
-	{table: tables[19], user: users[5], uuid: "14e5ad81-3105-4cbc-85c8-4ffeec1c3812", file: true},
-	{table: tables[19], user: users[0], uuid: "df45f27f-8ecb-41b0-864f-bb76669279f5", file: true},
+	{table: tables[20], user: users[5], uuid: "14e5ad81-3105-4cbc-85c8-4ffeec1c3812", file: true},
+	{table: tables[20], user: users[0], uuid: "df45f27f-8ecb-41b0-864f-bb76669279f5", file: true},
 	# StoreBookCollections
-	{table: tables[20], user: users[5], uuid: "2cfe3d1a-2853-4e5c-9261-1942a9c5ddd9", file: false},
-	{table: tables[20], user: users[5], uuid: "285a5fca-8db2-4f73-8b12-5d41cdac82ed", file: false},
-	{table: tables[20], user: users[0], uuid: "921b2d9f-5565-442f-95c0-1658ee57146b", file: false},
-	{table: tables[20], user: users[0], uuid: "21a9045f-4148-4e21-a701-8d19dd865d17", file: false},
+	{table: tables[21], user: users[5], uuid: "2cfe3d1a-2853-4e5c-9261-1942a9c5ddd9", file: false},
+	{table: tables[21], user: users[5], uuid: "285a5fca-8db2-4f73-8b12-5d41cdac82ed", file: false},
+	{table: tables[21], user: users[5], uuid: "7bb97f7e-cd7d-4fa8-a734-ef4732d33fcd", file: false},
+	{table: tables[21], user: users[0], uuid: "921b2d9f-5565-442f-95c0-1658ee57146b", file: false},
+	{table: tables[21], user: users[0], uuid: "21a9045f-4148-4e21-a701-8d19dd865d17", file: false},
 	# StoreBookCollectionNames
 		# First name of the first collection
-	{table: tables[21], user: users[5], uuid: "5f0d68f0-fc99-457b-823a-b9994d17b6b1", file: false},
+	{table: tables[22], user: users[5], uuid: "5f0d68f0-fc99-457b-823a-b9994d17b6b1", file: false},
 		# Second name of the first collection
-	{table: tables[21], user: users[5], uuid: "f41d7646-b513-4af4-b93d-3813b1edfc3e", file: false},
+	{table: tables[22], user: users[5], uuid: "f41d7646-b513-4af4-b93d-3813b1edfc3e", file: false},
 		# First name of the second collection
-	{table: tables[21], user: users[5], uuid: "9c2f12ad-0e94-4379-a0d6-7e087380bf5b", file: false},
+	{table: tables[22], user: users[5], uuid: "9c2f12ad-0e94-4379-a0d6-7e087380bf5b", file: false},
 		# Second name of the second collection
-	{table: tables[21], user: users[5], uuid: "25060c42-e7bf-4187-9712-0a94c51d497c", file: false},
+	{table: tables[22], user: users[5], uuid: "25060c42-e7bf-4187-9712-0a94c51d497c", file: false},
 		# First name of the third collection
-	{table: tables[21], user: users[0], uuid: "9ffb7b69-b9bc-45bc-ae94-34ec08c427c2", file: false},
+	{table: tables[22], user: users[5], uuid: "e5a21039-1aae-406b-98ba-16d820e906e7", file: false},
 		# First name of the fourth collection
-	{table: tables[21], user: users[0], uuid: "5d8ebd0d-9e62-42bb-8565-963cbb6499d7", file: false},
+	{table: tables[22], user: users[0], uuid: "9ffb7b69-b9bc-45bc-ae94-34ec08c427c2", file: false},
+		# First name of the fifth collection
+	{table: tables[22], user: users[0], uuid: "5d8ebd0d-9e62-42bb-8565-963cbb6499d7", file: false},
 	# StoreBooks
 		# First book of the first collection
-	{table: tables[22], user: users[5], uuid: "1cf6fc5f-8fa5-4972-895d-8b1d6552d41c", file: false},
+	{table: tables[23], user: users[5], uuid: "1cf6fc5f-8fa5-4972-895d-8b1d6552d41c", file: false},
 		# Second book of the first collection
-	{table: tables[22], user: users[5], uuid: "4df158a0-2157-4370-abac-dd3c25ca9ed3", file: false},
+	{table: tables[23], user: users[5], uuid: "4df158a0-2157-4370-abac-dd3c25ca9ed3", file: false},
 		# First book of the second collection
-	{table: tables[22], user: users[5], uuid: "5242102c-b107-4e82-8eb8-bebe2a990436", file: false},
+	{table: tables[23], user: users[5], uuid: "5242102c-b107-4e82-8eb8-bebe2a990436", file: false},
 		# Second book of the second collection
-	{table: tables[22], user: users[5], uuid: "617833c8-4d0a-4d78-acd0-306a90e346ba", file: false},
+	{table: tables[23], user: users[5], uuid: "617833c8-4d0a-4d78-acd0-306a90e346ba", file: false},
 		# First book of the third collection
-	{table: tables[22], user: users[0], uuid: "b0e4b01d-d53d-47b5-b5e4-48ea7bab6619", file: false},
-		# Second book of the third collection
-	{table: tables[22], user: users[0], uuid: "5aa1c310-cbc6-48b4-9000-63315e713d25", file: false},
+	{table: tables[23], user: users[5], uuid: "45c14ab4-8789-41c4-b0f6-11be0a86a94c", file: false},
 		# First book of the fourth collection
-	{table: tables[22], user: users[0], uuid: "13836f22-040f-4efd-9f30-9202184b23bf", file: false},
+	{table: tables[23], user: users[0], uuid: "b0e4b01d-d53d-47b5-b5e4-48ea7bab6619", file: false},
+		# Second book of the fourth collection
+	{table: tables[23], user: users[0], uuid: "5aa1c310-cbc6-48b4-9000-63315e713d25", file: false},
+		# Third book of the fourth collection
+	{table: tables[23], user: users[0], uuid: "0c3d12b8-1398-4f4e-b912-2aa460671579", file: false},
+		# First book of the fifth collection
+	{table: tables[23], user: users[0], uuid: "13836f22-040f-4efd-9f30-9202184b23bf", file: false},
+		# Second book of the fifth collection
+	{table: tables[23], user: users[0], uuid: "f27a4472-d3f8-4310-9f76-156af7c03c43", file: false},
+		# Third book of the fifth collection
+	{table: tables[23], user: users[0], uuid: "ba96f327-f096-4408-8bd0-620f9aad3f09", file: false},
 	# StoreBookCovers
-	{table: tables[23], user: users[5], uuid: "bb63e1c9-866c-47b5-b852-e8473df404f3", file: true},
+		# Covers for the first author
+	{table: tables[24], user: users[5], uuid: "bb63e1c9-866c-47b5-b852-e8473df404f3", file: true},
+	{table: tables[24], user: users[5], uuid: "2ba327c3-d33c-4181-900e-f4c331ddf288", file: true},
+	{table: tables[24], user: users[5], uuid: "a557824f-26ed-4e5e-8afa-43e20e76e2ad", file: true},
+	{table: tables[24], user: users[5], uuid: "33b486ae-a22e-414b-915c-9a9520970ed8", file: true},
+		# Covers for the second author
+	{table: tables[24], user: users[0], uuid: "63960709-1aa5-40dd-a7a3-8fa79aaa1f5d", file: true},
 	# StoreBookFiles
-	{table: tables[24], user: users[5], uuid: "b7cf0cee-fe8d-4f08-8b6e-d391065f1abb", file: true}
+		# Files for the first author
+	{table: tables[25], user: users[5], uuid: "b7cf0cee-fe8d-4f08-8b6e-d391065f1abb", file: true},
+	{table: tables[25], user: users[5], uuid: "8f219b89-eb25-4c55-b1a4-467e36bfa081", file: true},
+	{table: tables[25], user: users[5], uuid: "fb2745e4-f095-4237-97d5-660e41356790", file: true},
+	{table: tables[25], user: users[5], uuid: "d6f52b96-6bca-40ee-bb70-fb1347e1c8ba", file: true},
+		# Files for the second author
+	{table: tables[25], user: users[0], uuid: "32adbdaa-0cbe-4672-80a6-19d4b8d6e943", file: true},
+	{table: tables[25], user: users[0], uuid: "050f7a0d-59a9-498a-9caa-8b418227e72b", file: true},
+	{table: tables[25], user: users[0], uuid: "6566a1b6-0b17-4ff8-ba01-c58374c179ee", file: true},
+	{table: tables[25], user: users[0], uuid: "987335cf-4fd0-4c80-a6f1-97bedd46ecbf", file: true}
 ])
 
 properties = Property.create([
@@ -108,102 +147,213 @@ properties = Property.create([
 	{table_object: table_objects[0], name: "page2", value: "Hallo Welt"},
 	{table_object: table_objects[1], name: "page1", value: "Table"},
 	{table_object: table_objects[1], name: "page2", value: "Tabelle"},
+	# Book properties
+		# Properties for the first book
+	{table_object: table_objects[3], name: "store_book", value: "b0e4b01d-d53d-47b5-b5e4-48ea7bab6619"},
+	{table_object: table_objects[3], name: "file", value: "32adbdaa-0cbe-4672-80a6-19d4b8d6e943"},
 	# Author properties
 		# Properties for the first author
-	{table_object: table_objects[3], name: "first_name", value: "Lemony"},
-	{table_object: table_objects[3], name: "last_name", value: "Snicket"},
-	{table_object: table_objects[3], name: "bio", value: "Dear reader, I'm sorry to tell you that I wrote some very unpleasant tales that you definitely should not read, if you want to further live a healthy life."},
-	{table_object: table_objects[3], name: "profile_image", value: "14e5ad81-3105-4cbc-85c8-4ffeec1c3812"},
-	{table_object: table_objects[3], name: "collections", value: "2cfe3d1a-2853-4e5c-9261-1942a9c5ddd9,285a5fca-8db2-4f73-8b12-5d41cdac82ed"},
+	{table_object: table_objects[4], name: "first_name", value: "Lemony"},
+	{table_object: table_objects[4], name: "last_name", value: "Snicket"},
+	{table_object: table_objects[4], name: "bios", value: "0d13e998-1b34-46be-90af-76c401f10fe2,51e8135e-7ba7-4d59-8f93-2eda6141dfc8"},
+	{table_object: table_objects[4], name: "collections", value: "2cfe3d1a-2853-4e5c-9261-1942a9c5ddd9,285a5fca-8db2-4f73-8b12-5d41cdac82ed,7bb97f7e-cd7d-4fa8-a734-ef4732d33fcd"},
+	{table_object: table_objects[4], name: "profile_image", value: "14e5ad81-3105-4cbc-85c8-4ffeec1c3812"},
 		# Properties for the second author
-	{table_object: table_objects[4], name: "first_name", value: "George"},
-	{table_object: table_objects[4], name: "last_name", value: "Orwell"},
-	{table_object: table_objects[4], name: "profile_image", value: "df45f27f-8ecb-41b0-864f-bb76669279f5"},
-	{table_object: table_objects[4], name: "bio", value: "Eric Arthur Blair, better known by his pen name George Orwell, was an English novelist and essayist, journalist and critic. His work is characterised by lucid prose, awareness of social injustice, opposition to totalitarianism, and outspoken support of democratic socialism."},
+	{table_object: table_objects[5], name: "first_name", value: "George"},
+	{table_object: table_objects[5], name: "last_name", value: "Orwell"},
+	{table_object: table_objects[5], name: "bios", value: "8d394726-6398-4915-a042-33520f5f68cc"},
+	{table_object: table_objects[5], name: "collections", value: "921b2d9f-5565-442f-95c0-1658ee57146b,21a9045f-4148-4e21-a701-8d19dd865d17"},
+	{table_object: table_objects[5], name: "profile_image", value: "df45f27f-8ecb-41b0-864f-bb76669279f5"},
 		# Properties for the third author
-	{table_object: table_objects[5], name: "first_name", value: "Aldous"},
-	{table_object: table_objects[5], name: "last_name", value: "Huxley"},
-	{table_object: table_objects[5], name: "bio", value: "Aldous Leonard Huxley was an English writer and philosopher. He wrote nearly fifty books — both novels and non-fiction works — as well as wide-ranging essays, narratives, and poems."},
+	{table_object: table_objects[6], name: "first_name", value: "Aldous"},
+	{table_object: table_objects[6], name: "last_name", value: "Huxley"},
+	{table_object: table_objects[6], name: "bios", value: "cd940d1d-4006-4aff-a680-0cfa58ed63f1"},
+	# AuthorBio properties
+		# Properties for the first bio
+	{table_object: table_objects[7], name: "bio", value: "Dear reader, I'm sorry to tell you that I wrote some very unpleasant tales that you definitely should not read, if you want to further live a healthy life."},
+	{table_object: table_objects[7], name: "language", value: "en"},
+		# Properties for the second bio
+	{table_object: table_objects[8], name: "bio", value: "Lieber Leser, es tut mir Leid, dir sagen zu müssen, dass ich einige sehr unangenehme Geschichten geschrieben habe, die du auf keinen Fall lesen solltest, wenn du weiterhin ein gesundes Leben führen willst."},
+	{table_object: table_objects[8], name: "language", value: "de"},
+		# Properties for the third bio
+	{table_object: table_objects[9], name: "bio", value: "Eric Arthur Blair, better known by his pen name George Orwell, was an English novelist and essayist, journalist and critic. His work is characterised by lucid prose, awareness of social injustice, opposition to totalitarianism, and outspoken support of democratic socialism."},
+	{table_object: table_objects[9], name: "language", value: "en"},
+		# Properties for the fourth bio
+	{table_object: table_objects[10], name: "bio", value: "Aldous Leonard Huxley was an English writer and philosopher. He wrote nearly fifty books — both novels and non-fiction works — as well as wide-ranging essays, narratives, and poems."},
+	{table_object: table_objects[10], name: "language", value: "en"},
+	# AuthorProfileImage properties
+		# Properties for the first AuthorProfileImage
+	{table_object: table_objects[11], name: "ext", value: "png"},
+	{table_object: table_objects[11], name: "type", value: "image/png"},
+		# Properties for the second AuthorProfileImage
+	{table_object: table_objects[12], name: "ext", value: "jpg"},
+	{table_object: table_objects[12], name: "type", value: "image/jpeg"},
 	# StoreBookCollection properties
 		# Properties for the first collection
-	{table_object: table_objects[8], name: "author", value: "099fbfa5-a6f1-41c1-99e9-0d02d8364f2d"},
-	{table_object: table_objects[8], name: "names", value: "5f0d68f0-fc99-457b-823a-b9994d17b6b1,f41d7646-b513-4af4-b93d-3813b1edfc3e"},
-	{table_object: table_objects[8], name: "books", value: "1cf6fc5f-8fa5-4972-895d-8b1d6552d41c,4df158a0-2157-4370-abac-dd3c25ca9ed3"},
+	{table_object: table_objects[13], name: "author", value: "099fbfa5-a6f1-41c1-99e9-0d02d8364f2d"},
+	{table_object: table_objects[13], name: "names", value: "5f0d68f0-fc99-457b-823a-b9994d17b6b1,f41d7646-b513-4af4-b93d-3813b1edfc3e"},
+	{table_object: table_objects[13], name: "books", value: "1cf6fc5f-8fa5-4972-895d-8b1d6552d41c,4df158a0-2157-4370-abac-dd3c25ca9ed3"},
 		# Properties for the second collection
-	{table_object: table_objects[9], name: "author", value: "099fbfa5-a6f1-41c1-99e9-0d02d8364f2d"},
-	{table_object: table_objects[9], name: "names", value: "9c2f12ad-0e94-4379-a0d6-7e087380bf5b"},
-	{table_object: table_objects[9], name: "books", value: "5242102c-b107-4e82-8eb8-bebe2a990436"},
+	{table_object: table_objects[14], name: "author", value: "099fbfa5-a6f1-41c1-99e9-0d02d8364f2d"},
+	{table_object: table_objects[14], name: "names", value: "9c2f12ad-0e94-4379-a0d6-7e087380bf5b,25060c42-e7bf-4187-9712-0a94c51d497c"},
+	{table_object: table_objects[14], name: "books", value: "5242102c-b107-4e82-8eb8-bebe2a990436,617833c8-4d0a-4d78-acd0-306a90e346ba"},
 		# Properties for the third collection
-	{table_object: table_objects[10], name: "author", value: "622ad623-b9a4-415d-92ee-a66f8a7f3c51"},
-	{table_object: table_objects[10], name: "names", value: "9ffb7b69-b9bc-45bc-ae94-34ec08c427c2"},
+	{table_object: table_objects[15], name: "author", value: "099fbfa5-a6f1-41c1-99e9-0d02d8364f2d"},
+	{table_object: table_objects[15], name: "names", value: "e5a21039-1aae-406b-98ba-16d820e906e7"},
+	{table_object: table_objects[15], name: "books", value: "45c14ab4-8789-41c4-b0f6-11be0a86a94c"},
 		# Properties for the fourth collection
-	{table_object: table_objects[11], name: "author", value: "622ad623-b9a4-415d-92ee-a66f8a7f3c51"},
-	{table_object: table_objects[11], name: "names", value: "5d8ebd0d-9e62-42bb-8565-963cbb6499d7"},
-	{table_object: table_objects[11], name: "books", value: "13836f22-040f-4efd-9f30-9202184b23bf"},
+	{table_object: table_objects[16], name: "author", value: "622ad623-b9a4-415d-92ee-a66f8a7f3c51"},
+	{table_object: table_objects[16], name: "names", value: "9ffb7b69-b9bc-45bc-ae94-34ec08c427c2"},
+	{table_object: table_objects[16], name: "books", value: "b0e4b01d-d53d-47b5-b5e4-48ea7bab6619,5aa1c310-cbc6-48b4-9000-63315e713d25,0c3d12b8-1398-4f4e-b912-2aa460671579"},
+		# Properties for the fifth collection
+	{table_object: table_objects[17], name: "author", value: "622ad623-b9a4-415d-92ee-a66f8a7f3c51"},
+	{table_object: table_objects[17], name: "names", value: "5d8ebd0d-9e62-42bb-8565-963cbb6499d7"},
+	{table_object: table_objects[17], name: "books", value: "13836f22-040f-4efd-9f30-9202184b23bf,f27a4472-d3f8-4310-9f76-156af7c03c43,ba96f327-f096-4408-8bd0-620f9aad3f09"},
 	# StoreBookCollectionName properties
 		# Properties for the first collection name
-	{table_object: table_objects[12], name: "name", value: "A Series of Unfortunate Events - Book the First"},
-	{table_object: table_objects[12], name: "language", value: "en"},
-		# Properties for the second collection name
-	{table_object: table_objects[13], name: "name", value: "Eine Reihe betrüblicher Ereignisse - Der schreckliche Anfang"},
-	{table_object: table_objects[13], name: "language", value: "de"},
-		# Properties for the third collection name
-	{table_object: table_objects[14], name: "name", value: "A Series of Unfortunate Events - Book the Second"},
-	{table_object: table_objects[14], name: "language", value: "en"},
-		# Properties for the fourth collection name
-	{table_object: table_objects[15], name: "name", value: "Eine Reihe betrüblicher Ereignisse - Das Haus der Schlangen"},
-	{table_object: table_objects[15], name: "language", value: "de"},
-		# Properties for the fifth collection name
-	{table_object: table_objects[16], name: "name", value: "1984"},
-	{table_object: table_objects[16], name: "language", value: "en"},
-		# Properties for the sixth collection name
-	{table_object: table_objects[17], name: "name", value: "Animal Farm"},
-	{table_object: table_objects[17], name: "language", value: "en"},
-	# Store Book properties
-		# Properties for the first store book
-	{table_object: table_objects[18], name: "collection", value: "2cfe3d1a-2853-4e5c-9261-1942a9c5ddd9"},
-	{table_object: table_objects[18], name: "title", value: "A Series of Unfortunate Events - Book the First"},
-	{table_object: table_objects[18], name: "description", value: "Dear Reader, I'm sorry to say that the book you are holding in your hands is extremely unpleasant. It tells an unhappy tale about three very unlucky children."},
+	{table_object: table_objects[18], name: "name", value: "A Series of Unfortunate Events - Book the First"},
 	{table_object: table_objects[18], name: "language", value: "en"},
-	{table_object: table_objects[18], name: "status", value: "review"},
-	{table_object: table_objects[18], name: "cover", value: "bb63e1c9-866c-47b5-b852-e8473df404f3"},
-	{table_object: table_objects[18], name: "file", value: "b7cf0cee-fe8d-4f08-8b6e-d391065f1abb"},
-		# Properties for the second store book
-	{table_object: table_objects[19], name: "collection", value: "2cfe3d1a-2853-4e5c-9261-1942a9c5ddd9"},
-	{table_object: table_objects[19], name: "title", value: "Eine Reihe betrüblicher Ereignisse - Der schreckliche Anfang"},
-	{table_object: table_objects[19], name: "description", value: "Lieber Leser, es tut mir sehr Leid, aber das Buch, das du gerade in Händen hälst, ist außerordentlich unerfreulich. Es erzählt die traurige Geschichte von drei sehr bedauernswerten Kindern."},
+		# Properties for the second collection name
+	{table_object: table_objects[19], name: "name", value: "Eine Reihe betrüblicher Ereignisse - Der schreckliche Anfang"},
 	{table_object: table_objects[19], name: "language", value: "de"},
-	{table_object: table_objects[19], name: "status", value: "review"},
-		# Properties for the third store book
-	{table_object: table_objects[20], name: "collection", value: "285a5fca-8db2-4f73-8b12-5d41cdac82ed"},
-	{table_object: table_objects[20], name: "title", value: "A Series of Unfortunate Events - Book the Second"},
-	{table_object: table_objects[20], name: "description", value: "Dear Reader, if you have picked up this book with the hope of finding a simple and cheery tale, I'm afraid you have picked up the wrong book altogether."},
+		# Properties for the third collection name
+	{table_object: table_objects[20], name: "name", value: "A Series of Unfortunate Events - Book the Second"},
 	{table_object: table_objects[20], name: "language", value: "en"},
-	{table_object: table_objects[20], name: "status", value: "unpublished"},
-		# Properties for the fourth store book
-	{table_object: table_objects[21], name: "collection", value: "285a5fca-8db2-4f73-8b12-5d41cdac82ed"},
-	{table_object: table_objects[21], name: "title", value: "Eine Reihe betrüblicher Ereignisse - Das Haus der Schlangen"},
-	{table_object: table_objects[21], name: "description", value: "Lieber Leser, wenn du dieses Buch zur Hand genommen hast in der Hoffnung, darin Zerstreuung und Vergnügen zu finden, dann liegst du leider völlig falsch."},
+		# Properties for the fourth collection name
+	{table_object: table_objects[21], name: "name", value: "Eine Reihe betrüblicher Ereignisse - Das Haus der Schlangen"},
 	{table_object: table_objects[21], name: "language", value: "de"},
-	{table_object: table_objects[21], name: "status", value: "published"},
-		# Properties for the fifth store book
-	{table_object: table_objects[22], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
-	{table_object: table_objects[22], name: "title", value: "1984"},
-	{table_object: table_objects[22], name: "description", value: "Orwell's novel about the destruction of man by a perfect state machinery has long since become a metaphor for totalitarian conditions that no longer seems in need of explanation."},
+		# Properties for the fifth collection name
+	{table_object: table_objects[22], name: "name", value: "A Series of Unfortunate Events - Book the Third"},
 	{table_object: table_objects[22], name: "language", value: "en"},
-	{table_object: table_objects[22], name: "status", value: "published"},
-		# Properties for the sixth store book
-	{table_object: table_objects[23], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
-	{table_object: table_objects[23], name: "title", value: "1984"},
-	{table_object: table_objects[23], name: "description", value: "Orwells Roman über die Zerstörung des Menschen durch eine perfekte Staatsmaschinerie ist längst zu einer scheinbar nicht mehr erklärungsbedürftigen Metapher für totalitäre Verhältnisse geworden."},
-	{table_object: table_objects[23], name: "language", value: "de"},
-	{table_object: table_objects[23], name: "status", value: "review"},
-		# Properties for the seventh store book
-	{table_object: table_objects[24], name: "collection", value: "21a9045f-4148-4e21-a701-8d19dd865d17"},
-	{table_object: table_objects[24], name: "title", value: "Animal Farm"},
-	{table_object: table_objects[24], name: "description", value: "Animal Farm is an allegorical novella by George Orwell, first published in England on 17 August 1945. The book tells the story of a group of farm animals who rebel against their human farmer, hoping to create a society where the animals can be equal, free, and happy."},
+		# Properties for the sixth collection name
+	{table_object: table_objects[23], name: "name", value: "1984"},
+	{table_object: table_objects[23], name: "language", value: "en"},
+		# Properties for the seventh collection name
+	{table_object: table_objects[24], name: "name", value: "Animal Farm"},
 	{table_object: table_objects[24], name: "language", value: "en"},
-	{table_object: table_objects[24], name: "status", value: "published"}
+	# StoreBook properties
+		# Properties for the first store book
+	{table_object: table_objects[25], name: "collection", value: "2cfe3d1a-2853-4e5c-9261-1942a9c5ddd9"},
+	{table_object: table_objects[25], name: "title", value: "A Series of Unfortunate Events - Book the First"},
+	{table_object: table_objects[25], name: "description", value: "Dear Reader, I'm sorry to say that the book you are holding in your hands is extremely unpleasant. It tells an unhappy tale about three very unlucky children."},
+	{table_object: table_objects[25], name: "language", value: "en"},
+	{table_object: table_objects[25], name: "price", value: "1399"},
+	{table_object: table_objects[25], name: "status", value: "review"},
+	{table_object: table_objects[25], name: "cover", value: "bb63e1c9-866c-47b5-b852-e8473df404f3"},
+	{table_object: table_objects[25], name: "file", value: "b7cf0cee-fe8d-4f08-8b6e-d391065f1abb"},
+		# Properties for the second store book
+	{table_object: table_objects[26], name: "collection", value: "2cfe3d1a-2853-4e5c-9261-1942a9c5ddd9"},
+	{table_object: table_objects[26], name: "title", value: "Eine Reihe betrüblicher Ereignisse - Der schreckliche Anfang"},
+	{table_object: table_objects[26], name: "description", value: "Lieber Leser, es tut mir sehr Leid, aber das Buch, das du gerade in Händen hältst, ist außerordentlich unerfreulich. Es erzählt die traurige Geschichte von drei sehr bedauernswerten Kindern."},
+	{table_object: table_objects[26], name: "language", value: "de"},
+	{table_object: table_objects[26], name: "status", value: "hidden"},
+	{table_object: table_objects[26], name: "cover", value: "2ba327c3-d33c-4181-900e-f4c331ddf288"},
+	{table_object: table_objects[26], name: "file", value: "8f219b89-eb25-4c55-b1a4-467e36bfa081"},
+		# Properties for the third store book
+	{table_object: table_objects[27], name: "collection", value: "285a5fca-8db2-4f73-8b12-5d41cdac82ed"},
+	{table_object: table_objects[27], name: "title", value: "A Series of Unfortunate Events - Book the Second"},
+	{table_object: table_objects[27], name: "description", value: "Dear Reader, if you have picked up this book with the hope of finding a simple and cheery tale, I'm afraid you have picked up the wrong book altogether."},
+	{table_object: table_objects[27], name: "language", value: "en"},
+	{table_object: table_objects[27], name: "status", value: "unpublished"},
+	{table_object: table_objects[27], name: "cover", value: "a557824f-26ed-4e5e-8afa-43e20e76e2ad"},
+	{table_object: table_objects[27], name: "file", value: "fb2745e4-f095-4237-97d5-660e41356790"},
+		# Properties for the fourth store book
+	{table_object: table_objects[28], name: "collection", value: "285a5fca-8db2-4f73-8b12-5d41cdac82ed"},
+	{table_object: table_objects[28], name: "title", value: "Eine Reihe betrüblicher Ereignisse - Das Haus der Schlangen"},
+	{table_object: table_objects[28], name: "description", value: "Lieber Leser, wenn du dieses Buch zur Hand genommen hast in der Hoffnung, darin Zerstreuung und Vergnügen zu finden, dann liegst du leider völlig falsch."},
+	{table_object: table_objects[28], name: "language", value: "de"},
+	{table_object: table_objects[28], name: "price", value: "2000"},
+	{table_object: table_objects[28], name: "status", value: "published"},
+	{table_object: table_objects[28], name: "cover", value: "33b486ae-a22e-414b-915c-9a9520970ed8"},
+	{table_object: table_objects[28], name: "file", value: "d6f52b96-6bca-40ee-bb70-fb1347e1c8ba"},
+		# Properties for the fifth store book
+	{table_object: table_objects[29], name: "collection", value: "7bb97f7e-cd7d-4fa8-a734-ef4732d33fcd"},
+	{table_object: table_objects[29], name: "title", value: "A Series of Unfortunate Events - Book the Third"},
+	{table_object: table_objects[29], name: "description", value: "Dear Reader, if you have not read anything about the Baudelaire orphans, then before you read even one more sentence, you should know this: Violet, Klaus and Sunny are kindhearted and quick-witted, but their lives, I am sorry to say, are filled with bad luck and misery."},
+	{table_object: table_objects[29], name: "language", value: "en"},
+	{table_object: table_objects[29], name: "status", value: "unpublished"},
+		# Properties for the sixth store book
+	{table_object: table_objects[30], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
+	{table_object: table_objects[30], name: "title", value: "1984"},
+	{table_object: table_objects[30], name: "description", value: "Orwell's novel about the destruction of man by a perfect state machinery has long since become a metaphor for totalitarian conditions that no longer seems in need of explanation."},
+	{table_object: table_objects[30], name: "language", value: "en"},
+	{table_object: table_objects[30], name: "price", value: "1000"},
+	{table_object: table_objects[30], name: "status", value: "published"},
+	{table_object: table_objects[30], name: "cover", value: "63960709-1aa5-40dd-a7a3-8fa79aaa1f5d"},
+	{table_object: table_objects[30], name: "file", value: "32adbdaa-0cbe-4672-80a6-19d4b8d6e943"},
+		# Properties for the seventh store book
+	{table_object: table_objects[31], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
+	{table_object: table_objects[31], name: "title", value: "1984"},
+	{table_object: table_objects[31], name: "description", value: "Orwells Roman über die Zerstörung des Menschen durch eine perfekte Staatsmaschinerie ist längst zu einer scheinbar nicht mehr erklärungsbedürftigen Metapher für totalitäre Verhältnisse geworden."},
+	{table_object: table_objects[31], name: "language", value: "de"},
+	{table_object: table_objects[31], name: "status", value: "review"},
+	{table_object: table_objects[31], name: "file", value: "050f7a0d-59a9-498a-9caa-8b418227e72b"},
+		# Properties for the eighth store book
+	{table_object: table_objects[32], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
+	{table_object: table_objects[32], name: "title", value: "1984"},
+	{table_object: table_objects[32], name: "description", value: "Le roman d'Orwell sur la destruction de l'homme par une machine étatique parfaite est devenu depuis longtemps une métaphore des conditions totalitaires qui ne semble plus avoir besoin d'explication."},
+	{table_object: table_objects[32], name: "language", value: "fr"},
+	{table_object: table_objects[32], name: "status", value: "unpublished"},
+		# Properties for the ninth store book
+	{table_object: table_objects[33], name: "collection", value: "21a9045f-4148-4e21-a701-8d19dd865d17"},
+	{table_object: table_objects[33], name: "title", value: "Animal Farm"},
+	{table_object: table_objects[33], name: "description", value: "Animal Farm is an allegorical novella by George Orwell, first published in England on 17 August 1945. The book tells the story of a group of farm animals who rebel against their human farmer, hoping to create a society where the animals can be equal, free, and happy."},
+	{table_object: table_objects[33], name: "language", value: "en"},
+	{table_object: table_objects[33], name: "status", value: "hidden"},
+	{table_object: table_objects[33], name: "file", value: "6566a1b6-0b17-4ff8-ba01-c58374c179ee"},
+		# Properties for the tenth store book
+	{table_object: table_objects[34], name: "collection", value: "21a9045f-4148-4e21-a701-8d19dd865d17"},
+	{table_object: table_objects[34], name: "title", value: "Farm der Tiere"},
+	{table_object: table_objects[34], name: "description", value: "Farm der Tiere ist eine allegorische Novelle von George Orwell, die erstmals am 17. August 1945 in England veröffentlicht wurde. Das Buch erzählt die Geschichte einer Gruppe von Nutztieren, die sich gegen ihren menschlichen Bauern auflehnen, in der Hoffnung, eine Gesellschaft zu schaffen, in der die Tiere gleichberechtigt, frei und glücklich sein können."},
+	{table_object: table_objects[34], name: "language", value: "de"},
+	{table_object: table_objects[34], name: "file", value: "987335cf-4fd0-4c80-a6f1-97bedd46ecbf"},
+		# Properties for the eleventh store book
+	{table_object: table_objects[35], name: "collection", value: "21a9045f-4148-4e21-a701-8d19dd865d17"},
+	{table_object: table_objects[35], name: "title", value: "La Ferme des animaux"},
+	{table_object: table_objects[35], name: "description", value: "La Ferme des animaux est un roman allégorique de George Orwell, publié pour la première fois en Angleterre le 17 août 1945. Le livre raconte l'histoire d'un groupe d'animaux de ferme qui se rebellent contre leur éleveur humain dans l'espoir de créer une société dans laquelle les animaux peuvent être égaux, libres et heureux."},
+	{table_object: table_objects[35], name: "language", value: "fr"},
+	{table_object: table_objects[35], name: "status", value: "published"},
+	# StoreBookCover properties
+		# Properties for the first StoreBookCover
+	{table_object: table_objects[36], name: "ext", value: "png"},
+	{table_object: table_objects[36], name: "type", value: "image/png"},
+		# Properties for the second StoreBookCover
+	{table_object: table_objects[37], name: "ext", value: "jpg"},
+	{table_object: table_objects[37], name: "type", value: "image/jpeg"},
+		# Properties for the third StoreBookCover
+	{table_object: table_objects[38], name: "ext", value: "png"},
+	{table_object: table_objects[38], name: "type", value: "image/png"},
+		# Properties for the fourth StoreBookCover
+	{table_object: table_objects[39], name: "ext", value: "jpg"},
+	{table_object: table_objects[39], name: "type", value: "image/jpeg"},
+		# Properties for the second StoreBookCover
+	{table_object: table_objects[40], name: "ext", value: "jpg"},
+	{table_object: table_objects[40], name: "type", value: "image/jpeg"},
+	# StoreBookFile properties
+		# Properties for the first StoreBookFile
+	{table_object: table_objects[41], name: "ext", value: "pdf"},
+	{table_object: table_objects[41], name: "type", value: "application/pdf"},
+		# Properties for the second StoreBookFile
+	{table_object: table_objects[42], name: "ext", value: "epub"},
+	{table_object: table_objects[42], name: "type", value: "application/zip+epub"},
+		# Properties for the third StoreBookFile
+	{table_object: table_objects[43], name: "ext", value: "pdf"},
+	{table_object: table_objects[43], name: "type", value: "application/pdf"},
+		# Properties for the fourth StoreBookFile
+	{table_object: table_objects[44], name: "ext", value: "epub"},
+	{table_object: table_objects[44], name: "type", value: "application/zip+epub"},
+		# Properties for the fifth StoreBookFile
+	{table_object: table_objects[45], name: "ext", value: "pdf"},
+	{table_object: table_objects[45], name: "type", value: "application/pdf"},
+		# Properties for the sixth StoreBookFile
+	{table_object: table_objects[46], name: "ext", value: "epub"},
+	{table_object: table_objects[46], name: "type", value: "application/zip+epub"},
+		# Properties for the seventh StoreBookFile
+	{table_object: table_objects[47], name: "ext", value: "pdf"},
+	{table_object: table_objects[47], name: "type", value: "application/pdf"},
+		# Properties for the eighth StoreBookFile
+	{table_object: table_objects[48], name: "ext", value: "epub"},
+	{table_object: table_objects[48], name: "type", value: "application/zip+epub"}
 ])
 
 notifications = Notification.create([
@@ -232,7 +382,10 @@ sessions = Session.create([
 	{user: users[0], app: apps[5], secret: "tTOwqee66k1-C549DKsU2Wbc4AQVg7Zyftj5z1vE", exp: DateTime.parse("3160-04-06 00:00:00"), device_name: "Surface Duo", device_type: "Foldable", device_os: "Android"},
 	# user: davClassLibraryTest, app: PocketLib
 	# JWT: eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImRhdkNsYXNzTGlicmFyeVRlc3RAZGF2LWFwcHMudGVjaCIsInVzZXJfaWQiOjUsImRldl9pZCI6MSwiZXhwIjozNzU2MTAxNzYwMH0.unJZtU7Mua12L_GsW09BvoeSQd56VR_RK9x3TE2GWQo.4
-	{user: users[4], app: apps[5], secret: "82S0LIhhkPWQgRCFfrp92RuLxG3av-YpKZRyXIJm", exp: DateTime.parse("3160-04-06 00:00:00"), device_name: "Samsung Galaxy Book S", device_type: "Laptop", device_os: "Windows 10"}
+	{user: users[4], app: apps[5], secret: "82S0LIhhkPWQgRCFfrp92RuLxG3av-YpKZRyXIJm", exp: DateTime.parse("3160-04-06 00:00:00"), device_name: "Samsung Galaxy Book S", device_type: "Laptop", device_os: "Windows 10"},
+	# user: Klaus, app: PocketLib
+	# JWT: eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImtsYXVzLmJhdWRlbGFpcmVAZGF2LWFwcHMudGVjaCIsInVzZXJfaWQiOjcsImRldl9pZCI6MSwiZXhwIjozNzU2MTAxNzYwMH0.Ow0dLs1x_HR6fJ02UqQBVRxDME7cqp_4LRxioJfe_F4.5
+	{user: users[6], app: apps[5], secret: "22KPAM9RIJnAE2TYb47IQN_QG6mEBq9kxV8gmRAx", exp: DateTime.parse("3160-04-06 00:00:00"), device_name: "PocketBook", device_type: "Book", device_os: "Windows Core"}
 ])
 
 apis = Api.create([
