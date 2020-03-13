@@ -14,6 +14,11 @@ class ApisController < ApplicationController
 			@functions = Hash.new
 			@errors = Array.new
 
+			# Add the url params to the vars
+			request.query_parameters.each do |key, value|
+				@vars[key.to_s] = value
+			end
+
 			# Get the environment variables
 			@vars["env"] = Hash.new
 			@api.api_env_vars.each do |env_var|
@@ -751,16 +756,56 @@ class ApisController < ApplicationController
 				end
 
 				return access
-			elsif command[0].to_s == "TableObject.find_by_property"	# user_id, table_id, property_name, property_value
-				user_id = execute_command(command[1], vars)
+			elsif command[0].to_s == "TableObject.find_by_property"	# user_id, table_id, property_name, property_value, exact = true
+				all_user = command[1] == :* 
+				user_id = all_user ? -1 : execute_command(command[1], vars)
 				table_id = execute_command(command[2], vars)
 				property_name = execute_command(command[3], vars)
 				property_value = execute_command(command[4], vars)
+				exact = command[5] != nil ? execute_command(command[5], vars) : true
 
 				objects = Array.new
-				TableObject.where(user_id: user_id, table_id: table_id).each do |table_object|
-					property = Property.find_by(table_object: table_object, name: property_name, value: property_value)
-					objects.push(table_object) if property
+
+				if all_user
+					TableObject.where(table_id: table_id).each do |table_object|
+						if exact
+							# Look for the exact property value
+							property = Property.find_by(table_object: table_object, name: property_name, value: property_value)
+							objects.push(table_object) if property
+						else
+							# Look for the properties that contain the property value
+							properties = Property.where(table_object: table_object, name: property_name)
+
+							contains_value = false
+							properties.each do |prop|
+								if prop.value.include? property_value
+									contains_value = true
+									break
+								end
+							end
+							objects.push(table_object) if contains_value
+						end
+					end
+				else
+					TableObject.where(user_id: user_id, table_id: table_id).each do |table_object|
+						if exact
+							# Look for the exact property value
+							property = Property.find_by(table_object: table_object, name: property_name, value: property_value)
+							objects.push(table_object) if property
+						else
+							# Look for properties that contain the property value
+							properties = Property.where(table_object: table_object, name: property_name)
+	
+							contains_value = false
+							properties.each do |prop|
+								if prop.value.include? property_value
+									contains_value = true
+									break
+								end
+							end
+							objects.push(table_object) if contains_value
+						end
+					end
 				end
 
 				return objects
@@ -834,6 +879,8 @@ class ApisController < ApplicationController
 				elsif var.class == String
 					if function_name == "split"
 						return var.split(execute_command(command[1], vars))
+					elsif function_name == "contains"
+						return var.include?(execute_command(command[1], vars))
 					end
 				end
 			else
@@ -857,6 +904,17 @@ class ApisController < ApplicationController
 			if last_part == "class"
 				return var.class.to_s
 			elsif var.class == Hash
+				# Access index of array in hash
+				if last_part.include?('#')
+					parts = last_part.split('#')
+					last_part = parts[0]
+					int = (Integer(parts[1]) rescue nil)
+
+					if var[last_part].class == Array && int
+						return var[last_part][int]
+					end
+				end
+
 				return var[last_part]
 			elsif var.class == Array
 				if last_part == "length"
@@ -865,6 +923,10 @@ class ApisController < ApplicationController
 			elsif var.class == String
 				if last_part == "length"
 					return var.length
+				elsif last_part == "upcase"
+					return var.upcase
+				elsif last_part == "downcase"
+					return var.downcase
 				end
 			elsif var.class == User
 				return var[last_part]
@@ -900,13 +962,11 @@ class ApisController < ApplicationController
 					return nil
 				end
 			end
+		elsif command.class == Symbol
+			return vars[command.to_s] if vars.key?(command.to_s)
+			return nil
 		else
-			if command.class == Symbol
-				return vars[command.to_s] if vars.key?(command.to_s)
-				return command.to_s
-			else
-				return command
-			end
+			return command
 		end
 	end
 
