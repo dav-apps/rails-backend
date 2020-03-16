@@ -756,6 +756,87 @@ class ApisController < ApplicationController
 				end
 
 				return access
+			elsif command[0].to_s == "Collection.add_table_object"	# collection_name, table_object_id
+				collection_name = execute_command(command[1], vars)
+				table_object_id = execute_command(command[2], vars)
+
+				if table_object_id.is_a?(String)
+					# Get the table object by uuid
+					obj = TableObject.find_by_uuid(table_object_id)
+				else
+					# Get the table object by id
+					obj = TableObject.find_by_id(table_object_id)
+				end
+
+				if !obj
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Try to find the collection
+				collection = Collection.find_by(name: collection_name, table: obj.table)
+
+				if !collection
+					# Create the collection
+					collection = Collection.new(name: collection_name, table: obj.table)
+					collection.save
+				end
+
+				# Create a TableObjectCollection object
+				obj_collection = TableObjectCollection.new(table_object: obj, collection: collection)
+				obj_collection.save
+			elsif command[0].to_s == "Collection.remove_table_object"	# collection_name, table_object_id
+				collection_name = execute_command(command[1], vars)
+				table_object_id = execute_command(command[2], vars)
+
+				if table_object_id.is_a?(String)
+					# Get the table object by uuid
+					obj = TableObject.find_by_uuid(table_object_id)
+				else
+					# Get the table object by id
+					obj = TableObject.find_by_id(table_object_id)
+				end
+
+				if !obj
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Find the collection
+				collection = Collection.find_by(name: collection_name, table: obj.table)
+
+				if !collection
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				# Find the TableObjectCollection
+				obj_collection = TableObjectCollection.find_by(table_object: obj, collection: collection)
+
+				if obj_collection
+					obj_collection.destroy!
+				end
+			elsif command[0].to_s == "Collection.get_table_objects"	# table_id, collection_name
+				table_id = execute_command(command[1], vars)
+				collection_name = execute_command(command[2], vars)
+
+				# Try to find the table
+				table = Table.find_by_id(table_id)
+
+				if !table
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				# Try to find the collection
+				collection = Collection.find_by(name: collection_name, table: table)
+
+				return collection.table_objects.to_a if collection
+				return Array.new
 			elsif command[0].to_s == "TableObject.find_by_property"	# user_id, table_id, property_name, property_value, exact = true
 				all_user = command[1] == :* 
 				user_id = all_user ? -1 : execute_command(command[1], vars)
