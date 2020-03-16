@@ -52,7 +52,9 @@ tables = Table.create([
 	{name: "StoreBookCollectionName", app: apps[5]},
 	{name: "StoreBook", app: apps[5]},
 	{name: "StoreBookCover", app: apps[5]},
-	{name: "StoreBookFile", app: apps[5]}
+	{name: "StoreBookFile", app: apps[5]},
+	{name: "Category", app: apps[5]},
+	{name: "CategoryName", app: apps[5]}
 ])
 
 table_objects = TableObject.create([
@@ -109,6 +111,8 @@ table_objects = TableObject.create([
 	{table: tables[23], user: users[5], uuid: "617833c8-4d0a-4d78-acd0-306a90e346ba", file: false},
 		# First book of the third collection
 	{table: tables[23], user: users[5], uuid: "45c14ab4-8789-41c4-b0f6-11be0a86a94c", file: false},
+		# Second book of the third collection
+	{table: tables[23], user: users[5], uuid: "2fd1beed-da6f-46c8-8631-a7931dda2ef2", file: false},
 		# First book of the fourth collection
 	{table: tables[23], user: users[0], uuid: "b0e4b01d-d53d-47b5-b5e4-48ea7bab6619", file: false},
 		# Second book of the fourth collection
@@ -127,6 +131,7 @@ table_objects = TableObject.create([
 	{table: tables[24], user: users[5], uuid: "2ba327c3-d33c-4181-900e-f4c331ddf288", file: true},
 	{table: tables[24], user: users[5], uuid: "a557824f-26ed-4e5e-8afa-43e20e76e2ad", file: true},
 	{table: tables[24], user: users[5], uuid: "33b486ae-a22e-414b-915c-9a9520970ed8", file: true},
+	{table: tables[24], user: users[5], uuid: "c877a6e5-aebb-4c8c-b28d-817aaffc9226", file: true},
 		# Covers for the second author
 	{table: tables[24], user: users[0], uuid: "63960709-1aa5-40dd-a7a3-8fa79aaa1f5d", file: true},
 	# StoreBookFiles
@@ -135,11 +140,23 @@ table_objects = TableObject.create([
 	{table: tables[25], user: users[5], uuid: "8f219b89-eb25-4c55-b1a4-467e36bfa081", file: true},
 	{table: tables[25], user: users[5], uuid: "fb2745e4-f095-4237-97d5-660e41356790", file: true},
 	{table: tables[25], user: users[5], uuid: "d6f52b96-6bca-40ee-bb70-fb1347e1c8ba", file: true},
+	{table: tables[25], user: users[5], uuid: "090cb584-c10e-4068-9346-81f134c3a5e3", file: true},
 		# Files for the second author
 	{table: tables[25], user: users[0], uuid: "32adbdaa-0cbe-4672-80a6-19d4b8d6e943", file: true},
 	{table: tables[25], user: users[0], uuid: "050f7a0d-59a9-498a-9caa-8b418227e72b", file: true},
 	{table: tables[25], user: users[0], uuid: "6566a1b6-0b17-4ff8-ba01-c58374c179ee", file: true},
-	{table: tables[25], user: users[0], uuid: "987335cf-4fd0-4c80-a6f1-97bedd46ecbf", file: true}
+	{table: tables[25], user: users[0], uuid: "987335cf-4fd0-4c80-a6f1-97bedd46ecbf", file: true},
+	# Categories
+	{table: tables[26], user: users[0], uuid: "0d29f1a8-e181-448c-81d1-5000b167cb16", file: false},
+	{table: tables[26], user: users[0], uuid: "8f1ac4ab-aeba-4e8a-8071-a2a77553dc3f", file: false},
+	{table: tables[26], user: users[0], uuid: "27c78f90-934e-41e3-8738-b20f6d76f0a9", file: false},
+	# CategoryNames
+	{table: tables[27], user: users[0], uuid: "a6125ec6-085f-4da3-b5c8-991922ec2081", file: false},
+	{table: tables[27], user: users[0], uuid: "b3cdf544-0485-48cf-a911-e7c187bcede5", file: false},
+	{table: tables[27], user: users[0], uuid: "60b73b76-310e-494b-be1a-8d19e5caf630", file: false},
+	{table: tables[27], user: users[0], uuid: "ce8f692d-5a4e-416a-8bb0-33802366db04", file: false},
+	{table: tables[27], user: users[0], uuid: "029e6808-e328-4fe2-bddd-3a80606e25aa", file: false},
+	{table: tables[27], user: users[0], uuid: "efaa516a-dd29-4fe4-aee1-25eabee3512a", file: false}
 ])
 
 properties = Property.create([
@@ -273,87 +290,130 @@ properties = Property.create([
 	{table_object: table_objects[29], name: "language", value: "en"},
 	{table_object: table_objects[29], name: "status", value: "unpublished"},
 		# Properties for the sixth store book
-	{table_object: table_objects[30], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
-	{table_object: table_objects[30], name: "title", value: "1984"},
-	{table_object: table_objects[30], name: "description", value: "Orwell's novel about the destruction of man by a perfect state machinery has long since become a metaphor for totalitarian conditions that no longer seems in need of explanation."},
+	{table_object: table_objects[30], name: "collection", value: "7bb97f7e-cd7d-4fa8-a734-ef4732d33fcd"},
+	{table_object: table_objects[30], name: "title", value: "Eine Reihe betrüblicher Ereignisse - Der Seufzersee"},
+	{table_object: table_objects[30], name: "description", value: "Lieber Leser, wenn du noch nie etwas von den Baudelaire-Kindern gehört hast, dann solltest du, bevor du auch nur eine einzige Zeile liest, Folgendes wissen: Violet, Klaus und Sunny sind nett, charmant und klug, aber ihr Leben - leider, leider - strotzt nur so vor Elend und Unheil."},
 	{table_object: table_objects[30], name: "language", value: "en"},
-	{table_object: table_objects[30], name: "price", value: "1000"},
 	{table_object: table_objects[30], name: "status", value: "published"},
-	{table_object: table_objects[30], name: "cover", value: "63960709-1aa5-40dd-a7a3-8fa79aaa1f5d"},
-	{table_object: table_objects[30], name: "file", value: "32adbdaa-0cbe-4672-80a6-19d4b8d6e943"},
+	{table_object: table_objects[30], name: "cover", value: "c877a6e5-aebb-4c8c-b28d-817aaffc9226"},
+	{table_object: table_objects[30], name: "file", value: "090cb584-c10e-4068-9346-81f134c3a5e3"},
 		# Properties for the seventh store book
 	{table_object: table_objects[31], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
 	{table_object: table_objects[31], name: "title", value: "1984"},
-	{table_object: table_objects[31], name: "description", value: "Orwells Roman über die Zerstörung des Menschen durch eine perfekte Staatsmaschinerie ist längst zu einer scheinbar nicht mehr erklärungsbedürftigen Metapher für totalitäre Verhältnisse geworden."},
-	{table_object: table_objects[31], name: "language", value: "de"},
-	{table_object: table_objects[31], name: "status", value: "review"},
-	{table_object: table_objects[31], name: "file", value: "050f7a0d-59a9-498a-9caa-8b418227e72b"},
+	{table_object: table_objects[31], name: "description", value: "Orwell's novel about the destruction of man by a perfect state machinery has long since become a metaphor for totalitarian conditions that no longer seems in need of explanation."},
+	{table_object: table_objects[31], name: "language", value: "en"},
+	{table_object: table_objects[31], name: "price", value: "1000"},
+	{table_object: table_objects[31], name: "status", value: "published"},
+	{table_object: table_objects[31], name: "cover", value: "63960709-1aa5-40dd-a7a3-8fa79aaa1f5d"},
+	{table_object: table_objects[31], name: "file", value: "32adbdaa-0cbe-4672-80a6-19d4b8d6e943"},
 		# Properties for the eighth store book
 	{table_object: table_objects[32], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
 	{table_object: table_objects[32], name: "title", value: "1984"},
-	{table_object: table_objects[32], name: "description", value: "Le roman d'Orwell sur la destruction de l'homme par une machine étatique parfaite est devenu depuis longtemps une métaphore des conditions totalitaires qui ne semble plus avoir besoin d'explication."},
-	{table_object: table_objects[32], name: "language", value: "fr"},
-	{table_object: table_objects[32], name: "status", value: "unpublished"},
+	{table_object: table_objects[32], name: "description", value: "Orwells Roman über die Zerstörung des Menschen durch eine perfekte Staatsmaschinerie ist längst zu einer scheinbar nicht mehr erklärungsbedürftigen Metapher für totalitäre Verhältnisse geworden."},
+	{table_object: table_objects[32], name: "language", value: "de"},
+	{table_object: table_objects[32], name: "status", value: "review"},
+	{table_object: table_objects[32], name: "file", value: "050f7a0d-59a9-498a-9caa-8b418227e72b"},
 		# Properties for the ninth store book
-	{table_object: table_objects[33], name: "collection", value: "21a9045f-4148-4e21-a701-8d19dd865d17"},
-	{table_object: table_objects[33], name: "title", value: "Animal Farm"},
-	{table_object: table_objects[33], name: "description", value: "Animal Farm is an allegorical novella by George Orwell, first published in England on 17 August 1945. The book tells the story of a group of farm animals who rebel against their human farmer, hoping to create a society where the animals can be equal, free, and happy."},
-	{table_object: table_objects[33], name: "language", value: "en"},
-	{table_object: table_objects[33], name: "status", value: "hidden"},
-	{table_object: table_objects[33], name: "file", value: "6566a1b6-0b17-4ff8-ba01-c58374c179ee"},
+	{table_object: table_objects[33], name: "collection", value: "921b2d9f-5565-442f-95c0-1658ee57146b"},
+	{table_object: table_objects[33], name: "title", value: "1984"},
+	{table_object: table_objects[33], name: "description", value: "Le roman d'Orwell sur la destruction de l'homme par une machine étatique parfaite est devenu depuis longtemps une métaphore des conditions totalitaires qui ne semble plus avoir besoin d'explication."},
+	{table_object: table_objects[33], name: "language", value: "fr"},
+	{table_object: table_objects[33], name: "status", value: "unpublished"},
 		# Properties for the tenth store book
 	{table_object: table_objects[34], name: "collection", value: "21a9045f-4148-4e21-a701-8d19dd865d17"},
-	{table_object: table_objects[34], name: "title", value: "Farm der Tiere"},
-	{table_object: table_objects[34], name: "description", value: "Farm der Tiere ist eine allegorische Novelle von George Orwell, die erstmals am 17. August 1945 in England veröffentlicht wurde. Das Buch erzählt die Geschichte einer Gruppe von Nutztieren, die sich gegen ihren menschlichen Bauern auflehnen, in der Hoffnung, eine Gesellschaft zu schaffen, in der die Tiere gleichberechtigt, frei und glücklich sein können."},
-	{table_object: table_objects[34], name: "language", value: "de"},
-	{table_object: table_objects[34], name: "file", value: "987335cf-4fd0-4c80-a6f1-97bedd46ecbf"},
+	{table_object: table_objects[34], name: "title", value: "Animal Farm"},
+	{table_object: table_objects[34], name: "description", value: "Animal Farm is an allegorical novella by George Orwell, first published in England on 17 August 1945. The book tells the story of a group of farm animals who rebel against their human farmer, hoping to create a society where the animals can be equal, free, and happy."},
+	{table_object: table_objects[34], name: "language", value: "en"},
+	{table_object: table_objects[34], name: "status", value: "hidden"},
+	{table_object: table_objects[34], name: "file", value: "6566a1b6-0b17-4ff8-ba01-c58374c179ee"},
 		# Properties for the eleventh store book
 	{table_object: table_objects[35], name: "collection", value: "21a9045f-4148-4e21-a701-8d19dd865d17"},
-	{table_object: table_objects[35], name: "title", value: "La Ferme des animaux"},
-	{table_object: table_objects[35], name: "description", value: "La Ferme des animaux est un roman allégorique de George Orwell, publié pour la première fois en Angleterre le 17 août 1945. Le livre raconte l'histoire d'un groupe d'animaux de ferme qui se rebellent contre leur éleveur humain dans l'espoir de créer une société dans laquelle les animaux peuvent être égaux, libres et heureux."},
-	{table_object: table_objects[35], name: "language", value: "fr"},
-	{table_object: table_objects[35], name: "status", value: "published"},
+	{table_object: table_objects[35], name: "title", value: "Farm der Tiere"},
+	{table_object: table_objects[35], name: "description", value: "Farm der Tiere ist eine allegorische Novelle von George Orwell, die erstmals am 17. August 1945 in England veröffentlicht wurde. Das Buch erzählt die Geschichte einer Gruppe von Nutztieren, die sich gegen ihren menschlichen Bauern auflehnen, in der Hoffnung, eine Gesellschaft zu schaffen, in der die Tiere gleichberechtigt, frei und glücklich sein können."},
+	{table_object: table_objects[35], name: "language", value: "de"},
+	{table_object: table_objects[35], name: "file", value: "987335cf-4fd0-4c80-a6f1-97bedd46ecbf"},
+		# Properties for the twelfth store book
+	{table_object: table_objects[36], name: "collection", value: "21a9045f-4148-4e21-a701-8d19dd865d17"},
+	{table_object: table_objects[36], name: "title", value: "La Ferme des animaux"},
+	{table_object: table_objects[36], name: "description", value: "La Ferme des animaux est un roman allégorique de George Orwell, publié pour la première fois en Angleterre le 17 août 1945. Le livre raconte l'histoire d'un groupe d'animaux de ferme qui se rebellent contre leur éleveur humain dans l'espoir de créer une société dans laquelle les animaux peuvent être égaux, libres et heureux."},
+	{table_object: table_objects[36], name: "language", value: "fr"},
+	{table_object: table_objects[36], name: "status", value: "published"},
 	# StoreBookCover properties
 		# Properties for the first StoreBookCover
-	{table_object: table_objects[36], name: "ext", value: "png"},
-	{table_object: table_objects[36], name: "type", value: "image/png"},
+	{table_object: table_objects[37], name: "ext", value: "png"},
+	{table_object: table_objects[37], name: "type", value: "image/png"},
 		# Properties for the second StoreBookCover
-	{table_object: table_objects[37], name: "ext", value: "jpg"},
-	{table_object: table_objects[37], name: "type", value: "image/jpeg"},
+	{table_object: table_objects[38], name: "ext", value: "jpg"},
+	{table_object: table_objects[38], name: "type", value: "image/jpeg"},
 		# Properties for the third StoreBookCover
-	{table_object: table_objects[38], name: "ext", value: "png"},
-	{table_object: table_objects[38], name: "type", value: "image/png"},
+	{table_object: table_objects[39], name: "ext", value: "png"},
+	{table_object: table_objects[39], name: "type", value: "image/png"},
 		# Properties for the fourth StoreBookCover
-	{table_object: table_objects[39], name: "ext", value: "jpg"},
-	{table_object: table_objects[39], name: "type", value: "image/jpeg"},
-		# Properties for the second StoreBookCover
 	{table_object: table_objects[40], name: "ext", value: "jpg"},
 	{table_object: table_objects[40], name: "type", value: "image/jpeg"},
+		# Properties for the fifth StoreBookCover
+	{table_object: table_objects[41], name: "ext", value: "png"},
+	{table_object: table_objects[41], name: "type", value: "image/png"},
+		# Properties for the sixth StoreBookCover
+	{table_object: table_objects[42], name: "ext", value: "jpg"},
+	{table_object: table_objects[42], name: "type", value: "image/jpeg"},
 	# StoreBookFile properties
 		# Properties for the first StoreBookFile
-	{table_object: table_objects[41], name: "ext", value: "pdf"},
-	{table_object: table_objects[41], name: "type", value: "application/pdf"},
-		# Properties for the second StoreBookFile
-	{table_object: table_objects[42], name: "ext", value: "epub"},
-	{table_object: table_objects[42], name: "type", value: "application/zip+epub"},
-		# Properties for the third StoreBookFile
 	{table_object: table_objects[43], name: "ext", value: "pdf"},
 	{table_object: table_objects[43], name: "type", value: "application/pdf"},
-		# Properties for the fourth StoreBookFile
+		# Properties for the second StoreBookFile
 	{table_object: table_objects[44], name: "ext", value: "epub"},
 	{table_object: table_objects[44], name: "type", value: "application/zip+epub"},
-		# Properties for the fifth StoreBookFile
+		# Properties for the third StoreBookFile
 	{table_object: table_objects[45], name: "ext", value: "pdf"},
 	{table_object: table_objects[45], name: "type", value: "application/pdf"},
-		# Properties for the sixth StoreBookFile
+		# Properties for the fourth StoreBookFile
 	{table_object: table_objects[46], name: "ext", value: "epub"},
 	{table_object: table_objects[46], name: "type", value: "application/zip+epub"},
-		# Properties for the seventh StoreBookFile
+		# Properties for the fifth StoreBookFile
 	{table_object: table_objects[47], name: "ext", value: "pdf"},
 	{table_object: table_objects[47], name: "type", value: "application/pdf"},
+		# Properties for the sixth StoreBookFile
+	{table_object: table_objects[48], name: "ext", value: "pdf"},
+	{table_object: table_objects[48], name: "type", value: "application/pdf"},
+		# Properties for the seventh StoreBookFile
+	{table_object: table_objects[49], name: "ext", value: "epub"},
+	{table_object: table_objects[49], name: "type", value: "application/zip+epub"},
 		# Properties for the eighth StoreBookFile
-	{table_object: table_objects[48], name: "ext", value: "epub"},
-	{table_object: table_objects[48], name: "type", value: "application/zip+epub"}
+	{table_object: table_objects[50], name: "ext", value: "pdf"},
+	{table_object: table_objects[50], name: "type", value: "application/pdf"},
+		# Properties for the ninth StoreBookFile
+	{table_object: table_objects[51], name: "ext", value: "epub"},
+	{table_object: table_objects[51], name: "type", value: "application/zip+epub"},
+	# Category properties
+		# Properties for the first category
+	{table_object: table_objects[52], name: "key", value: "childrens"},
+	{table_object: table_objects[52], name: "names", value: "a6125ec6-085f-4da3-b5c8-991922ec2081,b3cdf544-0485-48cf-a911-e7c187bcede5"},
+		# Properties for the second category
+	{table_object: table_objects[53], name: "key", value: "tragedy"},
+	{table_object: table_objects[53], name: "names", value: "60b73b76-310e-494b-be1a-8d19e5caf630,ce8f692d-5a4e-416a-8bb0-33802366db04"},
+		# Properties for the third category
+	{table_object: table_objects[54], name: "key", value: "dystopia"},
+	{table_object: table_objects[54], name: "names", value: "029e6808-e328-4fe2-bddd-3a80606e25aa,efaa516a-dd29-4fe4-aee1-25eabee3512a"},
+	# CategoryName properties
+		# Properties for the first name of the first category
+	{table_object: table_objects[55], name: "name", value: "Children's book"},
+	{table_object: table_objects[55], name: "language", value: "en"},
+		# Properties for the second name of the first category
+	{table_object: table_objects[56], name: "name", value: "Kinderbuch"},
+	{table_object: table_objects[56], name: "language", value: "de"},
+		# Properties for the first name of the second category
+	{table_object: table_objects[57], name: "name", value: "Tragedy"},
+	{table_object: table_objects[57], name: "language", value: "en"},
+		# Properties for the second name of the second category
+	{table_object: table_objects[58], name: "name", value: "Tragödie"},
+	{table_object: table_objects[58], name: "language", value: "de"},
+		# Properties for the first name of the third category
+	{table_object: table_objects[59], name: "name", value: "Dystopia"},
+	{table_object: table_objects[59], name: "language", value: "en"},
+		# Properties for the second name of the third category
+	{table_object: table_objects[60], name: "name", value: "Dystopie"},
+	{table_object: table_objects[60], name: "language", value: "de"}
 ])
 
 notifications = Notification.create([
