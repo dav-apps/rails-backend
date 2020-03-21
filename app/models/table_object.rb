@@ -2,7 +2,7 @@ class TableObject < ApplicationRecord
    after_destroy :delete_blob
 
    belongs_to :table
-   belongs_to :user
+	belongs_to :user
    has_many :properties, dependent: :destroy
    validates :uuid, presence: true
    has_many :table_objects_access_token
@@ -12,6 +12,7 @@ class TableObject < ApplicationRecord
 	has_many :table_object_user_access, dependent: :destroy
 	has_many :table_object_collections, dependent: :destroy
 	has_many :collections, through: :table_object_collections
+	has_many :purchases
 
    private
    def delete_blob

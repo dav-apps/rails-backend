@@ -20,6 +20,7 @@ class User < ApplicationRecord
 	has_many :sessions, dependent: :destroy
 	has_one :provider, dependent: :destroy
 	has_many :table_object_user_access, dependent: :destroy
+	has_many :purchases
 
 	private
 	def delete_avatar
