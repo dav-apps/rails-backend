@@ -783,9 +783,14 @@ class ApisController < ApplicationController
 					collection.save
 				end
 
-				# Create a TableObjectCollection object
-				obj_collection = TableObjectCollection.new(table_object: obj, collection: collection)
-				obj_collection.save
+				# Try to find the TableObjectCollection
+				obj_collection = TableObjectCollection.find_by(table_object: obj, collection: collection)
+
+				if !obj_collection
+					# Create the TableObjectCollection
+					obj_collection = TableObjectCollection.new(table_object: obj, collection: collection)
+					obj_collection.save
+				end
 			elsif command[0].to_s == "Collection.remove_table_object"	# collection_name, table_object_id
 				collection_name = execute_command(command[1], vars)
 				table_object_id = execute_command(command[2], vars)
@@ -1000,6 +1005,8 @@ class ApisController < ApplicationController
 			elsif var.class == Array
 				if last_part == "length"
 					return var.count
+				elsif last_part == "reverse"
+					return var.reverse
 				end
 			elsif var.class == String
 				if last_part == "length"
