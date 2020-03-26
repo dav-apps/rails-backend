@@ -462,13 +462,13 @@ class UsersController < ApplicationController
 				result[key] = requested_user[key]
 			end
 
-			avatar_info = BlobOperationsService.get_avatar_information(user.id)
+			avatar_info = BlobOperationsService.get_avatar_information(requested_user.id)
 			result["avatar"] = avatar_info[0]
 			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
-			result["used_storage"] = user.used_storage
-			result["dev"] = user.dev != nil
-			result["provider"] = user.provider != nil
+			result["total_storage"] = get_total_storage(requested_user.plan, requested_user.confirmed)
+			result["used_storage"] = requested_user.used_storage
+			result["dev"] = requested_user.dev != nil
+			result["provider"] = requested_user.provider != nil
 
 			users_apps = Array.new
 			UsersApp.where(user_id: requested_user.id).each do |users_app|
@@ -487,6 +487,67 @@ class UsersController < ApplicationController
 				result["subscription_status"] = requested_user.subscription_status
 				result["stripe_customer_id"] = requested_user.stripe_customer_id
 			end
+
+			render json: result, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
+
+	def get_user_by_auth
+		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		user_id = params["id"]
+		
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
+			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
+
+			api_key = auth.split(",")[0]
+
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			# Return the data
+			result = Hash.new
+			[
+				"id", 
+				"email", 
+				"username", 
+				"confirmed", 
+				"created_at", 
+				"updated_at", 
+				"plan"
+			].each do |key|
+				result[key] = user[key]
+			end
+
+			avatar_info = BlobOperationsService.get_avatar_information(user.id)
+			result["avatar"] = avatar_info[0]
+			result["avatar_etag"] = avatar_info[1]
+			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
+			result["used_storage"] = user.used_storage
+			result["dev"] = user.dev != nil
+			result["provider"] = user.provider != nil
+
+			users_apps = Array.new
+			UsersApp.where(user: user).each do |users_app|
+				app_hash = users_app.app.attributes
+				app_hash["used_storage"] = users_app.used_storage
+				users_apps.push(app_hash)
+			end
+
+			result["apps"] = users_apps
+			result["old_email"] = user.old_email
+			result["new_email"] = user.new_email
+			result["archives"] = user.archives
+			result["period_end"] = user.period_end
+			result["subscription_status"] = user.subscription_status
+			result["stripe_customer_id"] = user.stripe_customer_id
 
 			render json: result, status: 200
 		rescue RuntimeError => e

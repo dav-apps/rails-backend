@@ -896,7 +896,74 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 			assert_equal(matt[key], resp[key])
 		end
 	end
-   # End get_user tests
+	# End get_user tests
+	
+	# get_user_by_auth tests
+	test "Missing fields in get_user_by_auth" do
+		get "/v1/auth/user/#{users(:sherlock).id}/auth"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't get user by auth with invalid auth" do
+		get "/v1/auth/user/#{users(:sherlock).id}/auth", headers: {Authorization: "asdasd,asdasd"}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(1101, resp["errors"][0][0])
+	end
+
+	test "Can't get user by auth that does not exist" do
+		auth_token = generate_auth_token(devs(:sherlock))
+
+		get "/v1/auth/user/-12/auth", headers: {Authorization: auth_token}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2801, resp["errors"][0][0])
+	end
+
+	test "Can't get user by auth from outside the website" do
+		matt = users(:matt)
+		auth_token = generate_auth_token(devs(:matt))
+
+		get "/v1/auth/user/#{matt.id}/auth", headers: {Authorization: auth_token}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get user by auth" do
+		matt = users(:matt)
+		auth_token = generate_auth_token(devs(:sherlock))
+
+		get "/v1/auth/user/#{matt.id}/auth", headers: {Authorization: auth_token}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+
+		assert_response 200
+		[
+			"id",
+			"email",
+			"username",
+			"confirmed",
+			"created_at",
+			"updated_at",
+			"plan",
+			"old_email",
+			"new_email",
+			"period_end",
+			"subscription_status",
+			"stripe_customer_id"
+		].each do |key|
+			assert_equal(matt[key], resp[key])
+		end
+	end
+	# End get_user_by_auth tests
 
    # get_user_by_jwt tests
    test "Missing fields in get_user_by_jwt" do
