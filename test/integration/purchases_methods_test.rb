@@ -259,6 +259,26 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(currency, resp["currency"])
 
 		assert_equal(false, resp["completed"])
+
+		# Get the stripe customer of the user
+		matt = User.find_by_id(matt.id)
+		assert_not_nil(matt.stripe_customer_id)
+
+		customer = Stripe::Customer.retrieve(matt.stripe_customer_id)
+		assert_not_nil(customer)
+
+		# Get the payment intent
+		payment_intent = Stripe::PaymentIntent.retrieve(purchase.payment_intent_id)
+		assert_not_nil(payment_intent)
+
+		assert_equal(price, payment_intent["amount"])
+		assert_equal((price * 0.2).round, payment_intent["application_fee_amount"])
+		assert_equal(currency, payment_intent["currency"])
+		assert_equal(obj.user.provider.stripe_account_id, payment_intent["transfer_data"]["destination"])
+		assert_equal("requires_payment_method", payment_intent["status"])
+
+		# Cancel the Payment intent
+		Stripe::PaymentIntent.cancel(payment_intent.id)
 	end
 
 	# get_purchase tests
@@ -322,5 +342,99 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(purchase.price, resp["price"])
 		assert_equal(purchase.currency, resp["currency"])
 		assert_equal(purchase.completed, resp["completed"])
+	end
+
+	# complete_purchase tests
+	test "Can't complete purchase without auth" do
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase)
+
+		post "/v1/purchase/#{purchase.id}/complete"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't complete purchase with invalid auth" do
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase)
+
+		post "/v1/purchase/#{purchase.id}/complete", headers: {Authorization: "asdasdasdasdsda"}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(1101, resp["errors"][0][0])
+	end
+
+	test "Can't complete purchase with another dev than the first dev" do
+		auth = generate_auth_token(devs(:dav))
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase)
+
+		post "/v1/purchase/#{purchase.id}/complete", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't complete purchase for user that has no payment method" do
+		auth = generate_auth_token(devs(:sherlock))
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase)
+
+		post "/v1/purchase/#{purchase.id}/complete", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(1113, resp["errors"][0][0])
+	end
+
+	test "Can complete purchase" do
+		torera = users(:torera)
+		auth = generate_auth_token(devs(:sherlock))
+		jwt = (JSON.parse(login_user(torera, "Geld", devs(:dav)).body))["jwt"]
+		obj = table_objects(:seriesOfUnfortunateEventsFirstStoreBook)
+
+		price = 999
+		currency = "eur"
+
+		# Create a purchase
+		post "/v1/apps/object/#{obj.id}/purchase",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {
+				product_image: "http://localhost:3001/bla.png",
+				product_name: "A Series of Unfortunate Events - Book the First",
+				provider_image: "http://localhost:3001/snicket.png",
+				provider_name: "Lemony Snicket",
+				price: price,
+				currency: currency
+			}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		assert(!resp["completed"])
+
+		# Get the purchase from the database
+		purchase = Purchase.find_by_id(resp["id"])
+
+		# Get the payment intent
+		payment_intent = Stripe::PaymentIntent.retrieve(purchase.payment_intent_id)
+		assert_not_nil(payment_intent)
+
+		assert_equal(price, payment_intent["amount"])
+		assert_equal((price * 0.2).round, payment_intent["application_fee_amount"])
+		assert_equal(currency, payment_intent["currency"])
+		assert_equal(obj.user.provider.stripe_account_id, payment_intent["transfer_data"]["destination"])
+		assert_equal(torera.stripe_customer_id, payment_intent["customer"])
+		assert_equal("requires_payment_method", payment_intent["status"])
+
+		# Complete the purchase
+		post "/v1/purchase/#{purchase.id}/complete", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert(resp["completed"])
+
+		payment_intent = Stripe::PaymentIntent.retrieve(purchase.payment_intent_id)
+		assert_not_nil(payment_intent)
+		assert_equal("succeeded", payment_intent["status"])
 	end
 end

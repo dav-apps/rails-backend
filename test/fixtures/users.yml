@@ -17,6 +17,7 @@ matt:
   email_confirmation_token: "emailconfirmationtoken"
   password_confirmation_token: "passwordconfirmationtoken"
   new_password: "blasdasdpasdjpasdopsadajd"
+  stripe_customer_id: cus_Gzi9UDeVX0BkwH
 
 cato:
   username: cato
