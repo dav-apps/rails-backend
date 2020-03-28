@@ -250,6 +250,11 @@ class ValidationService
 		table_object.user == user ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_table_object_already_purchased(user, table_object)
+		error_code = 1121
+		Purchase.find_by(user: user, table_object: table_object, completed: true) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.authenticate_user(user, password)
 		error_code = 1201
 		!user.authenticate(password) ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
@@ -937,6 +942,8 @@ class ValidationService
 			"Purchase is already completed"
 		when 1120
 			"Can't create purchase for own TableObject"
+		when 1121
+			"You already purchased this TableObject"
 		when 1201
 			"Password is incorrect"
 		when 1202

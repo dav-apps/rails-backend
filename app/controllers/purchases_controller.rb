@@ -35,6 +35,9 @@ class PurchasesController < ApplicationController
 			# Check if the app of the table object belongs to the dev
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(object.table.app, dev))
 
+			# Check if the user already purchased the table object
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_already_purchased(user, object))
+
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
 			price = body["price"]
@@ -163,6 +166,9 @@ class PurchasesController < ApplicationController
 
 			# Check if the purchase is already completed
 			ValidationService.raise_validation_error(ValidationService.validate_purchase_already_completed(purchase))
+			
+			# Check if the user already purchased the table object
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_already_purchased(purchase.user, purchase.table_object))
 
 			# Check if the user has a stripe customer
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_stripe_customer(purchase.user))

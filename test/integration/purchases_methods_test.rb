@@ -210,6 +210,27 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(1102, resp["errors"][0][0])
 	end
 
+	test "Can't create purchase for table object that the user already purchased" do
+		obj = table_objects(:seriesOfUnfortunateEventsFirstStoreBook)
+		cato = users(:cato)
+		jwt = (JSON.parse(login_user(cato, "123456", devs(:dav)).body))["jwt"]
+
+		post "/v1/apps/object/#{obj.id}/purchase",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {
+				product_image: "http://localhost:3001/bla.png",
+				product_name: "A Series of Unfortunate Events - Book the First",
+				provider_image: "http://localhost:3001/snicket.png",
+				provider_name: "Lemony Snicket",
+				price: 1366,
+				currency: "eur"
+			}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(1121, resp["errors"][0][0])
+	end
+
 	test "Can create purchase" do
 		obj = table_objects(:seriesOfUnfortunateEventsFirstStoreBook)
 		matt = users(:matt)
@@ -385,6 +406,44 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 400
 		assert_equal(1113, resp["errors"][0][0])
+	end
+
+	test "Can't complete purchase for table object that the user already purchased" do
+		cato = users(:cato)
+		auth = generate_auth_token(devs(:sherlock))
+		jwt = (JSON.parse(login_user(cato, "123456", devs(:dav)).body))["jwt"]
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase2)
+		obj = table_objects(:seriesOfUnfortunateEventsFirstStoreBook)
+
+		# Update the purchase with completed = false
+		purchase.completed = false
+		purchase.save
+
+		# Create a purchase
+		post "/v1/apps/object/#{obj.id}/purchase",
+		headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+		params: {
+			product_image: "http://localhost:3001/bla.png",
+			product_name: "A Series of Unfortunate Events - Book the First",
+			provider_image: "http://localhost:3001/snicket.png",
+			provider_name: "Lemony Snicket",
+			price: 1366,
+			currency: "eur"
+		}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+
+		# Update the first purchase with completed = true
+		purchase.completed = true
+		purchase.save
+
+		# Try to complete the second purchase
+		post "/v1/purchase/#{resp["id"]}/complete", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(1121, resp["errors"][0][0])
 	end
 
 	test "Can complete purchase" do
