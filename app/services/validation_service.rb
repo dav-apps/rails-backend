@@ -29,6 +29,14 @@ class ValidationService
 	min_api_function_name_length = 3
 	max_api_function_name_length = 100
 	max_params_length = 200
+	min_product_image_length = 2
+	max_product_image_length = 65000
+	min_product_name_length = 2
+	max_product_name_length = 300
+	min_provider_image_length = 2
+	max_provider_image_length = 65000
+	min_provider_name_length = 2
+	max_provider_name_length = 100
 
 	def self.get_errors_of_validations(validations)
 		errors = Array.new
@@ -200,6 +208,11 @@ class ValidationService
 		!user.stripe_customer_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_user_has_payment_method(payment_methods)
+		error_code = 1113
+		payment_methods.data.size == 0 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_user_is_user_of_app(users_app)
 		error_code = 1114
 		!users_app ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
@@ -214,6 +227,27 @@ class ValidationService
 		error_code = 1116
 		c = country.downcase
 		(c != "de" && c != "us") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_currency_supported(currency)
+		error_code = 1117
+		c = currency.downcase
+		(c != "eur") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_user_of_table_object_is_provider(table_object)
+		error_code = 1118
+		!table_object.user.provider ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_purchase_already_completed(purchase)
+		error_code = 1119
+		purchase.completed ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_purchase_does_not_belong_to_user(table_object, user)
+		error_code = 1120
+		table_object.user == user ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.authenticate_user(user, password)
@@ -456,6 +490,36 @@ class ValidationService
 		!country ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_price_missing(price)
+		error_code = 2139
+		!price ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_currency_missing(currency)
+		error_code = 2140
+		!currency ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_product_image_missing(product_image)
+		error_code = 2141
+		!product_image ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_product_name_missing(product_name)
+		error_code = 2142
+		!product_name ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_provider_image_missing(provider_image)
+		error_code = 2143
+		!provider_image ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_provider_name_missing(provider_name)
+		error_code = 2144
+		!provider_name ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
 		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -524,6 +588,26 @@ class ValidationService
 	define_singleton_method :validate_message_too_short do |message|
 		error_code = 2210
 		message.length < min_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_product_image_too_short do |product_image|
+		error_code = 2211
+		product_image.length < min_product_image_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_product_name_too_short do |product_name|
+		error_code = 2212
+		product_name.length < min_product_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_provider_image_too_short do |provider_image|
+		error_code = 2213
+		provider_image.length < min_provider_image_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_provider_name_too_short do |provider_name|
+		error_code = 2214
+		provider_name.length < min_provider_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_username_too_long do |username|
@@ -601,6 +685,26 @@ class ValidationService
 		params.length > max_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_product_image_too_long do |product_image|
+		error_code = 2312
+		product_image.length > max_product_image_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_product_name_too_long do |product_name|
+		error_code = 2313
+		product_name.length > max_product_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_provider_image_too_long do |provider_image|
+		error_code = 2314
+		provider_image.length > max_provider_image_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_provider_name_too_long do |provider_name|
+		error_code = 2315
+		provider_name.length > max_provider_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	def self.validate_email_not_valid(email)
 		error_code = 2401
 		!validate_email(email) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -634,6 +738,11 @@ class ValidationService
 	def self.validate_code_not_valid(code)
 		error_code = 2407
 		(!code.is_a?(Integer) || code < 0) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_price_not_valid(price)
+		error_code = 2408
+		(!price.is_a?(Integer) || price < 0) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_table_name_contains_not_allowed_characters(table_name)
@@ -766,6 +875,11 @@ class ValidationService
 		!provider ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
+	def self.validate_purchase_does_not_exist(purchase)
+		error_code = 2818
+		!purchase ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
 	def self.validate_dev_already_exists(dev)
 		error_code = 2902
 		dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
@@ -815,6 +929,14 @@ class ValidationService
 			"User is already a stripe customer"
 		when 1116
 			"Country not supported"
+		when 1117
+			"Currency not supported"
+		when 1118
+			"User of TableObject is not a provider"
+		when 1119
+			"Purchase is already completed"
+		when 1120
+			"Can't create purchase for own TableObject"
 		when 1201
 			"Password is incorrect"
 		when 1202
@@ -905,6 +1027,18 @@ class ValidationService
 			"Missing field: errors"
 		when 2138
 			"Missing field: country"
+		when 2139
+			"Missing field: price"
+		when 2140
+			"Missing field: currency"
+		when 2141
+			"Missing field: product_image"
+		when 2142
+			"Missing field: product_name"
+		when 2143
+			"Missing field: provider_image"
+		when 2144
+			"Missing field: provider_name"
 		when 2201
 			"Field too short: username"
 		when 2202
@@ -925,6 +1059,14 @@ class ValidationService
 			"Field too short: commands"
 		when 2210
 			"Field too short: message"
+		when 2211
+			"Field too short: product_image"
+		when 2212
+			"Field too short: product_name"
+		when 2213
+			"Field too short: provider_image"
+		when 2214
+			"Field too short: provider_name"
 		when 2301
 			"Field too long: username"
 		when 2302
@@ -947,6 +1089,14 @@ class ValidationService
 			"Field too long: message"
 		when 2311
 			"Field too long: params"
+		when 2312
+			"Field too long: product_image"
+		when 2313
+			"Field too long: product_name"
+		when 2314
+			"Field too long: provider_image"
+		when 2315
+			"Field too long: provider_name"
 		when 2401
 			"Field not valid: email"
 		when 2402
@@ -961,6 +1111,8 @@ class ValidationService
 			"Field not valid: method"
 		when 2407
 			"Field not valid: code"
+		when 2408
+			"Field not valid: price"
 		when 2501
 			"Field contains not allowed characters: table_name"
 		when 2502
@@ -1013,6 +1165,8 @@ class ValidationService
 			"Resource does not exist: ApiEndpoint"
 		when 2817
 			"Resource does not exist: Provider"
+		when 2818
+			"Resource does not exist: Purchase"
 		when 2901
 			"Resource already exists: User"
 		when 2902

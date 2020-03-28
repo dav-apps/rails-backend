@@ -195,9 +195,14 @@ ActiveRecord::Schema.define(version: 2020_03_21_191322) do
   create_table "purchases", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
     t.integer "user_id"
     t.integer "table_object_id"
+    t.string "payment_intent_id"
+    t.string "product_image"
+    t.string "product_name"
+    t.string "provider_image"
+    t.string "provider_name"
     t.integer "price"
     t.string "currency"
-    t.boolean "paid", default: false
+    t.boolean "completed", default: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end

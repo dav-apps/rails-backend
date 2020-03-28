@@ -43,6 +43,11 @@ Rails.application.routes.draw do
   # Provider routes
   match '/v1/provider', to: 'providers#create_provider', via: :post
   match '/v1/provider', to: 'providers#get_provider', via: :get
+
+  # Purchase routes
+  match '/v1/apps/object/:id/purchase', to: 'purchases#create_purchase', via: :post
+  match '/v1/purchase/:id', to: 'purchases#get_purchase', via: :get
+  match '/v1/purchase/:id/complete', to: 'purchases#complete_purchase', via: :post
   
   # Apps routes
   match '/v1/apps/object', to: 'apps#create_object', via: 'post'
