@@ -13,3 +13,7 @@ davTable:
 testTable:
   name: TestTable
   app: TestApp
+
+StoreBook:
+  name: StoreBook
+  app: PocketLib

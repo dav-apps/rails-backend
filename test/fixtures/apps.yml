@@ -15,3 +15,9 @@ davApp:
   description: dav Test app
   published: false
   dev: dav
+
+PocketLib:
+  name: PocketLib
+  description: Read your books wherever and whenever you want!
+  published: true
+  dev: dav
