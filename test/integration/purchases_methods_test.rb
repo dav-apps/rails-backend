@@ -6,7 +6,7 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	# create_purchase tests
-	test "Missing fields in create_purchase" do
+	test "Can't create purchase without jwt" do
 		obj = table_objects(:second)
 
 		post "/v1/apps/object/#{obj.id}/purchase"
@@ -259,5 +259,68 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(currency, resp["currency"])
 
 		assert_equal(false, resp["completed"])
+	end
+
+	# get_purchase tests
+	test "Can't get purchase without auth" do
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase)
+
+		get "/v1/purchase/#{purchase.id}"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2101, resp["errors"][0][0])
+	end
+
+	test "Can't get purchase with invalid auth" do
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase)
+
+		get "/v1/purchase/#{purchase.id}", headers: {Authorization: "asdsadasd"}
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(1101, resp["errors"][0][0])
+	end
+
+	test "Can't get purchase that does not exist" do
+		auth = generate_auth_token(devs(:sherlock))
+
+		get "/v1/purchase/-12", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2818, resp["errors"][0][0])
+	end
+
+	test "Can't get purchase with another dev than the first dev" do
+		auth = generate_auth_token(devs(:dav))
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase)
+
+		get "/v1/purchase/#{purchase.id}", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can get purchase" do
+		auth = generate_auth_token(devs(:sherlock))
+		purchase = purchases(:seriesOfUnfortunateEventsFirstStoreBookPurchase)
+
+		get "/v1/purchase/#{purchase.id}", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		assert_equal(purchase.id, resp["id"])
+		assert_equal(purchase.user_id, resp["user_id"])
+		assert_equal(purchase.table_object_id, resp["table_object_id"])
+		assert_equal(purchase.payment_intent_id, resp["payment_intent_id"])
+		assert_equal(purchase.product_image, resp["product_image"])
+		assert_equal(purchase.product_name, resp["product_name"])
+		assert_equal(purchase.provider_image, resp["provider_image"])
+		assert_equal(purchase.provider_name, resp["provider_name"])
+		assert_equal(purchase.price, resp["price"])
+		assert_equal(purchase.currency, resp["currency"])
+		assert_equal(purchase.completed, resp["completed"])
 	end
 end

@@ -1,0 +1,11 @@
+seriesOfUnfortunateEventsFirstStoreBookPurchase:
+  user: matt
+  table_object: seriesOfUnfortunateEventsFirstStoreBook
+  payment_intent_id: pi_asdasdasd
+  product_image: http://localhost:3001/bla.png
+  product_name: A Series of Unfortunate Events - Book the First
+  provider_image: http://localhost:3001/snicket.png
+  provider_name: Lemony Snicket
+  price: 1366
+  currency: eur
+  completed: false
