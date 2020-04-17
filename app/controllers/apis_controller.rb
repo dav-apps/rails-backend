@@ -757,6 +757,7 @@ class ApisController < ApplicationController
 
 				return access
 			elsif command[0].to_s == "Collection.add_table_object"	# collection_name, table_object_id
+				error = Hash.new
 				collection_name = execute_command(command[1], vars)
 				table_object_id = execute_command(command[2], vars)
 
@@ -792,6 +793,7 @@ class ApisController < ApplicationController
 					obj_collection.save
 				end
 			elsif command[0].to_s == "Collection.remove_table_object"	# collection_name, table_object_id
+				error = Hash.new
 				collection_name = execute_command(command[1], vars)
 				table_object_id = execute_command(command[2], vars)
 
@@ -825,6 +827,7 @@ class ApisController < ApplicationController
 					obj_collection.destroy!
 				end
 			elsif command[0].to_s == "Collection.get_table_objects"	# table_id, collection_name
+				error = Hash.new
 				table_id = execute_command(command[1], vars)
 				collection_name = execute_command(command[2], vars)
 
@@ -895,6 +898,54 @@ class ApisController < ApplicationController
 				end
 
 				return objects
+			elsif command[0].to_s == "Purchase.get_table_object"	# purchase_id, user_id
+				error = Hash.new
+				purchase_id = execute_command(command[1], vars)
+				user_id = execute_command(command[2], vars)
+
+				purchase = Purchase.find_by_id(purchase_id)
+
+				if !purchase
+					error["code"] = 0
+					@errors.push(error)
+					return @errors
+				end
+
+				user = User.find_by_id(user_id)
+
+				if !user
+					error["code"] = 1
+					@errors.push(error)
+					return @errors
+				end
+
+				if purchase.user != user
+					error["code"] = 2
+					@errors.push(error)
+					return @errors
+				end
+
+				if !purchase.completed
+					error["code"] = 3
+					@errors.push(error)
+					return @errors
+				end
+
+				return purchase.table_object
+			elsif command[0].to_s == "Purchase.find_by_user_and_table_object"		# user_id, table_object_id
+				user_id = execute_command(command[1], vars)
+				table_object_id = execute_command(command[2], vars)
+
+				if table_object_id.class == Integer
+					# table_object_id is id
+					return Purchase.find_by(user_id: user_id, table_object_id: table_object_id, completed: true)
+				else
+					# table_object_id is uuid
+					table_object = TableObject.find_by(uuid: table_object_id)
+					
+					return nil if !table_object
+					return Purchase.find_by(user_id: user_id, table_object_id: table_object.id, completed: true)
+				end
 
 			# Command is an expression
 			elsif command[1] == :==
@@ -1034,6 +1085,8 @@ class ApisController < ApplicationController
 				props = var.where(name: last_part)
 				return props[0].value if props.count > 0
 				return nil
+			elsif var.class == Purchase
+				return var[last_part]
 			end
 		elsif command.to_s.include?('#')
 			parts = command.to_s.split('#')
