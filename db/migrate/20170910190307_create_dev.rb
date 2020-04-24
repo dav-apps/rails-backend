@@ -1,4 +1,4 @@
-class CreateDev < ActiveRecord::Migration
+class CreateDev < ActiveRecord::Migration[4.2]
   def change
     create_table :devs do |t|
       t.integer :user_id

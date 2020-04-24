@@ -1,4 +1,4 @@
-class CreateTable < ActiveRecord::Migration
+class CreateTable < ActiveRecord::Migration[4.2]
   def change
     create_table :tables do |t|
       t.integer :app_id

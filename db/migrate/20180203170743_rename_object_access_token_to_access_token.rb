@@ -1,4 +1,4 @@
-class RenameObjectAccessTokenToAccessToken < ActiveRecord::Migration
+class RenameObjectAccessTokenToAccessToken < ActiveRecord::Migration[4.2]
   def change
     rename_table :object_access_tokens, :access_tokens
     remove_column :access_tokens, :table_object_id, :integer
