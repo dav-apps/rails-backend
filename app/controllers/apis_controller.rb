@@ -69,6 +69,9 @@ class ApisController < ApplicationController
 			# Stop the execution of the program if this is true
 			@execution_stopped = false
 
+			# Stop the current for loop if this is true
+			@break_loop = false
+
 			ast.each do |element|
 				break if @execution_stopped
 				execute_command(element, @vars)
@@ -84,6 +87,7 @@ class ApisController < ApplicationController
 	def execute_command(command, vars)
 		return nil if @execution_stopped
 		return nil if @errors.count > 0
+		return nil if @break_loop
 
 		if command.class == Array
 			# Command is a function call
@@ -177,9 +181,16 @@ class ApisController < ApplicationController
 				commands = command[4]
 
 				array.each do |entry|
+					break if @break_loop
+
 					vars[var_name.to_s] = entry
 					execute_command(commands, vars)
 				end
+
+				@break_loop = false
+			elsif command[0] == :break
+				@break_loop = true
+				return nil
 			elsif command[0] == :def
 				# Function definition
 				name = command[1].to_s
@@ -1012,6 +1023,17 @@ class ApisController < ApplicationController
 						end
 					elsif function_name == "contains"
 						return var.include?(execute_command(command[1], vars))
+					elsif function_name == "join"
+						return "" if var.size == 0
+
+						separator = execute_command(command[1], vars)
+						result = var[0]
+
+						for i in 1..var.size - 1 do
+							result = result + separator + var[i]
+						end
+
+						return result
 					end
 				elsif var.class == String
 					if function_name == "split"
