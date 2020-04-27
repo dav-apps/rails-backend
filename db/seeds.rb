@@ -8,6 +8,10 @@ users = User.create([
 	{email: "klaus.baudelaire@dav-apps.tech", password: "isadora", username: "Klaus", confirmed: true, plan: 2}
 ])
 
+providers = Provider.create([
+	{user: users[5], stripe_account_id: "acct_1GPFIgAwAxz84qLO"}
+])
+
 devs = Dev.create([
    {user: users.first, api_key: "eUzs3PQZYweXvumcWvagRHjdUroGe5Mo7kN1inHm", secret_key: "Stac8pRhqH0CSO5o9Rxqjhu7vyVp4PINEMJumqlpvRQai4hScADamQ", uuid: "d133e303-9dbb-47db-9531-008b20e5aae8"},
    {user: users.second, api_key: "MhKSDyedSw8WXfLk2hkXzmElsiVStD7C8JU3KNGp", secret_key: "5nyf0tRr0GNmP3eB83pobm8hifALZsUq3NpW5En9nFRpssXxlZv-JA", uuid: "71a5d4f8-083e-413e-a8ff-66847a5f3a97"}
