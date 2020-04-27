@@ -994,6 +994,57 @@ class AppsController < ApplicationController
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
+
+	def remove_object
+		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		object_id = params["id"]
+
+		begin
+			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
+
+			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt, session_id)
+			ValidationService.raise_validation_error(jwt_signature_validation[0])
+			user_id = jwt_signature_validation[1][0]["user_id"]
+			dev_id = jwt_signature_validation[1][0]["dev_id"]
+
+			user = User.find_by_id(user_id)
+			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
+
+			dev = Dev.find_by_id(dev_id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+
+			obj = TableObject.find_by(uuid: object_id)
+			obj = TableObject.find_by_id(object_id) if !obj
+
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
+
+			table = Table.find_by_id(obj.table_id)
+			ValidationService.raise_validation_error(ValidationService.validate_table_does_not_exist(table))
+
+			app = App.find_by_id(table.app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+
+			# Check if the user has access to the table object
+			access = TableObjectUserAccess.find_by(user: user, table_object: obj)
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_user_access_does_not_exist(access))
+
+			# Remove the TableObjectUserAccess
+			access.destroy!
+
+			# Notify connected clients
+			TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 2, session_id: session_id)
+
+			# Save that the user was active
+			user.update_column(:last_active, Time.now)
+
+			render json: {}, status: 200
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
    
 	# Table methods
 	def create_table

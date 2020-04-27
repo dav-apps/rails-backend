@@ -885,6 +885,11 @@ class ValidationService
 		!purchase ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
+	def self.validate_table_object_user_access_does_not_exist(access)
+		error_code = 2819
+		!access ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
+	end
+
 	def self.validate_dev_already_exists(dev)
 		error_code = 2902
 		dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 409} : {success: true}
@@ -1174,6 +1179,8 @@ class ValidationService
 			"Resource does not exist: Provider"
 		when 2818
 			"Resource does not exist: Purchase"
+		when 2819
+			"Resource does not exist: TableObjectUserAccess"
 		when 2901
 			"Resource already exists: User"
 		when 2902

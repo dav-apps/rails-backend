@@ -1781,7 +1781,116 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_not_equal(old_users_app_last_active, matt_cards.last_active)
 		assert_equal(old_updated_at, matt.updated_at)
 	end
-   # End delete_object tests
+	# End delete_object tests
+	
+	# remove_object tests
+	test "Missing fields in remove_object" do
+		delete "/v1/apps/object/1/access"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
+	end
+
+	test "Can't remove object that does not exist" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
+
+		delete "/v1/apps/object/-123/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2805, resp["errors"][0][0])
+	end
+
+	test "Can't remove object to which the user has no access to" do
+		matt = users(:matt)
+		obj = table_objects(:second)
+		jwt = generate_session_jwt(matt, devs(:sherlock), obj.table.app_id, "schachmatt")
+
+		delete "/v1/apps/object/#{obj.id}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+	
+		assert_response 404
+		assert_equal(2819, resp["errors"][0][0])
+	end
+
+	test "Can't remove object which belongs to the app of another dev" do
+		matt = users(:matt)
+		obj = table_objects(:third)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:dav)).body)["jwt"]
+
+		delete "/v1/apps/object/#{obj.id}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can remove object" do
+		cato = users(:cato)
+		obj = table_objects(:third)
+		access = table_object_user_accesses(:catoAccessThirdTableObject)
+		jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
+
+		delete "/v1/apps/object/#{obj.id}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		
+		# Check if the TableObjectUserAccess was deleted
+		access = TableObjectUserAccess.find_by_id(access.id)
+		assert_nil(access)
+	end
+
+	test "Can remove object with session jwt" do
+		cato = users(:cato)
+		obj = table_objects(:third)
+		access = table_object_user_accesses(:catoAccessThirdTableObject)
+		jwt = generate_session_jwt(cato, devs(:sherlock), obj.table.app_id, "123456")
+
+		delete "/v1/apps/object/#{obj.id}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		
+		# Check if the TableObjectUserAccess was deleted
+		access = TableObjectUserAccess.find_by_id(access.id)
+		assert_nil(access)
+	end
+
+	test "Can remove object with uuid" do
+		cato = users(:cato)
+		obj = table_objects(:third)
+		access = table_object_user_accesses(:catoAccessThirdTableObject)
+		jwt = (JSON.parse login_user(cato, "123456", devs(:sherlock)).body)["jwt"]
+
+		delete "/v1/apps/object/#{obj.uuid}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		
+		# Check if the TableObjectUserAccess was deleted
+		access = TableObjectUserAccess.find_by_id(access.id)
+		assert_nil(access)
+	end
+
+	test "Can remove object with uuid and session jwt" do
+		cato = users(:cato)
+		obj = table_objects(:third)
+		access = table_object_user_accesses(:catoAccessThirdTableObject)
+		jwt = generate_session_jwt(cato, devs(:sherlock), obj.table.app_id, "123456")
+
+		delete "/v1/apps/object/#{obj.uuid}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		
+		# Check if the TableObjectUserAccess was deleted
+		access = TableObjectUserAccess.find_by_id(access.id)
+		assert_nil(access)
+	end
+	# End remove_object tests
    
 	# create_table tests
 	test "Missing fields in create_table" do
