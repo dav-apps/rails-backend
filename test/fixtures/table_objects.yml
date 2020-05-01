@@ -49,3 +49,13 @@ seriesOfUnfortunateEventsFirstStoreBook:
   table: StoreBook
   user: snicket
   uuid: fd8f8228-0e6b-4de6-abd2-5365754c5308
+
+seriesOfUnfortunateEventsSecondStoreBook:
+  table: StoreBook
+  user: snicket
+  uuid: d485ec3e-09e1-49d0-bb0c-c5115ef85522
+
+ausMeinemLebenStoreBook:
+  table: StoreBook
+  user: hindenburg
+  uuid: e61fe8b0-fffc-4108-bdfc-58c9fd581be7

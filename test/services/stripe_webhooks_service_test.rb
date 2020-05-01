@@ -2,14 +2,14 @@ require 'test_helper'
 require 'stripe_mock'
 
 class StripeWebhooksServiceTest < ActiveSupport::TestCase
-   setup do
-      StripeMock.start
-      save_users_and_devs
+	setup do
+		StripeMock.start
+		save_users_and_devs
    end
 
    teardown do
-      StripeMock.stop
-   end
+		StripeMock.stop
+	end
 
    # InvoicePaymentSucceededEvent tests
 	test "InvoicePaymentSucceededEvent should update the user from active free plan to active plus plan" do
@@ -70,6 +70,280 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		assert_equal(2, torera.plan)
 		assert_equal(0, torera.subscription_status)
 		assert_equal(period_end, torera.period_end.to_i)
+	end
+
+	test "InvoicePaymentSucceededEvent should create appropriate transfer for single provider" do
+		# 10 € -> 1 PocketLib provider
+		StripeMock.stop
+		klaus = users(:klaus)
+		amount = 1000
+		transferred_amount = 1000 * 0.8
+
+		# Get the customer
+		payment_method = Stripe::PaymentMethod.list({
+			customer: klaus.stripe_customer_id,
+			type: 'card'
+		}).data[0]
+
+		# Create a payment intent
+		payment_intent = Stripe::PaymentIntent.create({
+			amount: amount,
+			currency: 'eur',
+			payment_method_types: ['card'],
+			payment_method: payment_method.id,
+			customer: klaus.stripe_customer_id,
+			confirm: true
+		})
+
+		# Trigger the InvoicePaymentSucceeded event
+		event = Hash.new
+		event["id"] = "test_evt_1"
+		event["livemode"] = false
+		event["type"] = "invoice.payment_succeeded"
+		event["object"] = "event"
+		event["data"] = Hash.new
+		event["data"]["object"] = Hash.new
+		event["data"]["object"]["lines"] = Hash.new
+		event["data"]["object"]["lines"]["data"] = Array.new([Hash.new])
+		event["data"]["object"]["lines"]["data"][0]["period"] = Hash.new
+		event["data"]["object"]["lines"]["data"][0]["plan"] = Hash.new
+
+		event["data"]["object"]["customer"] = klaus.stripe_customer_id
+		event["data"]["object"]["lines"]["data"][0]["period"]["end"] = 123456
+		event["data"]["object"]["lines"]["data"][0]["plan"]["product"] = ENV['STRIPE_DAV_PRO_PRODUCT_ID']
+		event["data"]["object"]["lines"]["data"][0]["amount"] = amount
+		event["data"]["object"]["charge"] = payment_intent.charges.data[0].id
+
+		StripeWebhooksService.InvoicePaymentSucceededEvent(Stripe::Util.convert_to_stripe_object(event))
+
+		# Get the transfers
+		transfers = Stripe::Transfer.list({limit: 1})
+		transfer = transfers.data[0]
+
+		assert_equal(800, transferred_amount)
+		assert_equal(transferred_amount, transfer.amount)
+		assert_equal("eur", transfer.currency)
+		assert_equal(providers(:snicket).stripe_account_id, transfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, transfer.source_transaction)
+	end
+
+	test "InvoicePaymentSucceededEvent should create appropriate transfers for multiple providers" do
+		# 10 € -> 2 PocketLib providers
+		StripeMock.stop
+		klaus = users(:klaus)
+		amount = 1000
+		transferred_amount = 400
+
+		# Create a TableObjectUserAccess for Aus meinem Leben
+		TableObjectUserAccess.create(
+			table_object: table_objects(:ausMeinemLebenStoreBook),
+			table_alias: tables(:StoreBook).id,
+			user: klaus
+		)
+
+		# Get the customer
+		payment_method = Stripe::PaymentMethod.list({
+			customer: klaus.stripe_customer_id,
+			type: 'card'
+		}).data[0]
+
+		# Create a payment intent
+		payment_intent = Stripe::PaymentIntent.create({
+			amount: amount,
+			currency: 'eur',
+			payment_method_types: ['card'],
+			payment_method: payment_method.id,
+			customer: klaus.stripe_customer_id,
+			confirm: true
+		})
+
+		# Trigger the InvoicePaymentSucceeded event
+		event = Hash.new
+		event["id"] = "test_evt_1"
+		event["livemode"] = false
+		event["type"] = "invoice.payment_succeeded"
+		event["object"] = "event"
+		event["data"] = Hash.new
+		event["data"]["object"] = Hash.new
+		event["data"]["object"]["lines"] = Hash.new
+		event["data"]["object"]["lines"]["data"] = Array.new([Hash.new])
+		event["data"]["object"]["lines"]["data"][0]["period"] = Hash.new
+		event["data"]["object"]["lines"]["data"][0]["plan"] = Hash.new
+
+		event["data"]["object"]["customer"] = klaus.stripe_customer_id
+		event["data"]["object"]["lines"]["data"][0]["period"]["end"] = 123456
+		event["data"]["object"]["lines"]["data"][0]["plan"]["product"] = ENV['STRIPE_DAV_PRO_PRODUCT_ID']
+		event["data"]["object"]["lines"]["data"][0]["amount"] = amount
+		event["data"]["object"]["charge"] = payment_intent.charges.data[0].id
+
+		StripeWebhooksService.InvoicePaymentSucceededEvent(Stripe::Util.convert_to_stripe_object(event))
+
+		# Get the transfers
+		transfers = Stripe::Transfer.list({limit: 2})
+		firstTransfer = transfers.data[0]
+		secondTransfer = transfers.data[1]
+
+		assert_equal(400, transferred_amount)
+		assert_equal(transferred_amount, firstTransfer.amount)
+		assert_equal(transferred_amount, secondTransfer.amount)
+
+		assert_equal("eur", secondTransfer.currency)
+		assert_equal(providers(:snicket).stripe_account_id, secondTransfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, secondTransfer.source_transaction)
+
+		assert_equal("eur", firstTransfer.currency)
+		assert_equal(providers(:hindenburg).stripe_account_id, firstTransfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, firstTransfer.source_transaction)
+	end
+
+	test "InvoicePaymentSucceededEvent should create appropriate transfers for multiple providers with user using multiple apps" do
+		# 10 € -> 2 PocketLib providers & 1 normal app
+		StripeMock.stop
+		klaus = users(:klaus)
+		amount = 1000
+		transferred_amount = 200
+
+		# Create a TableObjectUserAccess for Aus meinem Leben
+		TableObjectUserAccess.create(
+			table_object: table_objects(:ausMeinemLebenStoreBook),
+			table_alias: tables(:StoreBook).id,
+			user: klaus
+		)
+
+		# Create a UsersApp for another app
+		UsersApp.create(app: apps(:Cards), user: klaus)
+
+		# Get the customer
+		payment_method = Stripe::PaymentMethod.list({
+			customer: klaus.stripe_customer_id,
+			type: 'card'
+		}).data[0]
+
+		# Create a payment intent
+		payment_intent = Stripe::PaymentIntent.create({
+			amount: amount,
+			currency: 'eur',
+			payment_method_types: ['card'],
+			payment_method: payment_method.id,
+			customer: klaus.stripe_customer_id,
+			confirm: true
+		})
+
+		# Trigger the InvoicePaymentSucceeded event
+		event = Hash.new
+		event["id"] = "test_evt_1"
+		event["livemode"] = false
+		event["type"] = "invoice.payment_succeeded"
+		event["object"] = "event"
+		event["data"] = Hash.new
+		event["data"]["object"] = Hash.new
+		event["data"]["object"]["lines"] = Hash.new
+		event["data"]["object"]["lines"]["data"] = Array.new([Hash.new])
+		event["data"]["object"]["lines"]["data"][0]["period"] = Hash.new
+		event["data"]["object"]["lines"]["data"][0]["plan"] = Hash.new
+
+		event["data"]["object"]["customer"] = klaus.stripe_customer_id
+		event["data"]["object"]["lines"]["data"][0]["period"]["end"] = 123456
+		event["data"]["object"]["lines"]["data"][0]["plan"]["product"] = ENV['STRIPE_DAV_PRO_PRODUCT_ID']
+		event["data"]["object"]["lines"]["data"][0]["amount"] = amount
+		event["data"]["object"]["charge"] = payment_intent.charges.data[0].id
+
+		StripeWebhooksService.InvoicePaymentSucceededEvent(Stripe::Util.convert_to_stripe_object(event))
+
+		# Get the transfers
+		transfers = Stripe::Transfer.list({limit: 2})
+		firstTransfer = transfers.data[0]
+		secondTransfer = transfers.data[1]
+
+		assert_equal(200, transferred_amount)
+		assert_equal(transferred_amount, firstTransfer.amount)
+		assert_equal(transferred_amount, secondTransfer.amount)
+
+		assert_equal("eur", secondTransfer.currency)
+		assert_equal(providers(:snicket).stripe_account_id, secondTransfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, secondTransfer.source_transaction)
+
+		assert_equal("eur", firstTransfer.currency)
+		assert_equal(providers(:hindenburg).stripe_account_id, firstTransfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, firstTransfer.source_transaction)
+	end
+
+	test "InvoicePaymentSucceededEvent should create appropriate transfers for multiple providers and multiple objects of the same provider with user using multiple apps" do
+		# 10 € -> 2 PocketLib providers (2 first provider, 1 second provider) & 1 normal app
+		StripeMock.stop
+		klaus = users(:klaus)
+		amount = 1000
+		transferred_amount = 133
+
+		# Create a TableObjectUserAccess for Aus meinem Leben and Series of Unfortunate Events 2
+		TableObjectUserAccess.create(
+			table_object: table_objects(:ausMeinemLebenStoreBook),
+			table_alias: tables(:StoreBook).id,
+			user: klaus
+		)
+
+		TableObjectUserAccess.create(
+			table_object: table_objects(:seriesOfUnfortunateEventsSecondStoreBook),
+			table_alias: tables(:StoreBook).id,
+			user: klaus
+		)
+
+		# Create a UsersApp for another app
+		UsersApp.create(app: apps(:Cards), user: klaus)
+
+		# Get the customer
+		payment_method = Stripe::PaymentMethod.list({
+			customer: klaus.stripe_customer_id,
+			type: 'card'
+		}).data[0]
+
+		# Create a payment intent
+		payment_intent = Stripe::PaymentIntent.create({
+			amount: amount,
+			currency: 'eur',
+			payment_method_types: ['card'],
+			payment_method: payment_method.id,
+			customer: klaus.stripe_customer_id,
+			confirm: true
+		})
+
+		# Trigger the InvoicePaymentSucceeded event
+		event = Hash.new
+		event["id"] = "test_evt_1"
+		event["livemode"] = false
+		event["type"] = "invoice.payment_succeeded"
+		event["object"] = "event"
+		event["data"] = Hash.new
+		event["data"]["object"] = Hash.new
+		event["data"]["object"]["lines"] = Hash.new
+		event["data"]["object"]["lines"]["data"] = Array.new([Hash.new])
+		event["data"]["object"]["lines"]["data"][0]["period"] = Hash.new
+		event["data"]["object"]["lines"]["data"][0]["plan"] = Hash.new
+
+		event["data"]["object"]["customer"] = klaus.stripe_customer_id
+		event["data"]["object"]["lines"]["data"][0]["period"]["end"] = 123456
+		event["data"]["object"]["lines"]["data"][0]["plan"]["product"] = ENV['STRIPE_DAV_PRO_PRODUCT_ID']
+		event["data"]["object"]["lines"]["data"][0]["amount"] = amount
+		event["data"]["object"]["charge"] = payment_intent.charges.data[0].id
+
+		StripeWebhooksService.InvoicePaymentSucceededEvent(Stripe::Util.convert_to_stripe_object(event))
+
+		# Get the transfers
+		transfers = Stripe::Transfer.list({limit: 2})
+		firstTransfer = transfers.data[0]	# -> hindenburg
+		secondTransfer = transfers.data[1]	# -> snicket
+
+		assert_equal(133, transferred_amount)
+		assert_equal(transferred_amount, firstTransfer.amount)
+		assert_equal(transferred_amount * 2, secondTransfer.amount)
+
+		assert_equal("eur", secondTransfer.currency)
+		assert_equal(providers(:snicket).stripe_account_id, secondTransfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, secondTransfer.source_transaction)
+
+		assert_equal("eur", firstTransfer.currency)
+		assert_equal(providers(:hindenburg).stripe_account_id, firstTransfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, firstTransfer.source_transaction)
 	end
    # end InvoicePaymentSucceededEvent tests
 

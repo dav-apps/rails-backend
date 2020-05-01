@@ -39,6 +39,14 @@ class ActiveSupport::TestCase
 		snicket = users(:snicket)
 		snicket.password = "vfd"
 		snicket.save
+
+		hindenburg = users(:hindenburg)
+		hindenburg.password = "ludendorff"
+		hindenburg.save
+
+		klaus = users(:klaus)
+		klaus.password = "isadora"
+		klaus.save
       
       devs(:dav).save
       devs(:matt).save

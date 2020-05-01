@@ -5,3 +5,7 @@ mattCards:
 tester2TestApp:
   app: TestApp
   user: tester2
+
+klausPocketLib:
+  app: PocketLib
+  user: klaus

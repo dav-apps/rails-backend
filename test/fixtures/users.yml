@@ -50,3 +50,14 @@ snicket:
   username: Snicket
   confirmed: true
   email: snicket@dav-apps.tech
+
+hindenburg:
+  username: Hindenburg
+  confirmed: true
+  email: hindenburg@dav-apps.tech
+
+klaus:
+  username: Klaus
+  confirmed: true
+  email: klaus.baudelaire@dav-apps.tech
+  stripe_customer_id: cus_H2NhsO2V8Lp2vp

@@ -7,3 +7,8 @@ catoAccessSixthTableObject:
   table_object: sixth
   table_alias: <%= Table.find(ActiveRecord::FixtureSet.identify('card')).id %>
   user: cato
+
+klausAccessSeriesOfUnfortunateEventsFirstStoreBook:
+  table_object: seriesOfUnfortunateEventsFirstStoreBook
+  table_alias: <%= Table.find(ActiveRecord::FixtureSet.identify('StoreBook')).id %>
+  user: klaus

@@ -1,3 +1,7 @@
 snicket:
   user: snicket
   stripe_account_id: acct_1GBq0kFppfMfJ79H
+
+hindenburg:
+  user: hindenburg
+  stripe_account_id: acct_1GdyrpIgs6wPf3j0
