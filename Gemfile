@@ -39,7 +39,7 @@ gem 'rubyzip'
 # Stripe for payments
 gem 'stripe'
 gem 'stripe_event'
-gem 'stripe-ruby-mock', '~> 2.5.3', :require => 'stripe_mock'
+gem 'stripe-ruby-mock', '~> 3.0.1', :require => 'stripe_mock'
 
 # Bootstrap emails
 gem 'bootstrap-email'

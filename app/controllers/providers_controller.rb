@@ -45,7 +45,7 @@ class ProvidersController < ApplicationController
 					payouts: {
 						schedule: {
 							interval: "monthly",
-							monthly_anchor: 1
+							monthly_anchor: 13
 						}
 					}
 				}

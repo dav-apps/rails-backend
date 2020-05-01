@@ -31,6 +31,7 @@ module Workspace
 		config.api_only = true
 
 		config.action_cable.allowed_request_origins = [
+			"http://localhost:3002",
 			"http://localhost:3001",
 			"http://localhost:3000",
 			"http://localhost:2999",
@@ -50,6 +51,7 @@ module Workspace
 			allow do
 				origins 	ENV['BASE_URL'],
 							'blog.dav-apps.tech',
+							'localhost:3002',
 							'localhost:3001',
 							'localhost:3000',
 							'localhost:2999',
