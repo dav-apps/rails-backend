@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-ruby '2.5.1'
+ruby '2.7.1'
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '5.2.3'
 # Use SCSS for stylesheets
@@ -45,10 +45,7 @@ gem 'stripe-ruby-mock', '~> 3.0.1', :require => 'stripe_mock'
 gem 'bootstrap-email'
 
 # IP location
-gem 'IPinfo', :require => 'ipinfo'
-
-# Heroku autoscaling
-gem 'rails_autoscale_agent'
+gem 'IPinfo', git: 'https://github.com/ipinfo/ruby'
 
 # Web Push
 gem 'webpush'
