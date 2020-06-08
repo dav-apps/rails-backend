@@ -103,35 +103,44 @@ class ApisController < ApplicationController
 					parts = command[1].to_s.split('.')
 					last_part = parts.pop
 					current_var = vars
-					table_object = nil
+					holder = nil
 
 					parts.each do |part|
 						if current_var.is_a?(Hash)
 							current_var = current_var[part]
 						elsif current_var.is_a?(TableObject) && part == "properties"
-							table_object = current_var
 							current_var = current_var.properties
+						elsif current_var.is_a?(TableObjectHolder) && part == "properties"
+							holder = current_var
+							current_var = current_var.values
 						else
 							return nil
 						end
 					end
 
 					if current_var.is_a?(Hash)
-						current_var[last_part] = execute_command(command[2], vars)
-					elsif current_var.class.to_s == "Property::ActiveRecord_Associations_CollectionProxy"
-						props = current_var.where(name: last_part)
-						
-						if props.count == 0 && table_object
-							# Create a new property
-							prop = Property.new(table_object_id: table_object.id, name: last_part, value: execute_command(command[2], vars))
-							prop.save
-							return prop.value
+						if holder
+							prop = holder.properties.find{ |property| property.name == last_part }
+
+							if prop
+								# Update the value of the property
+								prop.value = execute_command(command[2], vars)
+								prop.save
+
+								# Update the values Hash of the TableObjectHolder
+								holder.values[prop.name] = prop.value
+
+								return prop.value
+							else
+								# Create a new property
+								prop = Property.new(table_object: holder.obj, name: last_part, value: execute_command(command[2], vars))
+								prop.save
+								holder.values[last_part] = prop.value
+								holder.properties.push(prop)
+								return prop.value
+							end
 						else
-							# Update the value of the property
-							prop = props[0]
-							prop.value = execute_command(command[2], vars)
-							prop.save
-							return prop.value
+							current_var[last_part] = execute_command(command[2], vars)
 						end
 					end
 				else
@@ -240,7 +249,6 @@ class ApisController < ApplicationController
 
 						ast_parent = Array.new
 						ast = @parser.parse_string(function.commands)
-						result = nil
 						
 						ast.each do |element|
 							ast_parent.push(element)
@@ -398,9 +406,14 @@ class ApisController < ApplicationController
 					error["code"] = 1
 					@errors.push(error)
 					return @errors
-				else
-					return table.table_objects.where(user_id: execute_command(command[2], vars).to_i).to_a
 				end
+
+				objects = table.table_objects.where(user_id: execute_command(command[2], vars).to_i).to_a
+				
+				holders = Array.new
+				objects.each{ |obj| holders.push(TableObjectHolder.new(obj)) }
+
+				return holders
 			elsif command[0].to_s == "TableObject.create"	# user_id, table_id, properties, visibility?
 				# Get the table
 				table = Table.find_by_id(execute_command(command[2], vars))
@@ -453,7 +466,7 @@ class ApisController < ApplicationController
 				end
 
 				# Return the table object
-				return obj
+				return TableObjectHolder.new(obj)
 			elsif command[0].to_s == "TableObject.create_file"	# user_id, table_id, ext, type, file
 				# Get the table
 				table = Table.find_by_id(execute_command(command[2], vars))
@@ -552,7 +565,7 @@ class ApisController < ApplicationController
 					return @errors
 				end
 
-				return obj
+				return TableObjectHolder.new(obj)
 			elsif command[0].to_s == "TableObject.get"	# uuid
 				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
 				return nil if !obj
@@ -564,7 +577,7 @@ class ApisController < ApplicationController
 					return @errors
 				end
 
-				return obj
+				return TableObjectHolder.new(obj)
 			elsif command[0].to_s == "TableObject.get_file"	# uuid
 				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
 				return nil if !obj.file
@@ -634,6 +647,8 @@ class ApisController < ApplicationController
 						prop.destroy!
 					end
 				end
+
+				return TableObjectHolder.new(obj)
 			elsif command[0].to_s == "TableObject.update_file"	# uuid, ext, type, file
 				# Get the table object
 				obj = TableObject.find_by(uuid: execute_command(command[1], vars))
@@ -729,7 +744,7 @@ class ApisController < ApplicationController
 					return @errors
 				end
 
-				return obj
+				return TableObjectHolder.new(obj)
 			elsif command[0].to_s == "TableObjectUserAccess.create"	# table_object_id, user_id, table_alias
 				# Check if there is already an TableObjectUserAccess object
 				error = Hash.new
@@ -854,7 +869,13 @@ class ApisController < ApplicationController
 				# Try to find the collection
 				collection = Collection.find_by(name: collection_name, table: table)
 
-				return collection.table_objects.to_a if collection
+				if collection
+					holders = Array.new
+					collection.table_objects.each{ |obj| holders.push(TableObjectHolder.new(obj)) }
+
+					return holders
+				end
+
 				return Array.new
 			elsif command[0].to_s == "TableObject.find_by_property"	# user_id, table_id, property_name, property_value, exact = true
 				all_user = command[1] == :* 
@@ -908,7 +929,10 @@ class ApisController < ApplicationController
 					end
 				end
 
-				return objects
+				holders = Array.new
+				objects.each{ |obj| holders.push(TableObjectHolder.new(obj)) }
+
+				return holders
 			elsif command[0].to_s == "Purchase.get_table_object"	# purchase_id, user_id
 				error = Hash.new
 				purchase_id = execute_command(command[1], vars)
@@ -942,7 +966,7 @@ class ApisController < ApplicationController
 					return @errors
 				end
 
-				return purchase.table_object
+				return TableObjectHolder.new(purchase.table_object)
 			elsif command[0].to_s == "Purchase.find_by_user_and_table_object"		# user_id, table_object_id
 				user_id = execute_command(command[1], vars)
 				table_object_id = execute_command(command[2], vars)
@@ -1107,6 +1131,9 @@ class ApisController < ApplicationController
 				props = var.where(name: last_part)
 				return props[0].value if props.count > 0
 				return nil
+			elsif var.class == TableObjectHolder
+				return var.values if last_part == "properties"
+				return var.obj[last_part]
 			elsif var.class == Purchase
 				return var[last_part]
 			end
