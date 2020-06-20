@@ -26,9 +26,6 @@ class PurchasesController < ApplicationController
 			provider_user = object.user
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(provider_user))
 
-			# Check if the table object belongs to the user
-			ValidationService.raise_validation_error(ValidationService.validate_purchase_does_not_belong_to_user(object, user))
-
 			# Check if the app of the table object belongs to the dev
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(object.table.app, dev))
 
@@ -59,6 +56,9 @@ class PurchasesController < ApplicationController
 
 			# Check if the currency is supported
 			ValidationService.raise_validation_error(ValidationService.validate_currency_supported(currency))
+
+			# If the object belongs to the user, set the price to 0
+			price = 0 if object.user == user
 
 			if price > 0
 				# Check if the user of the table object is a provider

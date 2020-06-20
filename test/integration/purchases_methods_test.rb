@@ -168,25 +168,56 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(1118, resp["errors"][0][0])
 	end
 
-	test "Can't create purchase for own table object" do
+	test "Can create purchase for own table object" do
 		obj = table_objects(:seriesOfUnfortunateEventsFirstStoreBook)
 		snicket = users(:snicket)
 		jwt = (JSON.parse(login_user(snicket, "vfd", devs(:dav)).body))["jwt"]
 
+		product_image = "http://localhost:3001/bla.png"
+		product_name = "A Series of Unfortunate Events - Book the First"
+		provider_image = "http://localhost:3001/snicket.png"
+		provider_name = "Lemony Snicket"
+		price = 0	# Should set the price to 0
+		currency = "eur"
+
 		post "/v1/apps/object/#{obj.id}/purchase",
 			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
 			params: {
-				product_image: "http://localhost:3001/bla.png",
-				product_name: "A Series of Unfortunate Events - Book the First",
-				provider_image: "http://localhost:3001/snicket.png",
-				provider_name: "Lemony Snicket",
+				product_image: product_image,
+				product_name: product_name,
+				provider_image: provider_image,
+				provider_name: provider_name,
 				price: 999,
-				currency: "eur"
+				currency: currency
 			}.to_json
 		resp = JSON.parse(response.body)
 
-		assert_response 400
-		assert_equal(1120, resp["errors"][0][0])
+		assert_response 201
+		
+		# Compare response with purchase in database
+		purchase = Purchase.find_by_id(resp["id"])
+		assert_equal(purchase.id, resp["id"])
+		assert_equal(purchase.user_id, resp["user_id"])
+		assert_equal(purchase.table_object_id, resp["table_object_id"])
+		assert_equal(purchase.product_image, resp["product_image"])
+		assert_equal(purchase.product_name, resp["product_name"])
+		assert_equal(purchase.provider_image, resp["provider_image"])
+		assert_equal(purchase.provider_name, resp["provider_name"])
+		assert_equal(purchase.price, resp["price"])
+		assert_equal(purchase.currency, resp["currency"])
+		assert_equal(purchase.completed, resp["completed"])
+
+		# Compare response with given params
+		assert_equal(product_image, resp["product_image"])
+		assert_equal(product_name, resp["product_name"])
+		assert_equal(provider_image, resp["provider_image"])
+		assert_equal(provider_name, resp["provider_name"])
+		assert_equal(price, resp["price"])
+		assert_equal(currency, resp["currency"])
+
+		assert_equal(true, resp["completed"])
+		assert_nil(resp["payment_intent_id"])
+		assert_nil(purchase.payment_intent_id)
 	end
 
 	test "Can't create purchase for table object that belongs to the app of another dev" do

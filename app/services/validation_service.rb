@@ -245,11 +245,6 @@ class ValidationService
 		purchase.completed ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_purchase_does_not_belong_to_user(table_object, user)
-		error_code = 1120
-		table_object.user == user ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
-	end
-
 	def self.validate_table_object_already_purchased(user, table_object)
 		error_code = 1121
 		Purchase.find_by(user: user, table_object: table_object, completed: true) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -945,8 +940,6 @@ class ValidationService
 			"User of TableObject is not a provider"
 		when 1119
 			"Purchase is already completed"
-		when 1120
-			"Can't create purchase for own TableObject"
 		when 1121
 			"You already purchased this TableObject"
 		when 1201
