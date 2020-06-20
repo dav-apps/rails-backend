@@ -1404,8 +1404,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 	end
 
 	test "Can create stripe customer for user" do
-		matt = users(:matt)
-		jwt = (JSON.parse(login_user(matt, "schachmatt", devs(:sherlock)).body))["jwt"]
+		cato = users(:cato)
+		jwt = (JSON.parse(login_user(cato, "123456", devs(:sherlock)).body))["jwt"]
 
 		post "/v1/auth/user/stripe", headers: {Authorization: jwt}
 		resp = JSON.parse(response.body)
@@ -1413,11 +1413,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 201
 
 		# Get the user and check if the stripe_customer_id matches the stripe_customer_id in the result
-		matt = User.find_by_id(matt.id)
-		assert_equal(matt.stripe_customer_id, resp["stripe_customer_id"])
+		cato = User.find_by_id(cato.id)
+		assert_equal(cato.stripe_customer_id, resp["stripe_customer_id"])
 
 		# Get the stripe customer and delete it
-		customer = Stripe::Customer.retrieve(matt.stripe_customer_id)
+		customer = Stripe::Customer.retrieve(cato.stripe_customer_id)
 		customer.delete
 	end
 	# End create_stripe_customer_for_user tests
