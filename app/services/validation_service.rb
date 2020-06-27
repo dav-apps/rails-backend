@@ -572,7 +572,7 @@ class ValidationService
 
 	define_singleton_method :validate_property_value_too_short do |value|
 		error_code = 2207
-		value.length < min_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		value.to_s.length < min_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_path_too_short do |path|
@@ -662,7 +662,7 @@ class ValidationService
 
 	define_singleton_method :validate_property_value_too_long do |value|
 		error_code = 2307
-		value.length > max_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		value.to_s.length > max_property_value_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_path_too_long do |path|

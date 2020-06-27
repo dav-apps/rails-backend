@@ -409,28 +409,27 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_object_missing(object))
 
 				object.each do |key, value|
-					if value
-						if value.length > 0
-							ValidationService.raise_multiple_validation_errors([
-								ValidationService.validate_property_name_too_short(key),
-								ValidationService.validate_property_name_too_long(key),
-								ValidationService.validate_property_value_too_short(value),
-								ValidationService.validate_property_value_too_long(value)
-							])
-						end
-					end
+					next if value == nil || value.to_s.length == 0
+
+					ValidationService.raise_multiple_validation_errors([
+						ValidationService.validate_property_name_too_short(key),
+						ValidationService.validate_property_name_too_long(key),
+						ValidationService.validate_property_value_too_short(value),
+						ValidationService.validate_property_value_too_long(value)
+					])
 				end
 
 				properties = Hash.new
 				
-				object.each do |key, value|
-					if value
-						if value.length > 0
-							property = Property.new(table_object_id: obj.id, name: key, value: value)
-							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(property.save))
-							properties[key] = value
-						end
-					end
+				object.each do |name, value|
+					next if value == nil || value.to_s.length == 0
+
+					create_property_type(table, name, value)
+
+					property = Property.new(table_object_id: obj.id, name: name, value: value.to_s)
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(property.save))
+
+					properties[name] = value
 				end
 
 				# Save that user uses the app
@@ -633,10 +632,14 @@ class AppsController < ApplicationController
 			else
 				# Return the object data
 				result = obj.attributes
+				property_types = table.property_types
 				properties = Hash.new
+
 				obj.properties.each do |prop|
-					properties[prop.name] = prop.value
+					# Get the data type and convert the value
+					properties[prop.name] = convert_value_to_data_type(prop.value, find_data_type(property_types, prop.name))
 				end
+
 				result["properties"] = properties
 				result["etag"] = generate_table_object_etag(obj)
 				result["table_id"] = table_id
@@ -710,10 +713,14 @@ class AppsController < ApplicationController
 			else
 				# Return the data
 				result = obj.attributes
+				property_types = table.property_types
 				properties = Hash.new
+
 				obj.properties.each do |prop|
-					properties[prop.name] = prop.value
+					# Get the data type and convert the value
+					properties[prop.name] = convert_value_to_data_type(prop.value, find_data_type(property_types, prop.name))
 				end
+
 				result["properties"] = properties
 				result["etag"] = generate_table_object_etag(obj)
 
@@ -865,7 +872,7 @@ class AppsController < ApplicationController
 
 				# Validate name and value of each property
 				body.each do |key, value|
-					next if !value || value.length == 0
+					next if value == nil || value.to_s.length == 0
 
 					ValidationService.raise_multiple_validation_errors([
 						ValidationService.validate_property_name_too_short(key),
@@ -879,14 +886,17 @@ class AppsController < ApplicationController
 				props = Array.new
 				obj.properties.each { |prop| props.push(prop) }
 
-				body.each do |key, value|
-					next if !value
-					prop = props.find { |p| p.name == key }
+				body.each do |name, value|
+					next if value == nil
+					prop = props.find { |p| p.name == name }
 
-					if value.length > 0
+					if value.to_s.length > 0
 						if !prop
+							# Create the property type
+							create_property_type(table, name, value)
+
 							# Create the property
-							new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+							new_prop = Property.new(name: name, value: value.to_s, table_object_id: obj.id)
 							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
 						elsif prop.value != value
 							# Update the property
@@ -912,14 +922,18 @@ class AppsController < ApplicationController
 				TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 1, session_id: session_id)
 
 				# Get the properties
+				result = obj.attributes
+				property_types = table.property_types
 				properties = Hash.new
-				obj.properties.each do |property|
-					properties[property.name] = property.value
+
+				obj.properties.each do |prop|
+					# Get the data type and convert the value
+					properties[prop.name] = convert_value_to_data_type(prop.value, find_data_type(property_types, prop.name))
 				end
 
-				result = obj.attributes
 				result["properties"] = properties
 				result["etag"] = generate_table_object_etag(obj)
+
 				render json: result, status: 200
 			end
 		rescue RuntimeError => e
@@ -2078,5 +2092,39 @@ class AppsController < ApplicationController
    private
    def generate_token
       SecureRandom.hex(20)
-   end
+	end
+
+	def find_data_type(property_types, name)
+		property_type = property_types.find { |type| type.name == name }
+		return property_type ? property_type.data_type : 0
+	end
+
+	def get_data_type_of_value(value)
+		return 1 if value.is_a?(TrueClass) || value.is_a?(FalseClass)
+		return 2 if value.is_a?(Integer)
+		return 3 if value.is_a?(Float)
+		return 0
+	end
+	
+	def convert_value_to_data_type(value, data_type)
+		# Try to convert the value from string to the specified type
+		# Return the original value if the parsing throws an exception
+		return value == "true" if data_type == 1
+		return Integer value rescue value if data_type == 2
+		return Float value rescue value if data_type == 3
+		return value
+	end
+
+	def create_property_type(table, name, value)
+		# Check if a PropertyType with the name already exists
+		property_type = PropertyType.find_by(table: table, name: name)
+		return if property_type
+
+		# Get the data type of the property value
+		data_type = get_data_type_of_value(value)
+
+		# Create the property type
+		property_type = PropertyType.new(table: table, name: name, data_type: data_type)
+		ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(property_type.save))
+	end
 end
