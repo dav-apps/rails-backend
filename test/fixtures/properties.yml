@@ -73,3 +73,18 @@ first8:
 second8:
   name: content
   value: Dies ist eine öffentliche Testnotiz. Jeder kann sie lesen!
+
+first9:
+  name: page
+  value: "123"
+  table_object: ninth
+
+second9:
+  name: bool
+  value: "true"
+  table_object: ninth
+
+third9:
+  name: zoom
+  value: "12.34"
+  table_object: ninth

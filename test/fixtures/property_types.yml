@@ -1,0 +1,14 @@
+cardTablePageProperty:
+  table: card
+  name: page
+  data_type: 2
+
+cardTableBoolProperty:
+  table: card
+  name: bool
+  data_type: 1
+
+cardTableZoomProperty:
+  table: card
+  name: zoom
+  data_type: 3

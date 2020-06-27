@@ -177,7 +177,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "get_app can be called from the appropriate dev" do
@@ -196,7 +196,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_same(tables(:note).id, resp["tables"][0]["id"])
+      assert_equal(tables(:note).id, resp["tables"][0]["id"])
    end
    
    test "Can't get an app of the first dev as another dev" do
@@ -206,7 +206,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    # End get_app tests
 
@@ -227,7 +227,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse(response.body)
 
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
 
 	test "Can't get active app users of the app of another dev" do
@@ -411,9 +411,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(resp["errors"].length, 2)
-      assert_same(resp["errors"][0][0], 2203)
-      assert_same(resp["errors"][1][0], 2204)
+      assert_equal(resp["errors"].length, 2)
+      assert_equal(resp["errors"][0][0], 2203)
+      assert_equal(resp["errors"][1][0], 2204)
    end
    
    test "Can't update the app of another dev" do
@@ -424,7 +424,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(resp["errors"][0][0], 1102)
+      assert_equal(resp["errors"][0][0], 1102)
    end
    
    test "Can't update the app of the first dev as another dev" do
@@ -435,7 +435,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can update name and description of an app at once" do
@@ -526,7 +526,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 401
-      assert_same(2102, resp["errors"][0][0])
+      assert_equal(2102, resp["errors"][0][0])
    end
    
    test "delete_app can't be called from outside the website" do
@@ -537,7 +537,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't delete the app of another dev" do
@@ -548,7 +548,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(resp["errors"][0][0], 1102)
+      assert_equal(resp["errors"][0][0], 1102)
    end
    # End delete_app tests
    
@@ -596,7 +596,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2205, resp["errors"][0][0])
+      assert_equal(2205, resp["errors"][0][0])
    end
    
    test "Can't create a new table in create_object with too long table_name" do
@@ -609,7 +609,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2305, resp["errors"][0][0])
+      assert_equal(2305, resp["errors"][0][0])
    end
    
    test "Can't create a new table in create_object with an invalid table_name" do
@@ -622,7 +622,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2501, resp["errors"][0][0])
+      assert_equal(2501, resp["errors"][0][0])
    end
 
    test "Can't create an object with table id if the table does not exist" do
@@ -648,7 +648,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't create an empty object" do
@@ -660,7 +660,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2116, resp["errors"][0][0])
+      assert_equal(2116, resp["errors"][0][0])
    end
    
    test "Can't create an object with too short name" do
@@ -673,7 +673,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2206, resp["errors"][0][0])
+      assert_equal(2206, resp["errors"][0][0])
    end
    
    test "Can't create an object with too long name and value" do
@@ -686,8 +686,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2306, resp["errors"][0][0])
-      assert_same(2307, resp["errors"][1][0])
+      assert_equal(2306, resp["errors"][0][0])
+      assert_equal(2307, resp["errors"][1][0])
    end
    
    test "Can't create object with visibility > 2" do
@@ -700,7 +700,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 201
-      assert_same(0, resp["visibility"])
+      assert_equal(0, resp["visibility"])
    end
    
    test "Can't create object with visibility < 0" do
@@ -713,7 +713,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 201
-      assert_same(0, resp["visibility"])
+      assert_equal(0, resp["visibility"])
    end
    
    test "Can't create object with visibility that is not an integer" do
@@ -726,7 +726,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 201
-      assert_same(0, resp["visibility"])
+      assert_equal(0, resp["visibility"])
    end
    
    test "Can create object with another visibility" do
@@ -739,7 +739,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 201
-      assert_same(2, resp["visibility"])
+      assert_equal(2, resp["visibility"])
    end
 
    test "Can't create object and upload file without ext parameter" do
@@ -752,7 +752,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 415
-      assert_same(1104, resp["errors"][0][0])
+      assert_equal(1104, resp["errors"][0][0])
    end
 
    test "Can create object and upload text file" do
@@ -811,7 +811,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 415
-      assert_same(1104, resp["errors"][0][0])
+      assert_equal(1104, resp["errors"][0][0])
    end
 
    test "Can create object with uuid and get correct etag" do
@@ -841,7 +841,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2704, resp["errors"][0][0])
+      assert_equal(2704, resp["errors"][0][0])
    end
 
    test "Can create object with binary file and get correct etag" do
@@ -915,7 +915,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
 
    test "Can create object with table_id and another visibility and upload text file" do
@@ -944,6 +944,40 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       delete "/v1/apps/object/#{resp["id"]}", headers: {'Authorization' => jwt}
       
       assert_response 200
+	end
+
+	test "Can create object with different data types" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+		first_property_name = "page"
+		first_property_value = 123
+		second_property_name = "bool"
+		second_property_value = true
+		third_property_name = "zoom"
+		third_property_value = 12.34
+
+		post "/v1/apps/object?table_id=#{tables(:note).id}&app_id=#{apps(:TestApp).id}",
+				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+				params: {
+					"#{first_property_name}": first_property_value,
+					"#{second_property_name}": second_property_value,
+					"#{third_property_name}": third_property_value
+				}.to_json
+		resp = JSON.parse response.body
+		
+		assert_response 201
+		
+		assert_equal(first_property_value, resp["properties"][first_property_name])
+		assert_equal(second_property_value, resp["properties"][second_property_name])
+		assert_equal(third_property_value, resp["properties"][third_property_name])
+		
+		obj = TableObject.find_by_id(resp["id"])
+
+		assert_not_nil(obj)
+		assert_equal(first_property_value.to_s, obj.properties[0].value)
+		assert_equal(second_property_value.to_s, obj.properties[1].value)
+		assert_equal(third_property_value.to_s, obj.properties[2].value)
 	end
 	
 	test "create_object should not create a property when the property has no value" do
@@ -999,7 +1033,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 		
 		assert_response 403
-		assert_same(1102, resp["errors"][0][0])
+		assert_equal(1102, resp["errors"][0][0])
 	end
    # End create_object tests
    
@@ -1012,7 +1046,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 404
-      assert_same(2805, resp["errors"][0][0])
+      assert_equal(2805, resp["errors"][0][0])
    end
    
    test "Can't get the objects of the tables of another dev" do
@@ -1023,7 +1057,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can get own object and all properties" do
@@ -1040,6 +1074,20 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["page1"])
       assert_not_nil(resp["properties"]["page2"])
+	end
+
+	test "Can get own object with different property data types" do
+		matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+
+		get "/v1/apps/object/#{table_objects(:ninth).id}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+		
+		assert_equal(Integer(properties(:first9).value), resp["properties"][properties(:first9).name])
+		assert_equal(properties(:second9).value == "true", resp["properties"][properties(:second9).name])
+		assert_equal(Float(properties(:third9).value), resp["properties"][properties(:third9).name])
 	end
 
 	test "Can get object with access" do
@@ -1093,7 +1141,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't get object without access token and JWT" do
@@ -1101,8 +1149,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2102, resp["errors"][0][0])
-      assert_same(2117, resp["errors"][1][0])
+      assert_equal(2102, resp["errors"][0][0])
+      assert_equal(2117, resp["errors"][1][0])
    end
    
    test "Can get object with access token without logging in" do
@@ -1405,6 +1453,20 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		end
 	end
 
+	test "Can get table object with auth with different property data types" do
+		auth = generate_auth_token(devs(:sherlock))
+		obj = table_objects(:ninth)
+
+		get "/v1/apps/object/#{obj.id}/auth", headers: {Authorization: auth}
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+
+		assert_equal(Integer(properties(:first9).value), resp["properties"][properties(:first9).name])
+		assert_equal(properties(:second9).value == "true", resp["properties"][properties(:second9).name])
+		assert_equal(Float(properties(:third9).value), resp["properties"][properties(:third9).name])
+	end
+
 	test "Can get table object with auth and uuid" do
 		auth = generate_auth_token(devs(:sherlock))
 		obj = table_objects(:third)
@@ -1432,7 +1494,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't update an object with too short name" do
@@ -1445,7 +1507,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2206, resp["errors"][0][0])
+      assert_equal(2206, resp["errors"][0][0])
    end
    
    test "Can't update an object with too long name and value" do
@@ -1458,8 +1520,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 400
-      assert_same(2306, resp["errors"][0][0])
-      assert_same(2307, resp["errors"][1][0])
+      assert_equal(2306, resp["errors"][0][0])
+      assert_equal(2307, resp["errors"][1][0])
    end
    
    test "update_object returns all properties of the object" do
@@ -1479,7 +1541,73 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
 		assert_equal(first_property_value, resp["properties"][first_property_name])
 		assert_equal(second_property_value, resp["properties"][second_property_name])
-   end
+	end
+	
+	test "Can update object with different data types" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		
+		first_property_name = properties(:first9).name
+		first_property_value = 321
+		second_property_name = properties(:second9).name
+		second_property_value = properties(:second9).value == "true"
+		third_property_name = properties(:third9).name
+		third_property_value = Float(properties(:third9).value)
+		fourth_property_name = "test1"
+		fourth_property_value = 456
+		fifth_property_name = "test2"
+		fifth_property_value = false
+		sixth_property_name = "test3"
+		sixth_property_value = 73.145
+
+		put "/v1/apps/object/#{table_objects(:ninth).id}",
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {
+				"#{first_property_name}": first_property_value,
+				"#{fourth_property_name}": fourth_property_value,
+				"#{fifth_property_name}": fifth_property_value,
+				"#{sixth_property_name}": sixth_property_value
+			}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 200
+
+		assert_equal(first_property_value, resp["properties"][first_property_name])
+		assert_equal(second_property_value, resp["properties"][second_property_name])
+		assert_equal(third_property_value, resp["properties"][third_property_name])
+		assert_equal(fourth_property_value, resp["properties"][fourth_property_name])
+		assert_equal(fifth_property_value, resp["properties"][fifth_property_name])
+		assert_equal(sixth_property_value, resp["properties"][sixth_property_name])
+
+		obj = TableObject.find_by_id(resp["id"])
+
+		assert_not_nil(obj)
+		assert_equal(first_property_value.to_s, obj.properties.find{ |prop| prop.name == first_property_name }.value)
+		assert_equal(second_property_value.to_s, obj.properties.find{ |prop| prop.name == second_property_name }.value)
+		assert_equal(third_property_value.to_s, obj.properties.find{ |prop| prop.name == third_property_name }.value)
+		assert_equal(fourth_property_value.to_s, obj.properties.find{ |prop| prop.name == fourth_property_name }.value)
+		assert_equal(fifth_property_value.to_s, obj.properties.find{ |prop| prop.name == fifth_property_name }.value)
+		assert_equal(sixth_property_value.to_s, obj.properties.find{ |prop| prop.name == sixth_property_name }.value)
+
+		# Check the property types
+		first_type = obj.table.property_types.find{ |type| type.name == first_property_name }
+		assert_equal(first_type.data_type, 2)
+
+		second_type = obj.table.property_types.find{ |type| type.name == second_property_name }
+		assert_equal(second_type.data_type, 1)
+
+		third_type = obj.table.property_types.find{ |type| type.name == third_property_name }
+		assert_equal(third_type.data_type, 3)
+
+		fourth_type = obj.table.property_types.find{ |type| type.name == fourth_property_name }
+		assert_equal(fourth_type.data_type, 2)
+
+		fifth_type = obj.table.property_types.find{ |type| type.name == fifth_property_name }
+		assert_equal(fifth_type.data_type, 1)
+
+		sixth_type = obj.table.property_types.find{ |type| type.name == sixth_property_name }
+		assert_equal(sixth_type.data_type, 3)
+	end
    
    test "Can update object with new visibility" do
       matt = users(:matt)
@@ -1520,7 +1648,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
 
       assert_response 415
-		assert_same(1104, resp["errors"][0][0])
+		assert_equal(1104, resp["errors"][0][0])
 	end
 
    test "Can update visibility and ext of object with file" do
@@ -1728,7 +1856,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can delete an object" do
@@ -2048,7 +2176,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 403
-      assert_same(1102, resp["errors"][0][0])
+      assert_equal(1102, resp["errors"][0][0])
    end
    
    test "Can't get the table of the app of another dev from the website" do

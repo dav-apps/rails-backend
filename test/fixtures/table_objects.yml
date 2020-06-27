@@ -40,6 +40,11 @@ eight:
   visibility: 2
   uuid: e2cf962a-bf93-45b1-9f2d-abe52c1968f0
 
+ninth:
+  table: card
+  user: matt
+  uuid: e4725af4-910c-41a5-bcab-aa22c497966a
+
 testerTableObject:
   table: testTable
   user: tester2
