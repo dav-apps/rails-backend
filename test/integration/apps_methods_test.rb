@@ -1777,7 +1777,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
 	end
 	
-	test "update_object does not create a new property when the value is empty" do
+	test "update_object does not create a new property if the value is empty" do
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		table_object = table_objects(:third)
@@ -1794,12 +1794,29 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(old_properties_count, obj.properties.count)
 	end
 
-	test "update_object removes existing property when the value is empty" do
+	test "update_object removes existing property if the value is empty" do
 		matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		table_object = table_objects(:third)
 		old_properties_count = table_object.properties.count
 		properties = {page2: ""}
+
+		put "/v1/apps/object/#{table_object.id}", 
+				params: properties.to_json, 
+				headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
+		resp = JSON.parse response.body
+
+		assert_response 200
+		obj = TableObject.find_by_id(table_object.id)
+		assert_equal(old_properties_count - 1, obj.properties.count)
+	end
+
+	test "update_object removes existing property if the value is nil" do
+		matt = users(:matt)
+		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
+		table_object = table_objects(:third)
+		old_properties_count = table_object.properties.count
+		properties = {page2: nil}
 
 		put "/v1/apps/object/#{table_object.id}", 
 				params: properties.to_json, 

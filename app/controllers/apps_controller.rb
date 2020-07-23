@@ -887,25 +887,22 @@ class AppsController < ApplicationController
 				obj.properties.each { |prop| props.push(prop) }
 
 				body.each do |name, value|
-					next if value == nil
 					prop = props.find { |p| p.name == name }
 
-					if value.to_s.length > 0
-						if !prop
-							# Create the property type
-							create_property_type(table, name, value)
+					if value == nil || value.to_s.length == 0
+						# Delete the property, if there is one
+						prop.destroy! if prop
+					elsif !prop
+						# Create the property type
+						create_property_type(table, name, value)
 
-							# Create the property
-							new_prop = Property.new(name: name, value: value.to_s, table_object_id: obj.id)
-							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
-						elsif prop.value != value
-							# Update the property
-							prop.value = value
-							ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
-						end
-					elsif prop
-						# Delete the property
-						prop.destroy!
+						# Create the property
+						new_prop = Property.new(name: name, value: value.to_s, table_object_id: obj.id)
+						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
+					else
+						# Update the property
+						prop.value = value
+						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
 					end
 				end
 
