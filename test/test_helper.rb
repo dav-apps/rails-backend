@@ -70,19 +70,6 @@ class ActiveSupport::TestCase
       dev.api_key + "," + Base64.strict_encode64(OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid))
    end
 
-   def extract_zip(file, destination)
-      require 'zip'
-      
-      FileUtils.mkdir_p(destination)
-		
-      Zip::File.open(file) do |zip_file|
-         zip_file.each do |f|
-            fpath = File.join(destination, f.name)
-            zip_file.extract(f, fpath) unless File.exist?(fpath)
-         end
-      end
-   end
-
    def generate_table_object_etag(object)
 		# id,table_id,user_id,visibility,uuid,file,property1Name:property1Value,property2Name:property2Value,...
 		etag_string = "#{object.id},#{object.table_id},#{object.user_id},#{object.visibility},#{object.uuid},#{object.file}"
