@@ -21,11 +21,6 @@ Rails.application.routes.draw do
   match '/v1/auth/user/:id/save_new_email', to: 'users#save_new_email', via: 'post'
   match '/v1/auth/user/:id/reset_new_email', to: 'users#reset_new_email', via: 'post'
   match '/v1/auth/user/:id/confirm', to: 'users#confirm_user', via: 'post'
-  
-  match '/v1/auth/archive', to: 'users#create_archive', via: 'post'
-  match '/v1/auth/archive/:id', to: 'users#get_archive', via: 'get'
-  match '/v1/auth/archive_part/:id', to: 'users#get_archive_part', via: 'get'
-  match '/v1/auth/archive/:id', to: 'users#delete_archive', via: 'delete'
 
   match '/v1/auth/session', to: 'users#create_session', via: 'post'
   match '/v1/auth/session/jwt', to: 'users#create_session_with_jwt', via: 'post'

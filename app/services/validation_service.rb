@@ -4,7 +4,6 @@ class ValidationService
    max_username_length = 25
    min_password_length = 7
 	max_password_length = 25
-	max_archive_count = 10
 	max_table_name_length = 100
    min_table_name_length = 2
    max_property_name_length = 100
@@ -125,11 +124,6 @@ class ValidationService
 		error_code = 1102
 		obj.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
-
-	def self.validate_archive_belongs_to_user(archive, user)
-		error_code = 1102
-		archive.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
-   end
    
    def self.validate_session_belongs_to_user(session, user)
       error_code = 1102
@@ -196,11 +190,6 @@ class ValidationService
 	def self.get_file_does_not_exist_error
 		error_code = 1111
 		{success: false, error: [error_code, get_error_message(error_code)], status: 400}
-	end
-
-	define_singleton_method :validate_max_archive_count do |user|
-		error_code = 1112
-		user.archives.count >= max_archive_count ? {success: false, error: [error_code, get_error_message(error_code)], status: 422} : {success: true}
 	end
 
 	def self.validate_user_is_stripe_customer(user)
@@ -388,11 +377,6 @@ class ValidationService
 	def self.validate_api_key_missing(api_key)
 		error_code = 2118
 		!api_key || api_key.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
-	end
-
-	def self.validate_archive_id_missing(archive_id)
-		error_code = 2119
-		!archive_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_time_missing(time)
@@ -835,16 +819,6 @@ class ValidationService
 		!token ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
-	def self.validate_archive_does_not_exist(archive)
-		error_code = 2810
-		!archive ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
-	end
-
-	def self.validate_archive_part_does_not_exist(archive_part)
-		error_code = 2811
-		!archive_part ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
-	end
-
 	def self.validate_notification_does_not_exist(notification)
 		error_code = 2812
 		!notification ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
@@ -924,8 +898,6 @@ class ValidationService
 			"Not enough storage space"
 		when 1111
 			"File does not exist"
-		when 1112
-			"You can't create more than #{max_archive_count} archives"
 		when 1113
 			"Please add your payment information"
 		when 1114
@@ -992,8 +964,6 @@ class ValidationService
 			"Missing field: access_token"
 		when 2118
 			"Missing field: api_key"
-		when 2119
-			"Missing field: archive_id"
 		when 2120
 			"Missing field: payment_token"
 		when 2121
@@ -1154,10 +1124,6 @@ class ValidationService
 			"Resource does not exist: EventLog"
 		when 2809
 			"Resource does not exist: AccessToken"
-		when 2810
-			"Resource does not exist: Archive"
-		when 2811
-			"Resource does not exist: ArchivePart"
 		when 2812
 			"Resource does not exist: Notification"
 		when 2813

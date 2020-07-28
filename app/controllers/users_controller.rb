@@ -482,7 +482,6 @@ class UsersController < ApplicationController
 			if dev == Dev.first
 				result["old_email"] = requested_user.old_email
 				result["new_email"] = requested_user.new_email
-				result["archives"] = requested_user.archives
 				result["period_end"] = requested_user.period_end
 				result["subscription_status"] = requested_user.subscription_status
 				result["stripe_customer_id"] = requested_user.stripe_customer_id
@@ -544,7 +543,6 @@ class UsersController < ApplicationController
 			result["apps"] = users_apps
 			result["old_email"] = user.old_email
 			result["new_email"] = user.new_email
-			result["archives"] = user.archives
 			result["period_end"] = user.period_end
 			result["subscription_status"] = user.subscription_status
 			result["stripe_customer_id"] = user.stripe_customer_id
@@ -609,7 +607,6 @@ class UsersController < ApplicationController
 			if dev == Dev.first
 				result["old_email"] = user.old_email
 				result["new_email"] = user.new_email
-				result["archives"] = user.archives
 				result["period_end"] = user.period_end
 				result["subscription_status"] = user.subscription_status
 				result["stripe_customer_id"] = user.stripe_customer_id
@@ -719,7 +716,6 @@ class UsersController < ApplicationController
 			result["dev"] = user.dev != nil
 			result["provider"] = user.provider != nil
 			result["apps"] = user.apps
-			result["archives"] = user.archives
 			
 			if email_changed
 				UserNotifier.send_change_email_email(user).deliver_later
@@ -1250,183 +1246,6 @@ class UsersController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 			render json: {}, status: 200
-		rescue RuntimeError => e
-			validations = JSON.parse(e.message)
-			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
-		end
-	end
-
-	def create_archive
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-
-		begin
-			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
-
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
-			ValidationService.raise_validation_error(jwt_signature_validation[0])
-			user_id = jwt_signature_validation[1][0]["user_id"]
-			dev_id = jwt_signature_validation[1][0]["dev_id"]
-
-			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
-
-			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-
-			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
-			ValidationService.raise_validation_error(ValidationService.validate_max_archive_count(user))
-
-			# Create the archive
-			archive = Archive.new(user: user)
-			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(archive.save))
-
-			archive.name = "dav-export-#{archive.id}.zip"
-			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(archive.save))
-
-			ExportDataWorker.perform_async(user.id, archive.id)
-			result = archive.attributes
-			render json: result, status: 201
-		rescue RuntimeError => e
-			validations = JSON.parse(e.message)
-			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
-		end
-	end
-
-	def get_archive
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		archive_id = params[:id]
-		file = params[:file] == "true"
-
-		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_jwt_missing(jwt),
-				ValidationService.validate_archive_id_missing(archive_id)
-			])
-
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
-			ValidationService.raise_validation_error(jwt_signature_validation[0])
-			user_id = jwt_signature_validation[1][0]["user_id"]
-			dev_id = jwt_signature_validation[1][0]["dev_id"]
-
-			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
-
-			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-
-			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
-
-			archive = Archive.find_by_id(archive_id)
-			ValidationService.raise_validation_error(ValidationService.validate_archive_does_not_exist(archive))
-
-			ValidationService.raise_validation_error(ValidationService.validate_archive_belongs_to_user(archive, user))
-
-			if file
-				# Return the file itself
-				result = BlobOperationsService.download_archive(archive.name)[1]
-				send_data(result, status: 200, filename: archive.name)
-			else
-				parts = Array.new
-
-				archive.archive_parts.each do |part|
-					hash = Hash.new
-
-					hash["id"] = part.id
-					hash["name"] = part.name
-					parts.push(hash)
-				end
-
-				# Return the archive object
-				result = archive.attributes
-				result["parts"] = parts
-
-				render json: result, status: 200
-			end
-		rescue RuntimeError => e
-			validations = JSON.parse(e.message)
-			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
-		end
-	end
-
-	def get_archive_part
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		id = params[:id]
-		file = params[:file] == "true"
-
-		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_jwt_missing(jwt),
-				ValidationService.validate_id_missing(id)
-			])
-
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
-			ValidationService.raise_validation_error(jwt_signature_validation[0])
-			user_id = jwt_signature_validation[1][0]["user_id"]
-			dev_id = jwt_signature_validation[1][0]["dev_id"]
-
-			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
-
-			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-
-			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
-
-			archive_part = ArchivePart.find_by_id(id)
-			ValidationService.raise_validation_error(ValidationService.validate_archive_part_does_not_exist(archive_part))
-
-			archive = Archive.find_by_id(archive_part.archive_id)
-			ValidationService.raise_validation_error(ValidationService.validate_archive_does_not_exist(archive))
-
-			ValidationService.raise_validation_error(ValidationService.validate_archive_belongs_to_user(archive, user))
-			
-			if file
-				# Return the file
-				result = BlobOperationsService.download_archive(archive_part.name)[1]
-				send_data(result, status: 200, filename: archive_part.name)
-			else
-				# Return the data
-				result = archive_part.attributes
-				render json: result, status: 200
-			end
-		rescue RuntimeError => e
-			validations = JSON.parse(e.message)
-			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
-		end
-	end
-
-	def delete_archive
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
-		archive_id = params[:id]
-
-		begin
-			ValidationService.raise_multiple_validation_errors([
-				ValidationService.validate_jwt_missing(jwt),
-				ValidationService.validate_id_missing(archive_id)
-			])
-
-			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
-			ValidationService.raise_validation_error(jwt_signature_validation[0])
-			user_id = jwt_signature_validation[1][0]["user_id"]
-			dev_id = jwt_signature_validation[1][0]["dev_id"]
-
-			user = User.find_by_id(user_id)
-			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
-
-			dev = Dev.find_by_id(dev_id)
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-
-			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
-			
-			archive = Archive.find_by_id(archive_id)
-			ValidationService.raise_validation_error(ValidationService.validate_archive_does_not_exist(archive))
-
-			ValidationService.raise_validation_error(ValidationService.validate_archive_belongs_to_user(archive, user))
-
-			# Delete the archive
-			archive.destroy!
-			result = {}
-			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
