@@ -44,44 +44,6 @@ class BlobOperationsService
          
       end
 	end
-	
-	def self.upload_archive(archive_path)
-      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-      filename = File.basename(archive_path)
-
-		client = Azure::Blob::BlobService.new
-      begin
-			client.create_block_blob(ENV["AZURE_ARCHIVES_CONTAINER_NAME"], filename, archive_path, chunking: true)
-      rescue Exception => e
-         puts e
-      end
-	end
-	
-	def self.download_archive(archive_name)
-      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-      begin
-         client = Azure::Blob::BlobService.new
-         client.get_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive_name)
-      rescue Exception => e
-         puts e
-      end
-	end
-
-   def self.delete_archive(archive_name)
-      Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
-      Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-
-      client = Azure::Blob::BlobService.new
-      begin
-         client.delete_blob(ENV['AZURE_ARCHIVES_CONTAINER_NAME'], archive_name)
-      rescue Exception => e
-         
-      end
-	end
 
 	def self.get_avatar_information(user_id)
 		Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]

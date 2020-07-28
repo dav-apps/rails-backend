@@ -2,7 +2,6 @@ class TasksWorker
    include Sidekiq::Worker
 
    def perform
-      remove_archives
 		update_used_storage_of_users
 		update_used_storage_of_users_apps
 		update_users_apps
@@ -38,15 +37,6 @@ class TasksWorker
    end
 
    # Tasks
-   def remove_archives
-		Archive.all.each do |archive|
-			if Time.now - archive.created_at > 1.month
-				# Delete the archive
-				archive.destroy!
-			end
-		end
-	end
-
 	def update_used_storage_of_users
 		User.all.each do |user|
 			used_storage = 0
