@@ -204,7 +204,6 @@ GEM
       ffi (~> 1.0)
     redis (4.2.1)
     ruby_http_client (3.5.0)
-    rubyzip (2.3.0)
     sassc (2.4.0)
       ffi (~> 1.9)
     sassc-rails (2.1.2)
@@ -277,7 +276,6 @@ DEPENDENCIES
   rack-cors
   rack-protection (~> 1.5.5)
   rails (= 5.2.4.3)
-  rubyzip
   sassc-rails
   sendgrid-ruby
   sexpistol

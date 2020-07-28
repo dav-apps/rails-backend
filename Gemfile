@@ -33,9 +33,6 @@ gem 'mysql2', '~> 0.5.2'
 # Sidekiq for async workers
 gem 'sidekiq'
 
-# Rubyzip for packaging zip files
-gem 'rubyzip'
-
 # Stripe for payments
 gem 'stripe'
 gem 'stripe_event'
