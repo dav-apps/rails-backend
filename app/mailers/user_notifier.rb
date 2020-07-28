@@ -51,13 +51,6 @@ class UserNotifier < ApplicationMailer
       make_bootstrap_mail(:to => @user.email, :subject => 'Confirm your new password')
    end
 
-   def send_export_data_email(user)
-      @user = user
-		@link = "#{ENV['BASE_URL']}/user#archives"
-
-      make_bootstrap_mail(:to => @user.email, :subject => 'The archive of your account is ready')
-   end
-
    def send_failed_payment_email(user)
       @user = user
 		@link = "#{ENV['BASE_URL']}/user#plans"
