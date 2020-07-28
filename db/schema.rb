@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_06_26_221344) do
+ActiveRecord::Schema.define(version: 2020_07_28_200149) do
 
   create_table "access_tokens", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.string "token"
@@ -75,19 +75,6 @@ ActiveRecord::Schema.define(version: 2020_06_26_221344) do
     t.string "link_web"
     t.string "link_play"
     t.string "link_windows"
-  end
-
-  create_table "archive_parts", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
-    t.integer "archive_id"
-    t.string "name"
-  end
-
-  create_table "archives", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
-    t.integer "user_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.string "name"
-    t.boolean "completed", default: false
   end
 
   create_table "collections", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|

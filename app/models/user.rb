@@ -14,7 +14,6 @@ class User < ApplicationRecord
 	has_many :table_objects, dependent: :destroy
 	has_many :users_apps, dependent: :destroy
 	has_many :apps, through: :users_apps
-	has_many :archives, dependent: :destroy
 	has_many :notifications, dependent: :destroy
    has_many :web_push_subscriptions, dependent: :destroy
 	has_many :sessions, dependent: :destroy
