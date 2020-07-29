@@ -1,10 +1,10 @@
 class ProvidersController < ApplicationController
 	def create_provider
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -64,7 +64,7 @@ class ProvidersController < ApplicationController
 	end
 
 	def get_provider
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))

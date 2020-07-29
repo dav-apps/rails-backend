@@ -144,5 +144,16 @@ class ApplicationController < ActionController::API
 		session_id = jwt_parts[3].to_i
 
 		return [jwt, session_id]
-   end
+	end
+
+	def get_authorization_header
+		return request.headers['HTTP_AUTHORIZATION']
+	end
+	
+	def get_content_type_header
+		type = request.headers["Content-Type"]
+		type = request.headers["CONTENT_TYPE"] if type == nil
+		type = request.headers["HTTP_CONTENT_TYPE"] if type == nil
+		return type
+	end
 end

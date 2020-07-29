@@ -1166,12 +1166,12 @@ class ApisController < ApplicationController
 
 	public
 	def create_api
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		app_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1213,7 +1213,7 @@ class ApisController < ApplicationController
 	end
 
 	def get_api
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		api_id = params["id"]
 
 		begin
@@ -1249,12 +1249,12 @@ class ApisController < ApplicationController
 	end
 
 	def create_api_endpoint
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		api_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			api_key = auth.split(",")[0]
 
@@ -1300,12 +1300,12 @@ class ApisController < ApplicationController
 	end
 
 	def set_api_endpoint
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		api_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			api_key = auth.split(",")[0]
 
@@ -1360,12 +1360,12 @@ class ApisController < ApplicationController
 	end
 
 	def create_api_function
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		api_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			api_key = auth.split(",")[0]
 
@@ -1416,12 +1416,12 @@ class ApisController < ApplicationController
 	end
 
 	def set_api_function
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		api_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			api_key = auth.split(",")[0]
 
@@ -1482,12 +1482,12 @@ class ApisController < ApplicationController
 	end
 
 	def create_api_error
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		api_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			api_key = auth.split(",")[0]
 
@@ -1529,12 +1529,12 @@ class ApisController < ApplicationController
 	end
 
 	def set_api_error
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		api_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			api_key = auth.split(",")[0]
 
@@ -1585,12 +1585,12 @@ class ApisController < ApplicationController
 	end
 
 	def set_api_errors
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		api_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			api_key = auth.split(",")[0]
 
@@ -1637,12 +1637,12 @@ class ApisController < ApplicationController
 	end
 
 	def set_api_env_vars
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		api_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			api_key = auth.split(",")[0]
 

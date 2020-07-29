@@ -3,7 +3,7 @@ class UsersController < ApplicationController
 	jwt_expiration_hours_dev = 10000000
 
 	define_method :signup do
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		email = params[:email]
       password = params[:password]
 		username = params[:username]
@@ -112,7 +112,7 @@ class UsersController < ApplicationController
 	end
 
 	define_method :login do
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		email = params[:email]
       password = params[:password]
 
@@ -152,7 +152,7 @@ class UsersController < ApplicationController
 	end
 
 	define_method :login_by_jwt do
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		api_key = params[:api_key]
 		
 		begin
@@ -194,11 +194,11 @@ class UsersController < ApplicationController
 	end
 
 	define_method :create_session do
-      auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+      auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		
 		begin
 			# Make sure the body is json
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			# Get necessary information from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -280,11 +280,11 @@ class UsersController < ApplicationController
 	end
 	
 	define_method :create_session_with_jwt do
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 			
 			body = ValidationService.parse_json(request.body.string)
 
@@ -356,7 +356,7 @@ class UsersController < ApplicationController
 	end
    
    def get_session
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		id = params[:id]
 		
 		begin
@@ -392,7 +392,7 @@ class UsersController < ApplicationController
    end
 
    def delete_session
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		
 		begin
 			# Validate the jwt
@@ -426,7 +426,7 @@ class UsersController < ApplicationController
    end
 
 	def get_user
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		requested_user_id = params["id"]
 		
 		begin
@@ -495,7 +495,7 @@ class UsersController < ApplicationController
 	end
 
 	def get_user_by_auth
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		user_id = params["id"]
 		
 		begin
@@ -555,7 +555,7 @@ class UsersController < ApplicationController
 	end
 
 	def get_user_by_jwt
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -620,7 +620,7 @@ class UsersController < ApplicationController
 	end
 
 	def update_user
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -637,7 +637,7 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			email_changed = false
 			password_changed = false
@@ -733,7 +733,7 @@ class UsersController < ApplicationController
 	end
 
 	def create_stripe_customer_for_user
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -778,12 +778,12 @@ class UsersController < ApplicationController
 	end
 
 	def delete_user
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		user_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			body = ValidationService.parse_json(request.body.string)
 
@@ -831,12 +831,12 @@ class UsersController < ApplicationController
 	end
 
 	def remove_app
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		app_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			body = ValidationService.parse_json(request.body.string)
 
@@ -888,12 +888,12 @@ class UsersController < ApplicationController
 	end
 
 	def confirm_user
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		user_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			body = ValidationService.parse_json(request.body.string)
 
@@ -929,7 +929,7 @@ class UsersController < ApplicationController
 	end
 
 	def send_verification_email
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -963,7 +963,7 @@ class UsersController < ApplicationController
 	end
 
 	def send_delete_account_email
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -996,11 +996,11 @@ class UsersController < ApplicationController
 	end
 
 	def send_remove_app_email
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			body = ValidationService.parse_json(request.body.string)
 
@@ -1041,11 +1041,11 @@ class UsersController < ApplicationController
 	end
 
 	def send_password_reset_email
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			body = ValidationService.parse_json(request.body.string)
 			
@@ -1078,11 +1078,11 @@ class UsersController < ApplicationController
 	end
 
 	def set_password
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			body = ValidationService.parse_json(request.body.string)
 
@@ -1128,12 +1128,12 @@ class UsersController < ApplicationController
 	end
 
 	def save_new_password
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		user_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			body = ValidationService.parse_json(request.body.string)
 			password_confirmation_token = body["password_confirmation_token"]
@@ -1170,12 +1170,12 @@ class UsersController < ApplicationController
 	end
 
 	def save_new_email
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		user_id = params["id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			body = ValidationService.parse_json(request.body.string)
 			email_confirmation_token = body["email_confirmation_token"]
@@ -1219,7 +1219,7 @@ class UsersController < ApplicationController
 	end
 
 	def reset_new_email
-		auth = request.headers['HTTP_AUTHORIZATION'] ? request.headers['HTTP_AUTHORIZATION'] : nil
+		auth = get_authorization_header
 		user_id = params["id"]
 
 		begin

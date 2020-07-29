@@ -1,11 +1,11 @@
 class AppsController < ApplicationController
 	# App methods
 	def create_app
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -66,7 +66,7 @@ class AppsController < ApplicationController
 	end
 	
 	def get_app
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		app_id = params["id"]
 		
 		begin
@@ -120,7 +120,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_active_app_users
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		id = params["id"]
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s').beginning_of_day : (Time.now - 1.month).beginning_of_day
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s').beginning_of_day : Time.now.beginning_of_day
@@ -161,7 +161,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_all_apps
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_auth_missing(auth))
@@ -195,7 +195,7 @@ class AppsController < ApplicationController
 	end
 
 	def update_app
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		app_id = params["id"]
 		
 		begin
@@ -219,7 +219,7 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			object = ValidationService.parse_json(request.body.string)
 			validations = Array.new
@@ -281,7 +281,7 @@ class AppsController < ApplicationController
 	end
 
 	def delete_app
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		app_id = params["id"]
 		
 		begin
@@ -317,7 +317,7 @@ class AppsController < ApplicationController
    
 	# TableObject methods
    def create_object
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		table_name = params["table_name"]
 		table_id = params["table_id"]
       app_id = params["app_id"]
@@ -381,7 +381,7 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_table_object_uuid_taken(uuid))
 			end
 
-         type = request.headers["Content-Type"]
+			type = get_content_type_header
          ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(type))
 
 			obj = TableObject.new(table_id: table.id, user_id: user.id)
@@ -402,7 +402,7 @@ class AppsController < ApplicationController
 			if !ext || ext.length < 1
 				# Save the object normally
 				# Content-Type must be application/json
-				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(type))
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(obj.save))
 
 				object = ValidationService.parse_json(request.body.string)
@@ -495,7 +495,7 @@ class AppsController < ApplicationController
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(ext_prop.save))
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
-               ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(type_prop.save))
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(type_prop.save))
 
 					# Return the data
 					result = obj.attributes
@@ -526,7 +526,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_object
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		object_id = params["id"]
 		token = params["access_token"]
 		file = params["file"]
@@ -653,7 +653,7 @@ class AppsController < ApplicationController
    end
    
    def get_object_with_auth
-      auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+      auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		id = params["id"]
 		file = params["file"]
 
@@ -733,7 +733,7 @@ class AppsController < ApplicationController
    end
 	
 	def update_object
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		object_id = params["id"]
 		visibility = params["visibility"]
 		ext = params["ext"]
@@ -769,7 +769,7 @@ class AppsController < ApplicationController
 			app = App.find_by_id(table.app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
-			type = request.headers["Content-Type"]
+			type = get_content_type_header
 			ValidationService.raise_validation_error(ValidationService.validate_content_type_is_supported(type))
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_belongs_to_user(obj, user))
@@ -865,7 +865,7 @@ class AppsController < ApplicationController
 				render json: result, status: 200
 			else
 				# The object is not a file
-				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+				ValidationService.raise_validation_error(ValidationService.validate_content_type_json(type))
 
 				# Update the properties of the object
 				body = ValidationService.parse_json(request.body.string)
@@ -940,7 +940,7 @@ class AppsController < ApplicationController
 	end
 
 	def delete_object
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		object_id = params["id"]
 
 		begin
@@ -1007,7 +1007,7 @@ class AppsController < ApplicationController
 	end
 
 	def remove_object
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		object_id = params["id"]
 
 		begin
@@ -1059,12 +1059,12 @@ class AppsController < ApplicationController
    
 	# Table methods
 	def create_table
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		app_id = params["app_id"]
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			jwt_signature_validation = ValidationService.validate_jwt_signature(jwt)
 			ValidationService.raise_validation_error(jwt_signature_validation[0])
@@ -1109,7 +1109,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_table
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		app_id = params["app_id"]
       table_name = params["table_name"]
 		
@@ -1200,7 +1200,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_table_by_id
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		table_id = params["id"]
 		
 		default_count = 100
@@ -1289,7 +1289,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_table_by_id_and_auth
-		auth = request.headers["HTTP_AUTHORIZATION"] ? request.headers["HTTP_AUTHORIZATION"].split(' ').last : nil
+		auth = get_authorization_header ? get_authorization_header.split(' ').last : nil
 		table_id = params["id"]
 		user_id = params["user_id"]
 
@@ -1350,7 +1350,7 @@ class AppsController < ApplicationController
 	end
 
 	def update_table
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		table_id = params["id"]
 		
 		begin
@@ -1378,7 +1378,7 @@ class AppsController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 			
 			object = ValidationService.parse_json(request.body.string)
 
@@ -1404,7 +1404,7 @@ class AppsController < ApplicationController
 	end
 
 	def delete_table
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		table_id = params["id"]
 		
 		begin
@@ -1445,7 +1445,7 @@ class AppsController < ApplicationController
 
 	# Access Token methods
 	def create_access_token
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		object_id = params["id"]
 		
 		begin
@@ -1492,7 +1492,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_access_token
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		object_id = params["id"]
 		
 		begin
@@ -1537,7 +1537,7 @@ class AppsController < ApplicationController
 	end
 	
 	def add_access_token_to_object
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		object_id = params["id"]
 		token = params["token"]
 		
@@ -1588,7 +1588,7 @@ class AppsController < ApplicationController
 	end
 
 	def remove_access_token_from_object
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		object_id = params["id"]
 		token = params["token"]
 		
@@ -1648,7 +1648,7 @@ class AppsController < ApplicationController
 
 	# Notification methods
 	def create_notification
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		uuid = params["uuid"]		# Optional
 		app_id = params["app_id"]
 		time = params["time"]		# The unix timestamp as integer
@@ -1676,7 +1676,7 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			if !uuid || uuid.length < 1
 				uuid = SecureRandom.uuid
@@ -1730,7 +1730,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_notification
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		uuid = params["uuid"]
 
 		begin
@@ -1777,7 +1777,7 @@ class AppsController < ApplicationController
 	end
 
 	def get_all_notifications
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		app_id = params["app_id"]
 
 		begin
@@ -1830,7 +1830,7 @@ class AppsController < ApplicationController
 	end
 
 	def update_notification
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		uuid = params["uuid"]
 		time = params["time"]
 		interval = params["interval"]
@@ -1856,7 +1856,7 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(notification.app, dev))
 
 			# Validate the content type
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			# Validate notification belongs to the user
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_user(notification.user, user))
@@ -1919,7 +1919,7 @@ class AppsController < ApplicationController
 	end
 
 	def delete_notification
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		uuid = params["uuid"]
 
 		begin
@@ -1958,7 +1958,7 @@ class AppsController < ApplicationController
 
 	# WebPushSubscription methods
    def create_subscription
-      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+      jwt, session_id = get_jwt_from_header(get_authorization_header)
 		uuid = params["uuid"]	# Optional
 
 		begin
@@ -1983,7 +1983,7 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_subscription_uuid_taken(uuid))
 
 			# Check if the Content-Type is application/json
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			# Validate the values
 			body = ValidationService.parse_json(request.body.string)
@@ -2016,7 +2016,7 @@ class AppsController < ApplicationController
 	end
 
    def get_subscription
-      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+      jwt, session_id = get_jwt_from_header(get_authorization_header)
 		uuid = params["uuid"]
 
 		begin
@@ -2050,7 +2050,7 @@ class AppsController < ApplicationController
 	end
 
 	def delete_subscription
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		uuid = params["uuid"]
 
 		begin

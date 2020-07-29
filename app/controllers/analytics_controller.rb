@@ -1,7 +1,7 @@
 class AnalyticsController < ApplicationController
 	def create_event_log
 		begin
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 			body = ValidationService.parse_json(request.body.string)
 
 			api_key = body["api_key"]
@@ -76,7 +76,7 @@ class AnalyticsController < ApplicationController
 	end
 
 	def get_event
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		event_id = params["id"]
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s') : (Time.now - 1.month)
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s') : Time.now
@@ -163,7 +163,7 @@ class AnalyticsController < ApplicationController
 	end
 
 	def get_event_by_name
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		name = params["name"]
 		app_id = params["app_id"]
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s') : (Time.now - 1.month)
@@ -255,7 +255,7 @@ class AnalyticsController < ApplicationController
 	end
 
    def update_event
-      jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+      jwt, session_id = get_jwt_from_header(get_authorization_header)
 		event_id = params["id"]
 		
 		begin
@@ -285,7 +285,7 @@ class AnalyticsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
 			# Only accept application/json as Content-Type
-			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(request.headers["Content-Type"]))
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
 
 			object = ValidationService.parse_json(request.body.string)
 			name = object["name"]
@@ -308,7 +308,7 @@ class AnalyticsController < ApplicationController
 	end
 	
 	def delete_event
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		event_id = params["id"]
 		
 		begin
@@ -348,7 +348,7 @@ class AnalyticsController < ApplicationController
 	end
 
 	def get_app
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		id = params[:id]
 
 		begin
@@ -395,7 +395,7 @@ class AnalyticsController < ApplicationController
 	end
 
 	def get_users
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_jwt_missing(jwt))
@@ -450,7 +450,7 @@ class AnalyticsController < ApplicationController
 	end
 
 	def get_active_users
-		jwt, session_id = get_jwt_from_header(request.headers['HTTP_AUTHORIZATION'])
+		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		start_timestamp = params["start"] ? DateTime.strptime(params["start"],'%s').beginning_of_day : (Time.now - 1.month).beginning_of_day
 		end_timestamp = params["end"] ? DateTime.strptime(params["end"],'%s').beginning_of_day : Time.now.beginning_of_day
 
