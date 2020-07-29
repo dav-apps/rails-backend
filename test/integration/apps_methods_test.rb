@@ -551,7 +551,171 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(resp["errors"][0][0], 1102)
    end
    # End delete_app tests
-   
+	
+	# create_exception tests
+	test "Can't create exception without content type json" do
+		post "/v1/apps/app/1/exception", headers: {'Content-Type': 'text/plain'}
+		resp = JSON.parse(response.body)
+
+		assert_response 415
+		assert_equal(1104, resp["errors"][0][0])
+	end
+
+	test "Can't create exception for app that does not exist" do
+		post "/v1/apps/app/-234/exception", headers: {'Content-Type': 'application/json'}
+		resp = JSON.parse(response.body)
+
+		assert_response 404
+		assert_equal(2803, resp["errors"][0][0])
+	end
+
+	test "Can't create exception for the app of another dev" do
+		app = apps(:TestApp)
+		sherlock = devs(:sherlock)
+
+		post "/v1/apps/app/#{app.id}/exception",
+			headers: {'Content-Type': 'application/json'},
+			params: {
+				api_key: sherlock.api_key,
+				name: "asd",
+				message: "asdasd",
+				stack_trace: "asdasdasdads",
+				app_version: "1.0",
+				os_version: "10.0.19235",
+				device_family: "Windows.Desktop",
+				locale: "de-DE"
+			}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can't create exception without required properties" do
+		app = apps(:Cards)
+		sherlock = devs(:sherlock)
+
+		post "/v1/apps/app/#{app.id}/exception",
+			headers: {'Content-Type': 'application/json'},
+			params: {}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2118, resp["errors"][0][0])
+		assert_equal(2111, resp["errors"][1][0])
+		assert_equal(2136, resp["errors"][2][0])
+		assert_equal(2145, resp["errors"][3][0])
+		assert_equal(2146, resp["errors"][4][0])
+		assert_equal(2131, resp["errors"][5][0])
+		assert_equal(2147, resp["errors"][6][0])
+		assert_equal(2148, resp["errors"][7][0])
+	end
+
+	test "Can't create exception with too short properties" do
+		app = apps(:Cards)
+		sherlock = devs(:sherlock)
+
+		post "/v1/apps/app/#{app.id}/exception",
+			headers: {'Content-Type': 'application/json'},
+			params: {
+				api_key: sherlock.api_key,
+				name: "a",
+				message: "a",
+				stack_trace: "a",
+				app_version: "a",
+				os_version: "a",
+				device_family: "a",
+				locale: "a"
+			}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2203, resp["errors"][0][0])
+		assert_equal(2210, resp["errors"][1][0])
+		assert_equal(2215, resp["errors"][2][0])
+		assert_equal(2216, resp["errors"][3][0])
+		assert_equal(2217, resp["errors"][4][0])
+		assert_equal(2218, resp["errors"][5][0])
+		assert_equal(2219, resp["errors"][6][0])
+	end
+
+	test "Can't create exception with too long properties" do
+		app = apps(:Cards)
+		sherlock = devs(:sherlock)
+
+		post "/v1/apps/app/#{app.id}/exception",
+			headers: {'Content-Type': 'application/json'},
+			params: {
+				api_key: sherlock.api_key,
+				name: "a" * 300,
+				message: "a" * 600,
+				stack_trace: "a" * 10100,
+				app_version: "a" * 200,
+				os_version: "a" * 300,
+				device_family: "a" * 300,
+				locale: "a" * 100
+			}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 400
+		assert_equal(2303, resp["errors"][0][0])
+		assert_equal(2310, resp["errors"][1][0])
+		assert_equal(2316, resp["errors"][2][0])
+		assert_equal(2317, resp["errors"][3][0])
+		assert_equal(2318, resp["errors"][4][0])
+		assert_equal(2319, resp["errors"][5][0])
+		assert_equal(2320, resp["errors"][6][0])
+	end
+
+	test "Can create exception" do
+		app = apps(:Cards)
+		sherlock = devs(:sherlock)
+
+		name = "System.NotImplementedException"
+		message = "The requested method is not implemented!"
+		stack_trace = "Lorem ipsum dolor sit amet"
+		app_version = "1.7.14"
+		os_version = "10.0.19041.388"
+		device_family = "Windows.Desktop"
+		locale = "de-DE"
+
+		post "/v1/apps/app/#{app.id}/exception",
+			headers: {'Content-Type': 'application/json'},
+			params: {
+				api_key: sherlock.api_key,
+				name: name,
+				message: message,
+				stack_trace: stack_trace,
+				app_version: app_version,
+				os_version: os_version,
+				device_family: device_family,
+				locale: locale
+			}.to_json
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+
+		assert_equal(name, resp["name"])
+		assert_equal(message, resp["message"])
+		assert_equal(stack_trace, resp["stack_trace"])
+		assert_equal(app_version, resp["app_version"])
+		assert_equal(os_version, resp["os_version"])
+		assert_equal(device_family, resp["device_family"])
+		assert_equal(locale, resp["locale"])
+
+		exception = ExceptionEvent.find_by_id(resp["id"])
+		assert_not_nil(exception)
+		assert_equal(app, exception.app)
+		assert_equal(name, exception.name)
+		assert_equal(message, exception.message)
+		assert_equal(stack_trace, exception.stack_trace)
+		assert_equal(app_version, exception.app_version)
+		assert_equal(os_version, exception.os_version)
+		assert_equal(device_family, exception.device_family)
+		assert_equal(locale, exception.locale)
+	end
+	# End create_exception tests
+
    # create_object tests
    test "Missing fields in create_object" do
       post "/v1/apps/object"

@@ -36,6 +36,20 @@ class ValidationService
 	max_provider_image_length = 65000
 	min_provider_name_length = 2
 	max_provider_name_length = 100
+	min_exception_name_length = 3
+	max_exception_name_length = 200
+	min_exception_message_length = 2
+	max_exception_message_length = 500
+	min_stack_trace_length = 2
+	max_stack_trace_length = 10000
+	min_app_version_length = 2
+	max_app_version_length = 100
+	min_os_version_length = 2
+	max_os_version_length = 200
+	min_device_family_length = 2
+	max_device_family_length = 200
+	min_locale_length = 2
+	max_locale_length = 10
 
 	def self.get_errors_of_validations(validations)
 		errors = Array.new
@@ -504,6 +518,26 @@ class ValidationService
 		!provider_name ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	def self.validate_stack_trace_missing(stack_trace)
+		error_code = 2145
+		!stack_trace ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_app_version_missing(app_version)
+		error_code = 2146
+		!app_version ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_device_family_missing(device_family)
+		error_code = 2147
+		!device_family ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	def self.validate_locale_missing(locale)
+		error_code = 2148
+		!locale ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_username_too_short do |username|
 		error_code = 2201
 		username.length < min_username_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -537,6 +571,11 @@ class ValidationService
 	define_singleton_method :validate_name_for_api_function_too_short do |name|
 		error_code = 2203
 		name.length < min_api_function_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_name_for_exception_too_short do |name|
+		error_code = 2203
+		name.length < min_exception_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_desc_too_short do |desc|
@@ -574,6 +613,11 @@ class ValidationService
 		message.length < min_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_message_for_exception_too_short do |message|
+		error_code = 2210
+		message.length < min_exception_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_product_image_too_short do |product_image|
 		error_code = 2211
 		product_image.length < min_product_image_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -592,6 +636,31 @@ class ValidationService
 	define_singleton_method :validate_provider_name_too_short do |provider_name|
 		error_code = 2214
 		provider_name.length < min_provider_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_stack_trace_too_short do |stack_trace|
+		error_code = 2215
+		stack_trace.length < min_stack_trace_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_app_version_too_short do |app_version|
+		error_code = 2216
+		app_version.length < min_app_version_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_os_version_too_short do |os_version|
+		error_code = 2217
+		os_version.length < min_os_version_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_device_family_too_short do |device_family|
+		error_code = 2218
+		device_family.length < min_device_family_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_locale_too_short do |locale|
+		error_code = 2219
+		locale.length < min_locale_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	define_singleton_method :validate_username_too_long do |username|
@@ -629,6 +698,11 @@ class ValidationService
 		name.length > max_api_function_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_name_for_exception_too_long do |name|
+		error_code = 2303
+		name.length > max_exception_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_desc_too_long do |desc|
 		error_code = 2304
 		desc.length > max_app_desc_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -664,6 +738,11 @@ class ValidationService
 		message.length > max_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
+	define_singleton_method :validate_message_for_exception_too_long do |message|
+		error_code = 2310
+		message.length > max_exception_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
 	define_singleton_method :validate_params_too_long do |params|
 		error_code = 2311
 		params.length > max_message_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -687,6 +766,31 @@ class ValidationService
 	define_singleton_method :validate_provider_name_too_long do |provider_name|
 		error_code = 2315
 		provider_name.length > max_provider_name_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_stack_trace_too_long do |stack_trace|
+		error_code = 2316
+		stack_trace.length > max_stack_trace_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_app_version_too_long do |app_version|
+		error_code = 2317
+		app_version.length > max_app_version_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_os_version_too_long do |os_version|
+		error_code = 2318
+		os_version.length > max_os_version_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_device_family_too_long do |device_family|
+		error_code = 2319
+		device_family.length > max_device_family_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+	end
+
+	define_singleton_method :validate_locale_too_long do |locale|
+		error_code = 2320
+		locale.length > max_locale_length ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_email_not_valid(email)
@@ -1014,6 +1118,14 @@ class ValidationService
 			"Missing field: provider_image"
 		when 2144
 			"Missing field: provider_name"
+		when 2145
+			"Missing field: stack_trace"
+		when 2146
+			"Missing field: app_version"
+		when 2147
+			"Missing field: device_family"
+		when 2148
+			"Missing field: locale"
 		when 2201
 			"Field too short: username"
 		when 2202
@@ -1042,6 +1154,16 @@ class ValidationService
 			"Field too short: provider_image"
 		when 2214
 			"Field too short: provider_name"
+		when 2215
+			"Field too short: stack_trace"
+		when 2216
+			"Field too short: app_version"
+		when 2217
+			"Field too short: os_version"
+		when 2218
+			"Field too short: device_family"
+		when 2219
+			"Field too short: locale"
 		when 2301
 			"Field too long: username"
 		when 2302
@@ -1072,6 +1194,16 @@ class ValidationService
 			"Field too long: provider_image"
 		when 2315
 			"Field too long: provider_name"
+		when 2316
+			"Field too long: stack_trace"
+		when 2317
+			"Field too long: app_version"
+		when 2318
+			"Field too long: os_version"
+		when 2319
+			"Field too long: device_family"
+		when 2320
+			"Field too long: locale"
 		when 2401
 			"Field not valid: email"
 		when 2402

@@ -65,6 +65,8 @@ Rails.application.routes.draw do
   match '/v1/apps/apps/all', to: 'apps#get_all_apps', via: 'get'
   match '/v1/apps/app/:id', to: 'apps#update_app', via: 'put'
   match '/v1/apps/app/:id', to: 'apps#delete_app', via: 'delete'
+
+  match '/v1/apps/app/:id/exception', to: 'apps#create_exception_event', via: :post
   
   match '/v1/apps/object/:id/access_token', to: 'apps#create_access_token', via: 'post'
   match '/v1/apps/object/:id/access_token', to: 'apps#get_access_token', via: 'get'

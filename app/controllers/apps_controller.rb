@@ -314,6 +314,86 @@ class AppsController < ApplicationController
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
 		end
 	end
+
+	# ExceptionEvent methods
+	def create_exception_event
+		app_id = params["id"]
+
+		begin
+			# Validate content type json
+			ValidationService.raise_validation_error(ValidationService.validate_content_type_json(get_content_type_header))
+
+			# Validate the app
+			app = App.find_by_id(app_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
+
+			# Get the properties from the body
+			body = ValidationService.parse_json(request.body.string)
+			api_key = body["api_key"]
+			name = body["name"]
+			message = body["message"]
+			stack_trace = body["stack_trace"]
+			app_version = body["app_version"]
+			os_version = body["os_version"]
+			device_family = body["device_family"]
+			locale = body["locale"]
+
+			# Validate the properties
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_api_key_missing(api_key),
+				ValidationService.validate_name_missing(name),
+				ValidationService.validate_message_missing(message),
+				ValidationService.validate_stack_trace_missing(stack_trace),
+				ValidationService.validate_app_version_missing(app_version),
+				ValidationService.validate_os_version_missing(os_version),
+				ValidationService.validate_device_family_missing(device_family),
+				ValidationService.validate_locale_missing(locale)
+			])
+
+			# Validate the dev
+			dev = Dev.find_by(api_key: api_key)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
+
+			# Validate the length of the params
+			ValidationService.raise_multiple_validation_errors([
+				ValidationService.validate_name_for_exception_too_short(name),
+				ValidationService.validate_name_for_exception_too_long(name),
+				ValidationService.validate_message_for_exception_too_short(message),
+				ValidationService.validate_message_for_exception_too_long(message),
+				ValidationService.validate_stack_trace_too_short(stack_trace),
+				ValidationService.validate_stack_trace_too_long(stack_trace),
+				ValidationService.validate_app_version_too_short(app_version),
+				ValidationService.validate_app_version_too_long(app_version),
+				ValidationService.validate_os_version_too_short(os_version),
+				ValidationService.validate_os_version_too_long(os_version),
+				ValidationService.validate_device_family_too_short(device_family),
+				ValidationService.validate_device_family_too_long(device_family),
+				ValidationService.validate_locale_too_short(locale),
+				ValidationService.validate_locale_too_long(locale)
+			])
+
+			# Create the exception event
+			exception = ExceptionEvent.create(
+				app: app,
+				name: name,
+				message: message,
+				stack_trace: stack_trace,
+				app_version: app_version,
+				os_version: os_version,
+				device_family: device_family,
+				locale: locale
+			)
+
+			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(exception.save))
+
+			# Return the data
+			render json: exception, status: 201
+		rescue RuntimeError => e
+			validations = JSON.parse(e.message)
+			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
+		end
+	end
    
 	# TableObject methods
    def create_object
