@@ -39,7 +39,7 @@ class ValidationService
 	min_exception_name_length = 3
 	max_exception_name_length = 200
 	min_exception_message_length = 2
-	max_exception_message_length = 500
+	max_exception_message_length = 250
 	min_stack_trace_length = 2
 	max_stack_trace_length = 10000
 	min_app_version_length = 2

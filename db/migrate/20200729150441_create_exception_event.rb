@@ -5,7 +5,7 @@ class CreateExceptionEvent < ActiveRecord::Migration[5.2]
 		t.datetime :created_at
 		t.string :name
 		t.string :message
-		t.string :stack_trace
+		t.text :stack_trace
 		t.string :app_version
 		t.string :os_version
 		t.string :device_family
