@@ -614,10 +614,14 @@ class AppsController < ApplicationController
 		begin
 			ValidationService.raise_validation_error(ValidationService.validate_id_missing(object_id))
 
-			obj = TableObject.find_by(uuid: object_id)
-			if !obj
-				obj = TableObject.find_by_id(object_id)
+			if object_id.include? '-'
+				# The object id is a uuid
+				obj = TableObject.find_by(uuid: object_id)
+			else
+				# The object id is a id
+				obj = TableObject.find_by_id(object_id.to_i)
 			end
+
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
 
 			table = Table.find_by_id(obj.table_id)
@@ -747,11 +751,14 @@ class AppsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			# Find the object
-         obj = TableObject.find_by(uuid: id)
-         if !obj
-				obj = TableObject.find_by_id(id)
-         end
+			if id.include? '-'
+				# The object id is a uuid
+				obj = TableObject.find_by(uuid: id)
+			else
+				# The object id is a id
+				obj = TableObject.find_by_id(id.to_i)
+			end
+
          ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
 
          table = Table.find_by_id(obj.table_id)
@@ -835,10 +842,12 @@ class AppsController < ApplicationController
 			dev = Dev.find_by_id(dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			obj = TableObject.find_by(uuid: object_id)
-
-			if !obj
-				obj = TableObject.find_by_id(object_id)
+			if object_id.include? '-'
+				# The object id is a uuid
+				obj = TableObject.find_by(uuid: object_id)
+			else
+				# The object id is a id
+				obj = TableObject.find_by_id(object_id.to_i)
 			end
 
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
@@ -981,7 +990,7 @@ class AppsController < ApplicationController
 						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
 					else
 						# Update the property
-						prop.value = value
+						prop.value = value.to_s
 						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(prop.save))
 					end
 				end
@@ -1039,11 +1048,13 @@ class AppsController < ApplicationController
 
 			dev = Dev.find_by_id(dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-
-			obj = TableObject.find_by(uuid: object_id)
-
-			if !obj
-				obj = TableObject.find_by_id(object_id)
+			
+			if object_id.include? '-'
+				# The object id is a uuid
+				obj = TableObject.find_by(uuid: object_id)
+			else
+				# The object id is a id
+				obj = TableObject.find_by_id(object_id.to_i)
 			end
 
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
@@ -1104,8 +1115,13 @@ class AppsController < ApplicationController
 			dev = Dev.find_by_id(dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			obj = TableObject.find_by(uuid: object_id)
-			obj = TableObject.find_by_id(object_id) if !obj
+			if object_id.include? '-'
+				# The object id is a uuid
+				obj = TableObject.find_by(uuid: object_id)
+			else
+				# The object id is a id
+				obj = TableObject.find_by_id(object_id.to_i)
+			end
 
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(obj))
 
