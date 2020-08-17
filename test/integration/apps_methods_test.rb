@@ -2092,6 +2092,114 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 	end
 	# End delete_object tests
 	
+	# add_object tests
+	test "Can't add object without jwt" do
+		post "/v1/apps/object/1/access"
+		resp = JSON.parse(response.body)
+
+		assert_response 401
+		assert_equal(2102, resp["errors"][0][0])
+	end
+
+	test "Can't add object of app of another dev" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:matt), apps(:TestApp).id, "schachmatt")
+		obj = table_objects(:third)
+
+		post "/v1/apps/object/#{obj.id}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 403
+		assert_equal(1102, resp["errors"][0][0])
+	end
+
+	test "Can add object" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
+		obj = table_objects(:third)
+
+		post "/v1/apps/object/#{obj.id}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		
+		access = TableObjectUserAccess.find_by_id(resp["id"])
+		assert_not_nil(access)
+		assert_equal(resp["table_object_id"], access.table_object_id)
+		assert_equal(resp["user_id"], access.user_id)
+		assert_equal(resp["table_alias"], access.table_alias)
+
+		assert_equal(access.table_object_id, obj.id)
+		assert_equal(access.user_id, matt.id)
+		assert_equal(access.table_alias, obj.table.id)
+	end
+
+	test "Can add object with uuid" do
+		matt = users(:matt)
+		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
+		obj = table_objects(:third)
+
+		post "/v1/apps/object/#{obj.uuid}/access", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		
+		access = TableObjectUserAccess.find_by_id(resp["id"])
+		assert_not_nil(access)
+		assert_equal(resp["table_object_id"], access.table_object_id)
+		assert_equal(resp["user_id"], access.user_id)
+		assert_equal(resp["table_alias"], access.table_alias)
+		
+		assert_equal(access.table_object_id, obj.id)
+		assert_equal(access.user_id, matt.id)
+		assert_equal(access.table_alias, obj.table.id)
+	end
+
+	test "Can add object with table alias" do
+		sherlock = users(:sherlock)
+		jwt = generate_session_jwt(sherlock, devs(:matt), apps(:TestApp).id, "sherlocked")
+		obj = table_objects(:fifth)
+		table_alias = tables(:testTable).id
+
+		post "/v1/apps/object/#{obj.id}/access?table_alias=#{table_alias}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		
+		access = TableObjectUserAccess.find_by_id(resp["id"])
+		assert_not_nil(access)
+		assert_equal(resp["table_object_id"], access.table_object_id)
+		assert_equal(resp["user_id"], access.user_id)
+		assert_equal(resp["table_alias"], access.table_alias)
+		
+		assert_equal(access.table_object_id, obj.id)
+		assert_equal(access.user_id, sherlock.id)
+		assert_equal(access.table_alias, table_alias)
+	end
+
+	test "Can add object with uuid and table alias" do
+		sherlock = users(:sherlock)
+		jwt = generate_session_jwt(sherlock, devs(:matt), apps(:TestApp).id, "sherlocked")
+		obj = table_objects(:fifth)
+		table_alias = tables(:testTable).id
+
+		post "/v1/apps/object/#{obj.uuid}/access?table_alias=#{table_alias}", headers: {Authorization: jwt}
+		resp = JSON.parse(response.body)
+
+		assert_response 201
+		
+		access = TableObjectUserAccess.find_by_id(resp["id"])
+		assert_not_nil(access)
+		assert_equal(resp["table_object_id"], access.table_object_id)
+		assert_equal(resp["user_id"], access.user_id)
+		assert_equal(resp["table_alias"], access.table_alias)
+		
+		assert_equal(access.table_object_id, obj.id)
+		assert_equal(access.user_id, sherlock.id)
+		assert_equal(access.table_alias, table_alias)
+	end
+	# End add_object tests
+
 	# remove_object tests
 	test "Missing fields in remove_object" do
 		delete "/v1/apps/object/1/access"

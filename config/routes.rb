@@ -50,6 +50,7 @@ Rails.application.routes.draw do
   match '/v1/apps/object/:id/auth', to: 'apps#get_object_with_auth', via: 'get'
   match '/v1/apps/object/:id', to: 'apps#update_object', via: 'put'
   match '/v1/apps/object/:id', to: 'apps#delete_object', via: 'delete'
+  match '/v1/apps/object/:id/access', to: 'apps#add_object', via: :post
   match '/v1/apps/object/:id/access', to: 'apps#remove_object', via: :delete
   
   match '/v1/apps/:app_id/table', to: 'apps#create_table', via: 'post'
