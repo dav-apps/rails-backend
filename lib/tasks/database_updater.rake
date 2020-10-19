@@ -59,6 +59,35 @@ namespace :database_updater do
 		end
 	end
 
+	desc "Creates a lot of table objects for testing database performance"
+	task generate_test_data: :environment do
+		i = 0
+		target = 10000
+
+		while i < target
+			obj = TableObject.new
+			obj.table_id = rand(20)
+			obj.user_id = 8
+			obj.uuid = SecureRandom.uuid
+			obj.save
+
+			number_properties = rand(4) + 1
+			j = 0
+			
+			while j < number_properties
+				prop = Property.new
+				prop.table_object_id = obj.id
+				prop.name = ('a'..'z').to_a.shuffle[0,8].join
+				prop.value = ('a'..'z').to_a.shuffle[0,16].join
+				prop.save
+
+				j += 1
+			end
+
+			i += 1
+		end
+	end
+
 	desc "Create EventSummaries with the count of the values"
 	task create_event_summaries: :environment do
 		# Create summaries of event logs
