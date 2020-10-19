@@ -337,6 +337,8 @@ class ApisController < ApplicationController
 				result = execute_command(command[1], vars)
 				puts result
 				return result
+			elsif command[0] == :log_time
+				return log_time(command[1])
 			elsif command[0] == :to_int
 				return execute_command(command[1], vars).to_i
 			elsif command[0] == :is_nil
@@ -1162,6 +1164,24 @@ class ApisController < ApplicationController
 
 	def break_execution
 		@execution_stopped = true
+	end
+
+	def log_time(message = nil)
+		current = Time.new
+		@start = current if @start == nil
+
+		time_diff = (current - @start).in_milliseconds
+
+		puts "---------------------"
+		if message == nil
+			puts "#{time_diff.to_s} ms"
+		else
+			puts "#{message}: #{time_diff.to_s} ms"
+		end
+		puts "---------------------"
+
+		@start = current
+		return time_diff
 	end
 
 	public
