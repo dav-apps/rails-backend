@@ -13,11 +13,15 @@ class ApisController < ApplicationController
 			@vars = Hash.new
 			@functions = Hash.new
 			@errors = Array.new
+			@cache_response = false
+			@response = response
 
 			# Add the url params to the vars
 			request.query_parameters.each do |key, value|
 				@vars[key.to_s] = value
 			end
+
+			cache_params = @vars.sort
 
 			# Get the environment variables
 			@vars["env"] = Hash.new
@@ -60,6 +64,20 @@ class ApisController < ApplicationController
 			end
 
 			ValidationService.raise_validation_error(ValidationService.validate_api_endpoint_does_not_exist(api_endpoint))
+
+			if api_endpoint.caching && request.headers["Authorization"] == nil && request.method.downcase == "get"
+				# Check if this request is cached
+				@cache_url = generate_request_url(path, cache_params)
+				cache = ApiRequestCache.find_by(url: @cache_url)
+
+				if cache != nil
+					# Return the cached response
+					render json: cache.response, status: 200
+					return
+				else
+					@cache_response = true
+				end
+			end
 
 			# Parse the endpoint commands
 			@parser = Sexpistol.new
@@ -372,7 +390,16 @@ class ApisController < ApplicationController
 					return result
 				end
 			elsif command[0] == :render_json
-				render json: execute_command(command[1], vars), status: execute_command(command[2], vars)
+				result = execute_command(command[1], vars)
+				status = execute_command(command[2], vars)
+
+				if @cache_response && (status == 200 || status == nil)
+					# Save the response in the cache
+					cache = ApiRequestCache.new(api: @api, url: @cache_url, response: result.to_json)
+					cache.save
+				end
+
+				render json: result, status: status
 				break_execution
 			elsif command[0] == :render_file
 				result = execute_command(command[1], vars)
@@ -380,7 +407,7 @@ class ApisController < ApplicationController
 				filename = execute_command(command[3], vars)
 				status = execute_command(command[4], vars)
 
-				response.headers['Content-Length'] = result.size.to_s if result
+				@response.set_header('Content-Length', result.size.to_s) if result
 				send_data(result, type: type, filename: filename, status: status)
 				break_execution
 
@@ -1184,6 +1211,20 @@ class ApisController < ApplicationController
 		return time_diff
 	end
 
+	def generate_request_url(url, params)
+		return nil if url == nil
+
+		for i in 0..(params.size - 1)
+			if i == 0
+				url += "?#{params[0][0]}=#{params[0][1]}"
+			else
+				url += "&#{params[i][0]}=#{params[i][1]}"
+			end
+		end
+
+		return url
+	end
+
 	public
 	def create_api
 		jwt, session_id = get_jwt_from_header(get_authorization_header)
@@ -1292,6 +1333,7 @@ class ApisController < ApplicationController
 			path = body["path"]
 			method = body["method"]
 			commands = body["commands"]
+			caching = body["caching"]
 
 			# Validate the properties
 			ValidationService.raise_multiple_validation_errors([
@@ -1310,6 +1352,7 @@ class ApisController < ApplicationController
 
 			# Create the api endpoint
 			endpoint = ApiEndpoint.new(api: api, path: path, method: method.upcase, commands: commands)
+			endpoint.caching = caching if caching != nil
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(endpoint.save))
 
 			render json: endpoint.attributes, status: 201
@@ -1343,6 +1386,7 @@ class ApisController < ApplicationController
 			path = body["path"]
 			method = body["method"]
 			commands = body["commands"]
+			caching = body["caching"]
 
 			# Validate the properties
 			ValidationService.raise_multiple_validation_errors([
@@ -1365,9 +1409,11 @@ class ApisController < ApplicationController
 			if endpoint
 				# Update the existing endpoint
 				endpoint.commands = commands
+				endpoint.caching = caching if caching != nil
 			else
 				# Create a new endpoint
 				endpoint = ApiEndpoint.new(api: api, path: path, method: method.upcase, commands: commands)
+				endpoint.caching = caching if caching != nil
 			end
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(endpoint.save))
