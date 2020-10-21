@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_10_19_195510) do
+ActiveRecord::Schema.define(version: 2020_10_20_215445) do
 
   create_table "access_tokens", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.string "token"
@@ -31,6 +31,19 @@ ActiveRecord::Schema.define(version: 2020_10_19_195510) do
     t.integer "count_daily"
     t.integer "count_monthly"
     t.integer "count_yearly"
+  end
+
+  create_table "api_endpoint_request_cache_params", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.integer "api_endpoint_request_cache_id"
+    t.string "name"
+    t.string "value"
+  end
+
+  create_table "api_endpoint_request_caches", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.integer "api_endpoint_id"
+    t.text "response"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "api_endpoints", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
@@ -59,14 +72,6 @@ ActiveRecord::Schema.define(version: 2020_10_19_195510) do
     t.string "name"
     t.string "params"
     t.text "commands"
-  end
-
-  create_table "api_request_caches", options: "ENGINE=InnoDB DEFAULT CHARSET=latin1", force: :cascade do |t|
-    t.integer "api_id"
-    t.string "url"
-    t.text "response"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
   end
 
   create_table "apis", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|

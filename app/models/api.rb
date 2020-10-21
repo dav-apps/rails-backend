@@ -4,5 +4,4 @@ class Api < ApplicationRecord
 	has_many :api_endpoints, dependent: :destroy
 	has_many :api_functions, dependent: :destroy
 	has_many :api_env_vars, dependent: :destroy
-	has_many :api_request_caches, dependent: :destroy
 end
