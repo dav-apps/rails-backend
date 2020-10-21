@@ -12,19 +12,6 @@ class ApisController < ApplicationController
 			api_endpoint = api.api_endpoints.find_by(method: request.method, path: path)
 			vars = Hash.new
 
-			# Add the url params to the vars
-			request.query_parameters.each do |key, value|
-				vars[key.to_s] = value
-			end
-
-			cache_params = vars.sort
-
-			# Get the environment variables
-			vars["env"] = Hash.new
-			api.api_env_vars.each do |env_var|
-				vars["env"][env_var.name] = convert_env_value(env_var.class_name, env_var.value)
-			end
-
 			if !api_endpoint
 				# Try to find an endpoint by checking the endpoints with variables in the url
 				api.api_endpoints.where(method: request.method).each do |endpoint|
@@ -62,20 +49,46 @@ class ApisController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_api_endpoint_does_not_exist(api_endpoint))
 
+			# Get the url params
+			request.query_parameters.each do |key, value|
+				vars[key.to_s] = value
+			end
+
 			cache_response = false
 
 			if api_endpoint.caching && request.headers["Authorization"] == nil && request.method.downcase == "get"
-				# Check if this request is cached
-				cache_url = generate_request_url(path, cache_params)
-				cache = ApiRequestCache.find_by(url: cache_url)
+				# Try to find a cache of the endpoint with this combination of params
+				cache = nil
+				cache_params = vars.sort.to_h
+				caches = ApiEndpointRequestCache.where(api_endpoint: api_endpoint)
+
+				caches.each do |request_cache|
+					request_cache_params = request_cache.api_endpoint_request_cache_params
+					next if cache_params.size != request_cache_params.size
+
+					# Convert the params into a hash
+					request_cache_params_hash = Hash.new
+					request_cache_params.each { |param| request_cache_params_hash[param.name] = param.value }
+
+					next if request_cache_params_hash != cache_params
+					cache = request_cache
+					break
+				end
 
 				if cache != nil
 					# Return the cached response
 					render json: cache.response, status: 200
 					return
 				else
+					# Copy the current vars as the params for the cache
 					cache_response = true
 				end
+			end
+
+			# Get the environment variables
+			vars["env"] = Hash.new
+			api.api_env_vars.each do |env_var|
+				vars["env"][env_var.name] = UtilsService.convert_env_value(env_var.class_name, env_var.value)
 			end
 
 			runner = DavExpressionRunner.new
@@ -87,8 +100,16 @@ class ApisController < ApplicationController
 
 			if cache_response && result[:status] == 200
 				# Save the response in the cache
-				cache = ApiRequestCache.new(api: api, url: cache_url, response: result[:data].to_json)
-				cache.save
+				cache = ApiEndpointRequestCache.new(api_endpoint: api_endpoint, response: result[:data].to_json)
+
+				if cache.save
+					# Create the cache params
+					cache_params.each do |var|
+						# var = ["key", "value"]
+						param = ApiEndpointRequestCacheParam.new(api_endpoint_request_cache: cache, name: var[0], value: var[1])
+						param.save
+					end
+				end
 			end
 
 			# Send the response
@@ -106,22 +127,6 @@ class ApisController < ApplicationController
 		end
 	end
 
-	private
-	def generate_request_url(url, params)
-		return nil if url == nil
-
-		for i in 0..(params.size - 1)
-			if i == 0
-				url += "?#{params[0][0]}=#{params[0][1]}"
-			else
-				url += "&#{params[i][0]}=#{params[i][1]}"
-			end
-		end
-
-		return url
-	end
-
-	public
 	def create_api
 		jwt, session_id = get_jwt_from_header(get_authorization_header)
 		app_id = params["id"]
@@ -620,7 +625,7 @@ class ApisController < ApplicationController
 			body = ValidationService.parse_json(request.body.string)
 
 			body.each do |key, value|
-				class_name = get_env_class_name(value)
+				class_name = UtilsService.get_env_class_name(value)
 
 				if class_name.start_with?('array')
 					value = value.join(',')
@@ -645,48 +650,6 @@ class ApisController < ApplicationController
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
 			render json: {"errors" => ValidationService.get_errors_of_validations(validations)}, status: validations.last["status"]
-		end
-	end
-
-	private
-	def get_env_class_name(value)
-		class_name = "string"
-
-		if value.is_a?(TrueClass) || value.is_a?(FalseClass)
-			class_name = "bool"
-		elsif value.is_a?(Integer)
-			class_name = "int"
-		elsif value.is_a?(Float)
-			class_name = "float"
-		elsif value.is_a?(Array)
-			content_class_name = get_env_class_name(value[0])
-			class_name = "array:#{content_class_name}"
-		end
-
-		return class_name
-	end
-
-	def convert_env_value(class_name, value)
-		if class_name == "bool"
-			return value == "true"
-		elsif class_name == "int"
-			return value.to_i
-		elsif class_name == "float"
-			return value.to_f
-		elsif class_name.include?(':')
-			parts = class_name.split(':')
-
-			if parts[0] == "array"
-				array = Array.new
-
-				value.split(',').each do |val|
-					array.push(convert_env_value(parts[1], val))
-				end
-
-				return array
-			else
-				return value
-			end
 		end
 	end
 end
