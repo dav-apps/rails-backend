@@ -88,6 +88,41 @@ namespace :database_updater do
 		end
 	end
 
+	desc "Updates all caches by executing each cached endpoint with the saved combination of params"
+	task update_caches: :environment do
+		Api.all.each do |api|
+			api.api_endpoints.where(caching: true).each do |api_endpoint|
+				# Get the environment variables of the api
+				vars = Hash.new
+				vars["env"] = Hash.new
+				api.api_env_vars.each do |env_var|
+					vars["env"][env_var.name] = UtilsService.convert_env_value(env_var.class_name, env_var.value)
+				end
+
+				caches = ApiEndpointRequestCache.where(api_endpoint: api_endpoint)
+				caches.each do |cache|
+					# Get the params
+					cache.api_endpoint_request_cache_params.each do |param|
+						vars[param.name] = param.value
+					end
+
+					runner = DavExpressionRunner.new
+					result = runner.run({
+						api: api,
+						vars: vars,
+						commands: api_endpoint.commands
+					})
+
+					if result[:status] == 200 && !result[:file]
+						# Update the cache
+						cache.response = result[:data].to_json
+						cache.save
+					end
+				end
+			end
+		end
+	end
+
 	desc "Create EventSummaries with the count of the values"
 	task create_event_summaries: :environment do
 		# Create summaries of event logs
