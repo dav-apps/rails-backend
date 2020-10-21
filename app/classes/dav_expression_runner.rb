@@ -332,7 +332,7 @@ class DavExpressionRunner
 				@response[:data] = result
 				@response[:status] = status == nil ? 200 : status
 				@response[:file] = true
-				@response[:headers] = {"Content-Length": result == nil ? 0 : result.size.to_s}
+				@response[:headers] = {"Content-Length" => result == nil ? 0 : result.size.to_s}
 				@response[:type] = type
 				@response[:filename] = filename
 
