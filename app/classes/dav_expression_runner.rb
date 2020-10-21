@@ -5,6 +5,7 @@ class DavExpressionRunner
 		@vars = props[:vars]
 		@functions = Hash.new
 		@errors = Array.new
+		@request = props[:request]
 		@response = Hash.new
 
 		# Parse and execute the commands
@@ -294,16 +295,16 @@ class DavExpressionRunner
 				return nil if json.size < 2
 				JSON.parse(json)
 			elsif command[0] == :get_header
-				return request.headers[command[1].to_s]
+				return @request[:headers][command[1].to_s]
 			elsif command[0] == :get_param
 				return params[command[1]]
 			elsif command[0] == :get_body
-				if request.body.class == StringIO
-					return request.body.string
-				elsif request.body.class == Tempfile
-					return request.body.read
+				if @request[:body].class == StringIO
+					return @request[:body].string
+				elsif @request[:body].class == Tempfile
+					return @request[:body].read
 				else
-					return request.body
+					return @request[:body]
 				end
 			elsif command[0] == :get_error
 				error = ApiError.find_by(api: @api, code: command[1])

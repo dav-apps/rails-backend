@@ -109,7 +109,11 @@ namespace :database_updater do
 					result = runner.run({
 						api: api,
 						vars: vars,
-						commands: api_endpoint.commands
+						commands: api_endpoint.commands,
+						request: {
+							headers: Hash.new,
+							body: nil
+						}
 					})
 
 					if result[:status] == 200 && !result[:file]

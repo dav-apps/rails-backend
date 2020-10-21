@@ -94,7 +94,11 @@ class ApisController < ApplicationController
 			result = runner.run({
 				api: api,
 				vars: vars,
-				commands: api_endpoint.commands
+				commands: api_endpoint.commands,
+				request: {
+					headers: request.headers.to_h,
+					body: request.body
+				}
 			})
 
 			if cache_response && result[:status] == 200
