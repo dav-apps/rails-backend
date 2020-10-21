@@ -60,9 +60,8 @@ class ApisController < ApplicationController
 				# Try to find a cache of the endpoint with this combination of params
 				cache = nil
 				cache_params = vars.sort.to_h
-				caches = ApiEndpointRequestCache.where(api_endpoint: api_endpoint)
-
-				caches.each do |request_cache|
+				
+				api_endpoint.api_endpoint_request_caches.each do |request_cache|
 					request_cache_params = request_cache.api_endpoint_request_cache_params
 					next if cache_params.size != request_cache_params.size
 

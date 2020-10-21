@@ -99,8 +99,7 @@ namespace :database_updater do
 					vars["env"][env_var.name] = UtilsService.convert_env_value(env_var.class_name, env_var.value)
 				end
 
-				caches = ApiEndpointRequestCache.where(api_endpoint: api_endpoint)
-				caches.each do |cache|
+				api_endpoint.api_endpoint_request_caches.each do |cache|
 					# Get the params
 					cache.api_endpoint_request_cache_params.each do |param|
 						vars[param.name] = param.value
