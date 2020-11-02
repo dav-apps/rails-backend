@@ -90,13 +90,18 @@ class ApisController < ApplicationController
 				vars["env"][env_var.name] = UtilsService.convert_env_value(env_var.class_name, env_var.value)
 			end
 
+			# Get the headers
+			headers = Hash.new
+			headers["Authorization"] = request.headers["Authorization"]
+			headers["Content-Type"] = request.headers["Content-Type"]
+
 			runner = DavExpressionRunner.new
 			result = runner.run({
 				api: api,
 				vars: vars,
 				commands: api_endpoint.commands,
 				request: {
-					headers: request.headers.to_h,
+					headers: headers,
 					body: request.body
 				}
 			})
