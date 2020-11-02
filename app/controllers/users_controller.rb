@@ -96,13 +96,15 @@ class UsersController < ApplicationController
 			UserNotifier.send_verification_email(user).deliver_later
 
 			result = Hash.new
-			result = user.attributes.extract!("id", 
-														"email", 
-														"username",
-														"confirmed",
-														"plan",
-														"used_storage")
-			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
+			result = user.attributes.extract!(
+				"id", 
+				"email", 
+				"username",
+				"confirmed",
+				"plan",
+				"used_storage"
+			)
+			result["total_storage"] = UtilsService.get_total_storage(user.plan, user.confirmed)
 			result["jwt"] = jwt
 			render json: result, status: 201
 		rescue RuntimeError => e
@@ -465,7 +467,7 @@ class UsersController < ApplicationController
 			avatar_info = BlobOperationsService.get_avatar_information(requested_user.id)
 			result["avatar"] = avatar_info[0]
 			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = get_total_storage(requested_user.plan, requested_user.confirmed)
+			result["total_storage"] = UtilsService.get_total_storage(requested_user.plan, requested_user.confirmed)
 			result["used_storage"] = requested_user.used_storage
 			result["dev"] = requested_user.dev != nil
 			result["provider"] = requested_user.provider != nil
@@ -528,7 +530,7 @@ class UsersController < ApplicationController
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
 			result["avatar"] = avatar_info[0]
 			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
+			result["total_storage"] = UtilsService.get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
 			result["dev"] = user.dev != nil
 			result["provider"] = user.provider != nil
@@ -590,7 +592,7 @@ class UsersController < ApplicationController
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
 			result["avatar"] = avatar_info[0]
 			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
+			result["total_storage"] = UtilsService.get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
 			result["dev"] = user.dev != nil
 			result["provider"] = user.provider != nil
@@ -702,16 +704,18 @@ class UsersController < ApplicationController
 			
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
-			result = user.attributes.except("email_confirmation_token", 
-														"password_confirmation_token", 
-														"new_password", 
-														"password_digest",
-														"stripe_customer_id")
+			result = user.attributes.except(
+				"email_confirmation_token", 
+				"password_confirmation_token", 
+				"new_password", 
+				"password_digest",
+				"stripe_customer_id"
+			)
 
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
 			result["avatar"] = avatar_info[0]
 			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = get_total_storage(user.plan, user.confirmed)
+			result["total_storage"] = UtilsService.get_total_storage(user.plan, user.confirmed)
 			result["used_storage"] = user.used_storage
 			result["dev"] = user.dev != nil
 			result["provider"] = user.provider != nil

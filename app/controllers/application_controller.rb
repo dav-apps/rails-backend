@@ -66,23 +66,6 @@ class ApplicationController < ActionController::API
       return 0
    end
 
-	def get_total_storage(plan, confirmed)
-		storage_unconfirmed = 1000000000 	# 1 GB
-      storage_on_free_plan = 2000000000 	# 2 GB
-      storage_on_plus_plan = 15000000000 	# 15 GB
-      storage_on_pro_plan = 50000000000   # 50 GB
-
-		if !confirmed
-			return storage_unconfirmed
-      elsif plan == 1 # User is on Plus plan
-			return storage_on_plus_plan
-		elsif plan == 2
-			return storage_on_pro_plan
-		else
-			return storage_on_free_plan
-		end
-   end
-
    def save_email_to_stripe_customer(user)
       if user.stripe_customer_id
          begin
@@ -107,29 +90,6 @@ class ApplicationController < ActionController::API
 
 		return Digest::MD5.hexdigest(etag_string)
 	end
-
-	def update_used_storage(user_id, app_id, storage_change)
-		update_used_storage_of_user(user_id, storage_change)
-		update_used_storage_of_app(user_id, app_id, storage_change)
-	end
-
-	def update_used_storage_of_user(user_id, storage_change)
-		user = User.find_by_id(user_id)
-
-		if user
-			user.used_storage = user.used_storage += storage_change
-			user.save
-		end
-	end
-
-	def update_used_storage_of_app(user_id, app_id, storage_change)
-		users_app = UsersApp.find_by(user_id: user_id, app_id: app_id)
-
-		if users_app
-			users_app.used_storage = users_app.used_storage += storage_change
-			users_app.save
-		end
-   end
 
 	def get_jwt_from_header(auth_header)
 		# session JWT: header.payload.signature.session_id

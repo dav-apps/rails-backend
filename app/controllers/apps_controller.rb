@@ -536,7 +536,7 @@ class AppsController < ApplicationController
 				# Save the object as a file
 				# Check if the user has enough free storage
 				file_size = get_file_size(request.body)
-				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
+				free_storage = UtilsService.get_total_storage(user.plan, user.confirmed) - user.used_storage
 				obj.file = true
 
 				ValidationService.raise_validation_error(ValidationService.validate_storage_space(free_storage, file_size))
@@ -562,7 +562,7 @@ class AppsController < ApplicationController
                type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
 
 					# Update the used storage
-					update_used_storage(user.id, app.id, file_size)
+					UtilsService.update_used_storage(user.id, app.id, file_size)
 
 					# Save that user uses the app
 					users_app = UsersApp.find_by(app_id: app.id, user_id: user.id)
@@ -897,7 +897,7 @@ class AppsController < ApplicationController
 				end
 
 				file_size = get_file_size(request.body)
-				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
+				free_storage = UtilsService.get_total_storage(user.plan, user.confirmed) - user.used_storage
 				file_size_difference = file_size - old_file_size
 
 				ValidationService.raise_validation_error(ValidationService.validate_storage_space(free_storage, file_size_difference))
@@ -927,7 +927,7 @@ class AppsController < ApplicationController
 				end
 
 				# Save the new used_storage value
-				update_used_storage(user.id, app.id, file_size_difference)
+				UtilsService.update_used_storage(user.id, app.id, file_size_difference)
 
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
@@ -1075,7 +1075,7 @@ class AppsController < ApplicationController
 
 				if size_prop
 					# Save the new used_storage value
-					update_used_storage(user.id, app.id, -size_prop.value.to_i)
+					UtilsService.update_used_storage(user.id, app.id, -size_prop.value.to_i)
 				end
 			end
 

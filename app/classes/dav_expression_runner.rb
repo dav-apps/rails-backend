@@ -463,7 +463,7 @@ class DavExpressionRunner
 				file_size = file.size
 
 				# Check if the user has enough free storage
-				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
+				free_storage = UtilsService.get_total_storage(user.plan, user.confirmed) - user.used_storage
 
 				if free_storage < file_size
 					error["code"] = 3
@@ -505,7 +505,7 @@ class DavExpressionRunner
 				type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
 
 				# Update the used storage
-				update_used_storage(user.id, table.app_id, file_size)
+				UtilsService.update_used_storage(user.id, table.app_id, file_size)
 
 				# Save that user uses the app
 				users_app = UsersApp.find_by(app_id: table.app_id, user_id: user.id)
@@ -645,7 +645,7 @@ class DavExpressionRunner
 				file_size = file.size
 				old_file_size = size_prop ? size_prop.value.to_i : 0
 				file_size_diff = file_size - old_file_size
-				free_storage = get_total_storage(user.plan, user.confirmed) - user.used_storage
+				free_storage = UtilsService.get_total_storage(user.plan, user.confirmed) - user.used_storage
 
 				# Check if the user has enough free storage
 				if free_storage < file_size_diff
@@ -691,7 +691,7 @@ class DavExpressionRunner
 				end
 
 				# Update the used storage
-				update_used_storage(obj.user.id, obj.table.app_id, file_size_diff)
+				UtilsService.update_used_storage(obj.user.id, obj.table.app_id, file_size_diff)
 
 				# Save the properties
 				if !ext_prop.save || !etag_prop.save || !size_prop.save || !type_prop.save
