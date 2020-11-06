@@ -1,3 +1,6 @@
+require 'blurhash'
+require 'rmagick'
+
 class DavExpressionRunner
 	def run(props)
 		# Get the runtime variables
@@ -937,6 +940,15 @@ class DavExpressionRunner
 					return nil if !table_object
 					return Purchase.find_by(user_id: user_id, table_object_id: table_object.id, completed: true)
 				end
+			elsif command[0].to_s == "Blurhash.encode"	# image_data
+				image_data = execute_command(command[1], vars)
+
+				tempfile = Tempfile.new
+				tempfile.binmode
+				tempfile.write(@request[:body].read)
+				tempfile.close
+				image = Magick::ImageList.new(tempfile.path)
+				return Blurhash.encode(image.columns, image.rows, image.export_pixels)
 
 			# Command is an expression
 			elsif command[1] == :==
