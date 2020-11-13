@@ -943,12 +943,13 @@ class DavExpressionRunner
 			elsif command[0].to_s == "Blurhash.encode"	# image_data
 				image_data = execute_command(command[1], vars)
 
-				tempfile = Tempfile.new
-				tempfile.binmode
-				tempfile.write(@request[:body].read)
-				tempfile.close
-				image = Magick::ImageList.new(tempfile.path)
-				return Blurhash.encode(image.columns, image.rows, image.export_pixels)
+				begin
+					image = Magick::ImageList.new
+					image.from_blob(@request[:body].string)
+					return Blurhash.encode(image.columns, image.rows, image.export_pixels)
+				rescue
+					return nil
+				end
 
 			# Command is an expression
 			elsif command[1] == :==
