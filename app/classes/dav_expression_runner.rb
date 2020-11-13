@@ -945,7 +945,16 @@ class DavExpressionRunner
 
 				begin
 					image = Magick::ImageList.new
-					image.from_blob(@request[:body].string)
+	
+					if @request[:body].class == StringIO
+						image.from_blob(@request[:body].string)
+					elsif @request[:body].class == Tempfile
+						@request[:body].rewind
+						image.from_blob(@request[:body].read)
+					else
+						image.from_blob(@request[:body])
+					end
+
 					return Blurhash.encode(image.columns, image.rows, image.export_pixels)
 				rescue
 					return nil
