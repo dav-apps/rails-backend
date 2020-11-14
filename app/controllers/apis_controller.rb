@@ -56,7 +56,7 @@ class ApisController < ApplicationController
 
 			cache_response = false
 
-			if api_endpoint.caching && request.headers["Authorization"] == nil && request.method.downcase == "get"
+			if api_endpoint.caching && Rails.env.production? && request.headers["Authorization"] == nil && request.method.downcase == "get"
 				# Try to find a cache of the endpoint with this combination of params
 				cache = nil
 				cache_params = vars.sort.to_h

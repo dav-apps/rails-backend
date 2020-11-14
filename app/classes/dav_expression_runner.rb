@@ -357,28 +357,40 @@ class DavExpressionRunner
 				when :<
 					return execute_command(command[0], vars) < execute_command(command[2], vars)
 				when :+, :-
-					if execute_command(command[0], vars).class == Integer
-						result = 0
-					elsif execute_command(command[0], vars).class == String
-						result = ""
-					end
-	
+					# Get all values
+					values = Array.new
 					i = 0
+
 					while command[i]
-						if command[i - 1] == :- && result.class == Integer
-							result -= execute_command(command[i], vars)
-						else
-							# Add the next part to the result
-							if result.class == String
-								result += execute_command(command[i], vars).to_s
-							else
-								result += execute_command(command[i], vars)
-							end
-						end
-	
+						value = execute_command(command[i], vars)
+						values.push(value)
+
 						i += 2
 					end
+
+					result = values[0].class == String ? "" : 0
+					i = -1
+					j = 0
+
+					while command[i]
+						value = values[j]
+						
+						if result.class == String || value.class == String
+							result = result.to_s + value.to_s
+						else
+							result += value
+						end
+
+						i += 2
+						j += 1
+					end
+
 					return result
+				when :/
+					first_var = execute_command(command[0], vars)
+					second_var = execute_command(command[2], vars)
+					return nil if (first_var.class != Integer && first_var.class != Float) || (second_var.class != Integer && second_var.class != Float)
+					return first_var / second_var
 				when :and, :or
 					result = execute_command(command[0], vars)
 					i = 2
@@ -401,9 +413,9 @@ class DavExpressionRunner
 				when "#"
 					# It's a comment. Ignore this command
 					return nil
-				when "User.get"		# (id)
+				when "User.get"		# id
 					return User.find_by_id(execute_command(command[1], vars).to_i)
-				when "Table.get"	# (id)
+				when "Table.get"		# id
 					table = Table.find_by(id: execute_command(command[1], vars).to_i)
 
 					if table && table.app != @api.app
@@ -1000,6 +1012,14 @@ class DavExpressionRunner
 						return nil if !table_object
 						return Purchase.find_by(user_id: user_id, table_object_id: table_object.id, completed: true)
 					end
+				when "Math.round"	# var, rounding = 2
+					var = execute_command(command[1], vars)
+					rounding = execute_command(command[2], vars)
+					rounding = 2 if rounding == nil
+					return var if var.class != Float || rounding.class != Integer
+					rounded_value = var.round(rounding)
+					rounded_value = var.round if rounded_value == var.round
+					return rounded_value
 				when "Blurhash.encode"	# image_data
 					image_data = execute_command(command[1], vars)
 
@@ -1018,6 +1038,30 @@ class DavExpressionRunner
 						return Blurhash.encode(image.columns, image.rows, image.export_pixels)
 					rescue
 						return nil
+					end
+				when "Image.get_details"	# image_data
+					image_data = execute_command(command[1], vars)
+					result = Hash.new
+
+					begin
+						image = Magick::ImageList.new
+
+						if @request[:body].class == StringIO
+							image.from_blob(@request[:body].string)
+						elsif @request[:body].class == Tempfile
+							@request[:body].rewind
+							image.from_blob(@request[:body].read)
+						else
+							image.from_blob(@request[:body])
+						end
+
+						result["width"] = image.columns
+						result["height"] = image.rows
+						return result
+					rescue
+						result["width"] = -1
+						result["height"] = -1
+						return result
 					end
 				else
 					if command[0].to_s.include?('.')
@@ -1103,6 +1147,14 @@ class DavExpressionRunner
 					return var.upcase
 				elsif last_part == "downcase"
 					return var.downcase
+				end
+			elsif var.class == Integer
+				if last_part == "to_f"
+					return var.to_f
+				end
+			elsif var.class == Float
+				if last_part == "round"
+					return var.round
 				end
 			elsif var.class == User
 				return var[last_part]
