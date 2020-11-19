@@ -94,6 +94,7 @@ class ApisController < ApplicationController
 			headers = Hash.new
 			headers["Authorization"] = request.headers["Authorization"]
 			headers["Content-Type"] = request.headers["Content-Type"]
+			headers["Content-Disposition"] = request.headers["Content-Disposition"]
 
 			runner = DavExpressionRunner.new
 			result = runner.run({

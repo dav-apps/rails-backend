@@ -1020,6 +1020,12 @@ class DavExpressionRunner
 					rounded_value = var.round(rounding)
 					rounded_value = var.round if rounded_value == var.round
 					return rounded_value
+				when "Regex.match"	# string, regex
+					string = execute_command(command[1], vars)
+					regex = execute_command(command[2], vars)
+					return Hash.new if string == nil || regex == nil
+					match = Regexp.new(regex).match(string)
+					return match == nil ? Hash.new : match.named_captures
 				when "Blurhash.encode"	# image_data
 					image_data = execute_command(command[1], vars)
 
@@ -1068,8 +1074,11 @@ class DavExpressionRunner
 						# Get the value of the variable
 						parts = command[0].to_s.split('.')
 						function_name = parts.pop
+
+						# Check if the variable exists
+						return command[0] if !vars.include?(parts[0].split('#')[0])
 						var = parts.size == 1 ? vars[parts[0]] : execute_command(parts.join('.'), vars)
-						
+
 						if var.class == Array
 							if function_name == "push"
 								i = 1
@@ -1117,6 +1126,9 @@ class DavExpressionRunner
 			# Return the value of the hash
 			parts = command.to_s.split('.')
 			last_part = parts.pop
+
+			# Check if the variable exists
+			return command if !vars.include?(parts[0].split('#')[0])
 			var = execute_command(parts.join('.').to_sym, vars)
 
 			if last_part == "class"
