@@ -1024,8 +1024,13 @@ class DavExpressionRunner
 					string = execute_command(command[1], vars)
 					regex = execute_command(command[2], vars)
 					return Hash.new if string == nil || regex == nil
-					match = Regexp.new(regex).match(string)
+					match = regex.match(string)
 					return match == nil ? Hash.new : match.named_captures
+				when "Regex.check" # string, regex
+					string = execute_command(command[1], vars)
+					regex = execute_command(command[2], vars)
+					return false if string == nil || regex == nil
+					return regex.match?(string)
 				when "Blurhash.encode"	# image_data
 					image_data = execute_command(command[1], vars)
 
@@ -1117,8 +1122,8 @@ class DavExpressionRunner
 					end
 				end
 			end
-		elsif !!command == command
-			# Command is boolean
+		elsif command.class == Regexp || !!command == command
+			# Command is Regexp or boolean
 			return command
 		elsif command.class == String && command.size == 1
 			return command

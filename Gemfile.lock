@@ -9,6 +9,12 @@ GIT
       hashie
 
 GIT
+  remote: https://github.com/dav-apps/sexpistol
+  revision: db0e61017fb70622f79be18a63bf0fcbd14c55e8
+  specs:
+    sexpistol (0.0.7)
+
+GIT
   remote: https://github.com/ipinfo/ruby
   revision: a5d3ce762bc2a898fccad7b5b5bceb22354832c9
   specs:
@@ -217,7 +223,6 @@ GEM
       tilt
     sendgrid-ruby (6.3.6)
       ruby_http_client (~> 3.4)
-    sexpistol (0.0.7)
     sidekiq (6.1.2)
       connection_pool (>= 2.2.2)
       rack (~> 2.0)
@@ -283,7 +288,7 @@ DEPENDENCIES
   rmagick
   sassc-rails
   sendgrid-ruby
-  sexpistol
+  sexpistol!
   sidekiq
   spring
   stripe

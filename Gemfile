@@ -48,7 +48,7 @@ gem 'IPinfo', git: 'https://github.com/ipinfo/ruby'
 gem 'webpush'
 
 # S-Expression parser
-gem 'sexpistol'
+gem 'sexpistol', git: 'https://github.com/dav-apps/sexpistol'
 
 # Blurhash
 gem 'blurhash'
