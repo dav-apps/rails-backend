@@ -54,8 +54,7 @@ class UsersController < ApplicationController
 				ValidationService.validate_username_too_short(username),
 				ValidationService.validate_username_too_long(username),
 				ValidationService.validate_password_too_short(password),
-				ValidationService.validate_password_too_long(password),
-				ValidationService.validate_username_taken(username)
+				ValidationService.validate_password_too_long(password)
 			])
 
 			if app_id != 0
@@ -660,8 +659,7 @@ class UsersController < ApplicationController
 			if username
 				ValidationService.raise_multiple_validation_errors([
 					ValidationService.validate_username_too_short(username),
-					ValidationService.validate_username_too_long(username),
-					ValidationService.validate_username_taken(username)
+					ValidationService.validate_username_too_long(username)
 				])
 
 				user.username = username

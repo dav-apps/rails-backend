@@ -858,11 +858,6 @@ class ValidationService
 		new_password == nil || new_password.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
-	def self.validate_username_taken(username)
-		error_code = 2701
-		User.exists?(username: username) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
-	end
-
 	def self.validate_email_taken(email)
 		error_code = 2702
 		User.exists?(email: email) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
@@ -1230,8 +1225,6 @@ class ValidationService
 			"Field is empty: old_email"
 		when 2603
 			"Field is empty: new_password"
-		when 2701
-			"Field already taken: username"
 		when 2702
 			"Field already taken: email"
 		when 2703

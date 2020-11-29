@@ -160,17 +160,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(2702, resp["errors"][0][0])
    end
    
-   test "Username already taken in signup" do
-      sherlock_auth_token = generate_auth_token(devs(:sherlock))
-		username = users(:cato).username
-      
-      post "/v1/auth/signup?email=test@example.com&password=testtest&username=#{username}", headers: {'Authorization' => sherlock_auth_token}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2701, resp["errors"][0][0])
-   end
-   
    test "Can't signup with too short username and password" do
       sherlock_auth_token = generate_auth_token(devs(:sherlock))
       
@@ -1196,19 +1185,6 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 400
       assert_equal(2301, resp["errors"][0][0])
-   end
-   
-   test "Can't update user with username that's already taken" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-		put "/v1/auth/user", 
-            params: {username: "cato"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      assert_response 400
-      assert_equal(2701, resp["errors"][0][0])
    end
    
    test "Can't update user with too short password" do
