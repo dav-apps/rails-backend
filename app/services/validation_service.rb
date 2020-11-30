@@ -229,7 +229,7 @@ class ValidationService
 	def self.validate_country_supported(country)
 		error_code = 1116
 		c = country.downcase
-		(c != "de" && c != "us") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		(c != "de" && c != "at" && c != "us") ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_currency_supported(currency)
