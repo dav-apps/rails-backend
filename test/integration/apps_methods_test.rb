@@ -1,10 +1,6 @@
 require 'test_helper'
 
 class AppsMethodsTest < ActionDispatch::IntegrationTest
-   setup do
-      save_users_and_devs
-   end
-   
 	# Tests for create_app
 	test "Missing fields in create_app" do
 		post "/v1/apps/app"

@@ -2,10 +2,6 @@ require 'test_helper'
 require 'sidekiq/testing'
 
 class DeleteUserWorkerTest < ActiveSupport::TestCase
-	setup do
-		save_users_and_devs
-	end
-
 	test "DeleteUserWorker will be invoked" do
 		Sidekiq::Testing.fake!
 		tester = users(:tester2)

@@ -2,11 +2,6 @@ require 'test_helper'
 require 'sidekiq/testing'
 
 class RemoveAppWorkerTest < ActiveSupport::TestCase
-
-	setup do
-      save_users_and_devs
-   end
-	
 	test "RemoveAppWorker will be invoked" do
 		Sidekiq::Testing.fake!
 		matt = users(:matt)

@@ -1,11 +1,6 @@
 require 'test_helper'
 
 class AuthMethodsTest < ActionDispatch::IntegrationTest
-
-   setup do
-      save_users_and_devs
-   end
-   
    # Login tests
    test "Can login" do
 		sherlock = users(:sherlock)

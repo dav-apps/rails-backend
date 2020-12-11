@@ -4,8 +4,7 @@ require 'stripe_mock'
 class StripeWebhooksServiceTest < ActiveSupport::TestCase
 	setup do
 		StripeMock.start
-		save_users_and_devs
-   end
+	end
 
    teardown do
 		StripeMock.stop

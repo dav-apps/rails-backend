@@ -1,10 +1,6 @@
 require 'test_helper'
 
 class PurchasesMethodsTest < ActionDispatch::IntegrationTest
-	setup do
-		save_users_and_devs
-	end
-
 	# create_purchase tests
 	test "Can't create purchase without jwt" do
 		obj = table_objects(:second)

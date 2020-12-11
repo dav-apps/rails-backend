@@ -1,10 +1,6 @@
 require 'test_helper'
 
 class ProvidersMethodsTest < ActionDispatch::IntegrationTest
-	setup do
-		save_users_and_devs
-	end
-
 	# create_provider tests
 	test "Missing fields in create_provider" do
 		post "/v1/provider"

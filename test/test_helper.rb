@@ -6,53 +6,7 @@ class ActiveSupport::TestCase
    # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
    fixtures :all
    
-   # Add more helper methods to be used by all tests here...
-   def save_users_and_devs
-      dav = users(:dav)
-      dav.password = "raspberry"
-      dav.save
-      
-      matt = users(:matt)
-      matt.password = "schachmatt"
-      matt.save
-      
-      sherlock = users(:sherlock)
-      sherlock.password = "sherlocked"
-      sherlock.save
-      
-      cato = users(:cato)
-      cato.password = "123456"
-      cato.save
-      
-      tester = users(:tester)
-      tester.password = "testpassword"
-      tester.save
-      
-      tester2 = users(:tester2)
-      tester2.password = "testpassword"
-      tester2.save
-
-      torera = users(:torera)
-      torera.password = "Geld"
-		torera.save
-		
-		snicket = users(:snicket)
-		snicket.password = "vfd"
-		snicket.save
-
-		hindenburg = users(:hindenburg)
-		hindenburg.password = "ludendorff"
-		hindenburg.save
-
-		klaus = users(:klaus)
-		klaus.password = "isadora"
-		klaus.save
-      
-      devs(:dav).save
-      devs(:matt).save
-      devs(:sherlock).save
-   end
-   
+   # Helper methods
    def login_user(user, password, dev)
       get "/v1/auth/login?email=#{user.email}&password=#{password}", headers: {'Authorization' => generate_auth_token(dev)}
       response
@@ -60,8 +14,8 @@ class ActiveSupport::TestCase
 
    def generate_session_jwt(user, dev, app_id, password)
 		post "/v1/auth/session", 
-				headers: {'Authorization' => generate_auth_token(devs(:sherlock)), 'Content-Type' => 'application/json'},
-				params: {email: user.email, password: password, api_key: dev.api_key, app_id: app_id, device_name: "Testdevice", device_type: "Testdevice", device_os: "Ubuntu"}.to_json
+			headers: {'Authorization' => generate_auth_token(devs(:sherlock)), 'Content-Type' => 'application/json'},
+			params: {email: user.email, password: password, api_key: dev.api_key, app_id: app_id, device_name: "Testdevice", device_type: "Testdevice", device_os: "Ubuntu"}.to_json
 		resp = JSON.parse(response.body)
 		return resp["jwt"]
    end

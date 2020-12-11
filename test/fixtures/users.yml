@@ -2,15 +2,18 @@ dav:
   username: dav
   confirmed: true
   email: dav@dav-apps.tech
+  password_digest: "$2a$12$tCcaD13rUulWLo9iz/62beyZVF47LphGLiFB4aTZxRAH6BTXN4Xva"   # raspberry
 
 sherlock:
   username: Sherlock
   confirmed: true
   email: sherlock@dav-apps.tech
+  password_digest: "$2a$12$RV/d/6khxwa3cxO7QE2s9eGIdJOcyjyMgmQVKoOf5QZTpV.exmHlm"   # sherlocked
 
 matt:
   username: matt
   confirmed: true
+  password_digest: "$2a$12$8tInIjFM.lT2HmxviVgsOO0rA1N7RYy7hR2TMBeaqv5wPfE/wpXPa"   # schachmatt
   email: matt@dav-apps.tech
   new_email: matt2@dav-apps.tech
   old_email: matt3@dav-apps.tech
@@ -23,16 +26,19 @@ cato:
   username: cato
   confirmed: true
   email: cato@dav-apps.tech
+  password_digest: "$2a$12$Dxjaxv1vJj3h06MCGMPqs.Xpge.Bhp441OseROU/z7e5Ad1WfpyR2"   # 123456
 
 tester:
   username: tester
   confirmed: false
+  password_digest: "$2a$12$OLwMMg4s/guyPtvRbvXobepIWZMY.TisGAkCkEhT7yLykmKSzx4qO"   # testpassword
   email: tester@example.com
   email_confirmation_token: "emailconfirmationtoken"
 
 tester2:
   username: tester2
   confirmed: true
+  password_digest: "$2a$12$OLwMMg4s/guyPtvRbvXobepIWZMY.TisGAkCkEhT7yLykmKSzx4qO"   # testpassword
   email: tester2@example.com
   email_confirmation_token: emailconfirmationtoken
   password_confirmation_token: passwordconfirmationtoken
@@ -40,6 +46,7 @@ tester2:
 torera:
   username: torera
   confirmed: true
+  password_digest: "$2a$12$Bb9BMzwBjNMizAnYLcSMMOSrZCr1RbJ3h4PAawT1buCDMnm/HJQci"   # Geld
   email: torera@dav-apps.tech
   new_email: torera2@dav-apps.tech
   old_email: torera3@dav-apps.tech
@@ -50,14 +57,17 @@ snicket:
   username: Snicket
   confirmed: true
   email: snicket@dav-apps.tech
+  password_digest: "$2a$12$fbggCn90jFaZgmO4eN9ZqOX.U5j3E1SRtDM9R4EK4P/3eDYgSowXy"   # vfd
 
 hindenburg:
   username: Hindenburg
   confirmed: true
   email: hindenburg@dav-apps.tech
+  password_digest: "$2a$12$fIROQ1fdAZ7FFeJNAVwCWeAn8uqESU31W.DMxbZccbYlqX/TtmUk2"   # ludendorff
 
 klaus:
   username: Klaus
   confirmed: true
   email: klaus.baudelaire@dav-apps.tech
+  password_digest: "$2a$12$g4r3bVR1LEUmfOrfS1C9m.4oqPigfgEmruFsu9Nmh4oBP5flYT1ri"   # isadora
   stripe_customer_id: cus_H2NhsO2V8Lp2vp

@@ -1,10 +1,6 @@
 require 'test_helper'
 
 class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
-   setup do
-      save_users_and_devs
-   end
-   
 	# create_event_log tests
 	test "Missing fields in create_event_log" do
 		post "/v1/analytics/event", headers: {'Content-Type': 'application/json'}

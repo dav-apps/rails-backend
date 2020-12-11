@@ -1,11 +1,6 @@
 require 'test_helper'
 
 class DevsMethodsTest < ActionDispatch::IntegrationTest
-
-   setup do
-      save_users_and_devs
-   end
-   
    # create_dev tests
    test "Missing fields in create_dev" do
       post "/v1/devs/dev"
