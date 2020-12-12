@@ -1,24 +1,47 @@
+default: &default
+  encoding: utf8
+  reconnect: false
+  pool: 5
+
 development:
-  adapter: mysql2
-  encoding: utf8
-  reconnect: false
-  database: <%= ENV['DEVELOPMENT_DATABASE_NAME'] %>
-  pool: 5
-  username: <%= ENV['DEVELOPMENT_DATABASE_USER'] %>
+  primary:
+    <<: *default
+    adapter: mysql2
+    database: <%= ENV['DEVELOPMENT_DATABASE_NAME'] %>
+    username: <%= ENV['DEVELOPMENT_DATABASE_USER'] %>
+  migration:
+    <<: *default
+    adapter: mysql2
+    database: <%= ENV['MIGRATION_DEVELOPMENT_DATABASE_NAME'] %>
+    username: <%= ENV['MIGRATION_DEVELOPMENT_DATABASE_USER'] %>
+
 test:
-  adapter: mysql2
-  encoding: utf8
-  reconnect: false
-  database: <%= ENV['TEST_DATABASE_NAME'] %>
-  pool: 5
-  username: <%= ENV['TEST_DATABASE_USER'] %>
+  primary:
+    <<: *default
+    adapter: mysql2
+    database: <%= ENV['TEST_DATABASE_NAME'] %>
+    username: <%= ENV['TEST_DATABASE_USER'] %>
+  migration:
+    <<: *default
+    adapter: mysql2
+    database: <%= ENV['TEST_DATABASE_NAME'] %>
+    username: <%= ENV['TEST_DATABASE_USER'] %>
+
 production:
-  adapter: sqlserver
-  mode: dblib
-  host: <%= ENV['AZURE_PRODUCTION_SERVER'] %>
-  port: 1433
-  database: <%= ENV['AZURE_PRODUCTION_DATABASE_NAME'] %>
-  username: <%= ENV['AZURE_PRODUCTION_DATABASE_USERNAME'] %>
-  password: <%= ENV['AZURE_PRODUCTION_DATABASE_PASSWORD'] %>
-  timeout: 20000
-  azure: true
+  primary:
+    adapter: sqlserver
+    mode: dblib
+    host: <%= ENV['AZURE_PRODUCTION_SERVER'] %>
+    port: 1433
+    database: <%= ENV['AZURE_PRODUCTION_DATABASE_NAME'] %>
+    username: <%= ENV['AZURE_PRODUCTION_DATABASE_USERNAME'] %>
+    password: <%= ENV['AZURE_PRODUCTION_DATABASE_PASSWORD'] %>
+    timeout: 20000
+    azure: true
+  migration:
+    adapter: postgresql
+    host: <%= ENV['DIGITAL_OCEAN_PRODUCTION_DATABASE_SERVER'] %>
+    port: <%= ENV['DIGITAL_OCEAN_PRODUCTION_DATABASE_PORT'] %>
+    database: <%= ENV['DIGITAL_OCEAN_PRODUCTION_DATABASE_NAME'] %>
+    username: <%= ENV['DIGITAL_OCEAN_PRODUCTION_DATABASE_USERNAME'] %>
+    password: <%= ENV['DIGITAL_OCEAN_PRODUCTION_DATABASE_PASSWORD'] %>
