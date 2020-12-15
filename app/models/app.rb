@@ -1,12 +1,12 @@
 class App < ApplicationRecord
    belongs_to :dev
-   has_many :tables, dependent: :destroy
-	has_many :events, dependent: :destroy
-	has_many :exception_events, dependent: :destroy
-   has_many :users_apps, dependent: :destroy
+   has_many :tables
+	has_many :events
+	has_many :exception_events
+   has_many :users_apps
    has_many :users, through: :users_apps
-   has_many :notifications, dependent: :destroy
-   has_many :active_app_users, dependent: :destroy
-	has_many :sessions, dependent: :destroy
-	has_many :apis, dependent: :destroy
+   has_many :notifications
+   has_many :active_app_users
+	has_many :sessions
+	has_many :apis
 end
