@@ -185,7 +185,7 @@ class DavExpressionRunner
 					return execute_command(function["commands"], args)
 				else
 					# Try to get the function from the database
-					function = ApiFunction.find_by(api: @api, name: name)
+					function = ApiFunctionDelegate.find_by(api_id: @api.id, name: name)
 					
 					if function
 						# Clone the vars for the function call
@@ -312,7 +312,7 @@ class DavExpressionRunner
 					return @request[:body]
 				end
 			when :get_error
-				error = ApiError.find_by(api: @api, code: command[1])
+				error = ApiErrorDelegate.find_by(api_id: @api.id, code: command[1])
 
 				if error
 					result = Hash.new
@@ -418,7 +418,7 @@ class DavExpressionRunner
 				when "Table.get"		# id
 					table = Table.find_by(id: execute_command(command[1], vars).to_i)
 
-					if table && table.app != @api.app
+					if table && table.app_id != @api.app_id
 						# Action not allowed error
 						error = Hash.new
 						error["code"] = 1
@@ -431,7 +431,7 @@ class DavExpressionRunner
 					table = Table.find_by(id: execute_command(command[1], vars).to_i)
 					return nil if !table
 
-					if table.app != @api.app
+					if table.app_id != @api.app_id
 						# Action not allowed error
 						error = Hash.new
 						error["code"] = 1
@@ -447,7 +447,7 @@ class DavExpressionRunner
 					return holders
 				when "TableObject.create"	# user_id, table_id, properties, visibility?
 					# Get the table
-					table = Table.find_by_id(execute_command(command[2], vars))
+					table = Table.find_by(id: execute_command(command[2], vars))
 					error = Hash.new
 					
 					# Check if the table exists
@@ -458,14 +458,14 @@ class DavExpressionRunner
 					end
 
 					# Check if the table belongs to the same app as the api
-					if table.app != @api.app
+					if table.app_id != @api.app_id
 						error["code"] = 1
 						@errors.push(error)
 						return @errors
 					end
 
 					# Check if the user exists
-					user = User.find_by_id(execute_command(command[1], vars))
+					user = User.find_by(id: execute_command(command[1], vars))
 					if !user
 						error["code"] = 2
 						@errors.push(error)
@@ -500,7 +500,7 @@ class DavExpressionRunner
 					return TableObjectHolder.new(obj)
 				when "TableObject.create_file"	# user_id, table_id, ext, type, file
 					# Get the table
-					table = Table.find_by_id(execute_command(command[2], vars))
+					table = Table.find_by(id: execute_command(command[2], vars))
 					error = Hash.new
 
 					# Check if the table exists
@@ -511,14 +511,14 @@ class DavExpressionRunner
 					end
 
 					# Check if the table belongs to the same app as the api
-					if table.app != @api.app
+					if table.app_id != @api.app_id
 						error["code"] = 1
 						@errors.push(error)
 						return @errors
 					end
 
 					# Check if the user exists
-					user = User.find_by_id(execute_command(command[1], vars))
+					user = User.find_by(id: execute_command(command[1], vars))
 					if !user
 						error["code"] = 2
 						@errors.push(error)
@@ -602,7 +602,7 @@ class DavExpressionRunner
 					return nil if !obj
 
 					# Check if the table of the table object belongs to the same app as the api
-					if obj.table.app != @api.app
+					if obj.table.app_id != @api.app_id
 						error["code"] = 0
 						@errors.push(error)
 						return @errors
@@ -614,7 +614,7 @@ class DavExpressionRunner
 					return nil if !obj.file
 
 					# Check if the table of the table object belongs to the same app as the api
-					if obj.table.app != @api.app
+					if obj.table.app_id != @api.app_id
 						error["code"] = 0
 						@errors.push(error)
 						return @errors
@@ -651,7 +651,7 @@ class DavExpressionRunner
 					end
 
 					# Check if the table of the table object belongs to the same app as the api
-					if obj.table.app != @api.app
+					if obj.table.app_id != @api.app_id
 						error["code"] = 2
 						@errors.push(error)
 						return @errors
@@ -700,7 +700,7 @@ class DavExpressionRunner
 					end
 
 					# Check if the table of the table object belongs to the same app as the api
-					if obj.table.app != @api.app
+					if obj.table.app_id != @api.app_id
 						error["code"] = 2
 						@errors.push(error)
 						return @errors
@@ -977,7 +977,7 @@ class DavExpressionRunner
 						return @errors
 					end
 
-					user = User.find_by_id(user_id)
+					user = User.find_by(id: user_id)
 
 					if !user
 						error["code"] = 1

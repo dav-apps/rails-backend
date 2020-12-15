@@ -5,16 +5,16 @@ class ApisController < ApplicationController
 
 		begin
 			# Get the api
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
 
 			# Find the correct api endpoint
-			api_endpoint = api.api_endpoints.find_by(method: request.method, path: path)
+			api_endpoint = ApiEndpointDelegate.find_by(api_id: api.id, method: request.method, path: path)
 			vars = Hash.new
 
 			if !api_endpoint
 				# Try to find an endpoint by checking the endpoints with variables in the url
-				api.api_endpoints.where(method: request.method).each do |endpoint|
+				ApiEndpointDelegate.where(api_id: api.id, method: request.method).each do |endpoint|
 					path_parts = endpoint.path.split('/')
 					url_parts = path.split('/')
 					next if path_parts.count != url_parts.count
@@ -60,9 +60,9 @@ class ApisController < ApplicationController
 				# Try to find a cache of the endpoint with this combination of params
 				cache = nil
 				cache_params = vars.sort.to_h
-				
-				api_endpoint.api_endpoint_request_caches.each do |request_cache|
-					request_cache_params = request_cache.api_endpoint_request_cache_params
+
+				ApiEndpointRequestCacheDelegate.where(api_endpoint_id: api_endpoint.id).each do |request_cache|
+					request_cache_params = ApiEndpointRequestCacheParamDelegate.where(api_endpoint_request_cache_id: request_cache.id)
 					next if cache_params.size != request_cache_params.size
 
 					# Convert the params into a hash
@@ -86,7 +86,7 @@ class ApisController < ApplicationController
 
 			# Get the environment variables
 			vars["env"] = Hash.new
-			api.api_env_vars.each do |env_var|
+			ApiEnvVarDelegate.where(api_id: api.id).each do |env_var|
 				vars["env"][env_var.name] = UtilsService.convert_env_value(env_var.class_name, env_var.value)
 			end
 
@@ -109,13 +109,13 @@ class ApisController < ApplicationController
 
 			if cache_response && result[:status] == 200
 				# Save the response in the cache
-				cache = ApiEndpointRequestCache.new(api_endpoint: api_endpoint, response: result[:data].to_json)
+				cache = ApiEndpointRequestCacheDelegate.new(api_endpoint_id: api_endpoint.id, response: result[:data].to_json)
 
 				if cache.save
 					# Create the cache params
 					cache_params.each do |var|
 						# var = ["key", "value"]
-						param = ApiEndpointRequestCacheParam.new(api_endpoint_request_cache: cache, name: var[0], value: var[1])
+						param = ApiEndpointRequestCacheParamDelegate.new(api_endpoint_request_cache_id: cache.id, name: var[0], value: var[1])
 						param.save
 					end
 				end
@@ -149,14 +149,14 @@ class ApisController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			app = App.find_by_id(app_id)
+			app = AppDelegate.find_by(id: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
 			# Get the properties from the body
@@ -168,7 +168,7 @@ class ApisController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_name_for_api_too_long(name))
 
 			# Create the api
-			api = Api.new(app: app, name: name)
+			api = ApiDelegate.new(app_id: app.id, name: name)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(api.save))
 
 			result = api.attributes
@@ -195,22 +195,22 @@ class ApisController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, api.app))
+			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, AppDelegate.find_by(id: api.app_id)))
 
 			# Return the api
 			result = api.attributes
-			result["endpoints"] = api.api_endpoints
-			result["functions"] = api.api_functions
-			result["errors"] = api.api_errors
+			result["endpoints"] = ApiEndpointDelegate.where(api_id: api.id)
+			result["functions"] = ApiFunctionDelegate.where(api_id: api.id)
+			result["errors"] = ApiErrorDelegate.where(api_id: api.id)
 
 			render json: result, status: 200
 		rescue RuntimeError => e
@@ -229,13 +229,13 @@ class ApisController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: api.app_id), dev))
 
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -261,7 +261,7 @@ class ApisController < ApplicationController
 			])
 
 			# Create the api endpoint
-			endpoint = ApiEndpoint.new(api: api, path: path, method: method.upcase, commands: commands)
+			endpoint = ApiEndpointDelegate.new(api_id: api.id, path: path, method: method.upcase, commands: commands)
 			endpoint.caching = caching if caching != nil
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(endpoint.save))
 
@@ -282,13 +282,13 @@ class ApisController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: api.app_id), dev))
 
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -314,7 +314,7 @@ class ApisController < ApplicationController
 			])
 
 			# Try to find the api endpoint by path and method
-			endpoint = ApiEndpoint.find_by(api: api, path: path, method: method.upcase)
+			endpoint = ApiEndpointDelegate.find_by(api_id: api.id, path: path, method: method.upcase)
 
 			if endpoint
 				# Update the existing endpoint
@@ -322,7 +322,7 @@ class ApisController < ApplicationController
 				endpoint.caching = caching if caching != nil
 			else
 				# Create a new endpoint
-				endpoint = ApiEndpoint.new(api: api, path: path, method: method.upcase, commands: commands)
+				endpoint = ApiEndpointDelegate.new(api_id: api.id, path: path, method: method.upcase, commands: commands)
 				endpoint.caching = caching if caching != nil
 			end
 
@@ -345,13 +345,13 @@ class ApisController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: api.app_id), dev))
 
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -381,7 +381,7 @@ class ApisController < ApplicationController
 			ValidationService.raise_multiple_validation_errors(validations)
 
 			# Create the api function
-			function = ApiFunction.new(api: api, name: name, params: params, commands: commands)
+			function = ApiFunctionDelegate.new(api_id: api.id, name: name, params: params, commands: commands)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(function.save))
 
 			render json: function.attributes, status: 201
@@ -401,13 +401,13 @@ class ApisController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: api.app_id), dev))
 
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -437,7 +437,7 @@ class ApisController < ApplicationController
 			ValidationService.raise_multiple_validation_errors(validations)
 
 			# Try to find the api function by name
-			function = ApiFunction.find_by(api: api, name: name)
+			function = ApiFunctionDelegate.find_by(api_id: api.id, name: name)
 
 			if function
 				# Update the existing function
@@ -445,7 +445,7 @@ class ApisController < ApplicationController
 				function.commands = commands
 			else
 				# Create a new function
-				function = ApiFunction.new(api: api, name: name, params: params, commands: commands)
+				function = ApiFunctionDelegate.new(api_id: api.id, name: name, params: params, commands: commands)
 			end
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(function.save))
@@ -467,13 +467,13 @@ class ApisController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: api.app_id), dev))
 
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -494,7 +494,7 @@ class ApisController < ApplicationController
 			])
 
 			# Create the api error
-			error = ApiError.new(api: api, code: code, message: message)
+			error = ApiErrorDelegate.new(api_id: api.id, code: code, message: message)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(error.save))
 			
 			render json: error.attributes, status: 201
@@ -514,13 +514,13 @@ class ApisController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: api.app_id), dev))
 
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -541,14 +541,14 @@ class ApisController < ApplicationController
 			])
 
 			# Try to find the api error by code
-			error = ApiError.find_by(api: api, code: code)
+			error = ApiErrorDelegate.find_by(api_id: api.id, code: code)
 
 			if error
 				# Update the existing error
 				error.message = message
 			else
 				# Create a new error
-				error = ApiError.new(api: api, code: code, message: message)
+				error = ApiErrorDelegate.new(api_id: api.id, code: code, message: message)
 			end
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(error.save))
@@ -570,13 +570,13 @@ class ApisController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: api.app_id), dev))
 
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -592,14 +592,14 @@ class ApisController < ApplicationController
 				next if !ValidationService.validate_message_too_short(message)[:success] || !ValidationService.validate_message_too_long(message)[:success] || !ValidationService.validate_code_not_valid(code)[:success]
 
 				# Try to find the api error by code
-				api_error = ApiError.find_by(api: api, code: code)
+				api_error = ApiErrorDelegate.find_by(api_id: api.id, code: code)
 
 				if api_error
 					# Update the existing error
 					api_error.message = message
 				else
 					# Create a new error
-					api_error = ApiError.new(api: api, code: code, message: message)
+					api_error = ApiErrorDelegate.new(api_id: api.id, code: code, message: message)
 				end
 
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(api_error.save))
@@ -622,13 +622,13 @@ class ApisController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
-			api = Api.find_by_id(api_id)
+			api = ApiDelegate.find_by(id: api_id)
 			ValidationService.raise_validation_error(ValidationService.validate_api_does_not_exist(api))
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(api.app, dev))
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: api.app_id), dev))
 
 			# Get the properties from the body
 			body = ValidationService.parse_json(request.body.string)
@@ -641,7 +641,7 @@ class ApisController < ApplicationController
 				end
 
 				# Try to find the api env var by name
-				env = ApiEnvVar.find_by(api: api, name: key)
+				env = ApiEnvVarDelegate.find_by(api_id: api.id, name: key)
 
 				if env
 					# Update the existing env var
@@ -649,7 +649,7 @@ class ApisController < ApplicationController
 					env.class_name = class_name
 				else
 					# Create a new env var
-					env = ApiEnvVar.new(api: api, name: key, value: value.to_s, class_name: class_name)
+					env = ApiEnvVarDelegate.new(api_id: api.id, name: key, value: value.to_s, class_name: class_name)
 				end
 
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(env.save))
