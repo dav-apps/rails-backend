@@ -980,17 +980,17 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 
 		# The api should have one more api error
-		api = Api.find_by_id(api.id)
-		assert_equal(api_error_count + 1, api.api_errors.count)
+		api_errors = ApiErrorDelegate.where(api_id: api.id)
+		assert_equal(api_error_count + 1, api_errors.count)
 
 		# The valid error should be created
-		error = ApiError.find_by(api: api, code: valid_code)
+		error = ApiErrorDelegate.find_by(api_id: api.id, code: valid_code)
 		assert_not_nil(error)
 		assert_equal(valid_code, error.code)
 		assert_equal(valid_message, error.message)
 
 		# The test api error should be updated
-		test_api_error = ApiError.find_by_id(test_api_error.id)
+		test_api_error = ApiErrorDelegate.find_by(id: test_api_error.id)
 		assert_equal(test_api_error_new_message, test_api_error.message)
 	end
 
@@ -1055,22 +1055,22 @@ class ApisMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 200
 		
-		string_var = ApiEnvVar.find_by(api: api, name: string_var_name)
+		string_var = ApiEnvVarDelegate.find_by(api_id: api.id, name: string_var_name)
 		assert_not_nil(string_var)
 		assert_equal(string_var_value, string_var.value)
 		assert_equal(string_var.class_name, "string")
 
-		float_var = ApiEnvVar.find_by(api: api, name: float_var_name)
+		float_var = ApiEnvVarDelegate.find_by(api_id: api.id, name: float_var_name)
 		assert_not_nil(float_var)
 		assert_equal(float_var_value.to_s, float_var.value)
 		assert_equal(float_var.class_name, "float")
 
-		bool_var = ApiEnvVar.find_by(api: api, name: bool_var_name)
+		bool_var = ApiEnvVarDelegate.find_by(api_id: api.id, name: bool_var_name)
 		assert_not_nil(bool_var)
 		assert_equal(bool_var_value.to_s, bool_var.value)
 		assert_equal(bool_var.class_name, "bool")
 
-		test_var = ApiEnvVar.find_by(api: api, name: test_var.name)
+		test_var = ApiEnvVarDelegate.find_by(api_id: api.id, name: test_var.name)
 		assert_not_nil(test_var)
 		assert_equal(test_var_new_value.to_s, test_var.value)
 		assert_equal(test_var.class_name, "int")

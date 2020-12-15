@@ -24,8 +24,8 @@ test:
   migration:
     <<: *default
     adapter: mysql2
-    database: <%= ENV['TEST_DATABASE_NAME'] %>
-    username: <%= ENV['TEST_DATABASE_USER'] %>
+    database: <%= ENV['MIGRATION_TEST_DATABASE_NAME'] %>
+    username: <%= ENV['MIGRATION_TEST_DATABASE_USER'] %>
 
 production:
   primary:

@@ -93,45 +93,63 @@ class ValidationService
 
 	def self.validate_app_belongs_to_dev(app, dev)
 		error_code = 1102
-		app.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		app.dev_id != dev.id ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_table_belongs_to_app(table, app)
 		error_code = 1102
-		table.app != app ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		table.app_id != app.id ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+	end
+
+	def self.dev_is_first_dev(dev)
+		first_dev = DevMigration.first
+		return first_dev.id == dev.id if !first_dev.nil?
+
+		first_dev = Dev.first
+		return first_dev.id == dev.id if !first_dev.nil?
+		false
 	end
 
 	def self.validate_dev_is_first_dev(dev)
 		error_code = 1102
-		dev != Dev.first ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		!dev_is_first_dev(dev) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_users_dev_is_dev(user, dev, error_code = 1102)
-		user.dev != dev ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		user.id != dev.user_id ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_user_is_user(user1, user2)
 		error_code = 1102
-		user1 != user2 ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		user1.id != user2.id ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_website_call_and_user_is_app_dev(user, dev, app)
 		error_code = 1102
-		!((dev == Dev.first) && (app.dev == user.dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		user_dev = DevDelegate.find_by(user_id: user.id)
+		return {success: false, error: [error_code, get_error_message(error_code)], status: 403} if user_dev.nil?
+
+		!(dev_is_first_dev(dev) && (app.dev_id == user_dev.id)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_website_call_and_user_is_app_dev_or_user_is_dev(user, dev, app)
 		error_code = 1102
+		user_dev = DevDelegate.find_by(user_id: user.id)
+		return {success: false, error: [error_code, get_error_message(error_code)], status: 403} if user_dev.nil?
+
 		# (Dev is first dev and the user is the dev of the app) or (Dev is user and dev and app belongs to dev)
 		# Only the dev of the app can call this
-		!(((dev == Dev.first) && (app.dev == user.dev)) || (user.dev == dev) && (app.dev == dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		!((dev_is_first_dev(dev) && (app.dev_id == user_dev.id)) || (user_dev.id == dev.id) && (app.dev_id == dev.id)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_website_call_and_user_is_app_dev_or_app_dev_is_dev(user, dev, app)
 		error_code = 1102
+		user_dev = DevDelegate.find_by(user_id: user.id)
+		user_dev_id = user_dev.nil? ? -1 : user_dev.id
+
 		# (Dev is first dev and the user is the dev of the app) or (app belongs to dev)
 		# Every user of the dev can call this
-		!(((dev == Dev.first) && (app.dev == user.dev)) || (app.dev == dev)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		!((dev_is_first_dev(dev) && (app.dev_id == user_dev_id)) || (app.dev_id == dev.id)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_table_object_belongs_to_user(obj, user)
