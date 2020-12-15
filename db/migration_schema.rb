@@ -77,6 +77,8 @@ ActiveRecord::Schema.define(version: 2020_12_12_004030) do
     t.bigint "app_id"
     t.bigint "used_storage", default: 0
     t.datetime "last_active"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
   end
 
   create_table "apps", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|

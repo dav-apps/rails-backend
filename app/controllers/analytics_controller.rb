@@ -23,10 +23,10 @@ class AnalyticsController < ApplicationController
 				ValidationService.validate_os_version_missing(os_version)
 			])
 			
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			app = App.find_by_id(app_id)
+			app = AppDelegate.find_by(id: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, dev))
 
@@ -90,16 +90,16 @@ class AnalyticsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(ValidationService.validate_dev_does_not_exist(dev)))
 
-			event = Event.find_by_id(event_id)
+			event = Event.find_by(id: event_id)
 			ValidationService.raise_validation_error(ValidationService.validate_event_does_not_exist(event))
 
-			app = App.find_by_id(event.app_id)
+			app = AppDelegate.find_by(id: event.app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
@@ -182,13 +182,13 @@ class AnalyticsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(ValidationService.validate_dev_does_not_exist(dev)))
 
-			app = App.find_by_id(app_id)
+			app = AppDelegate.find_by(id: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 			ValidationService.raise_validation_error(ValidationService.validate_website_call_and_user_is_app_dev(user, dev, app))
 
@@ -269,16 +269,16 @@ class AnalyticsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			event = Event.find_by_id(event_id)
+			event = Event.find_by(id: event_id)
 			ValidationService.raise_validation_error(ValidationService.validate_event_does_not_exist(event))
 			
-			app = App.find_by_id(event.app_id)
+			app = AppDelegate.find_by(id: event.app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			# Make sure this is called from the website
@@ -322,16 +322,16 @@ class AnalyticsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			event = Event.find_by_id(event_id)
+			event = Event.find_by(id: event_id)
 			ValidationService.raise_validation_error(ValidationService.validate_event_does_not_exist(event))
 			
-			app = App.find_by_id(event.app_id)
+			app = AppDelegate.find_by(id: event.app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			# Make sure this is called from the website
@@ -362,13 +362,13 @@ class AnalyticsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			app = App.find_by_id(id)
+			app = AppDelegate.find_by(id: id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			# Make sure this is called from the website
@@ -378,7 +378,7 @@ class AnalyticsController < ApplicationController
 			users = Array.new
 			result = Hash.new
 			
-			app.users_apps.each do |users_app|
+			UsersAppDelegate.where(app_id: app.id).each do |users_app|
 				hash = Hash.new
 				hash["id"] = users_app.user_id
 				hash["started_using"] = users_app.created_at
@@ -405,10 +405,10 @@ class AnalyticsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
@@ -462,10 +462,10 @@ class AnalyticsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
