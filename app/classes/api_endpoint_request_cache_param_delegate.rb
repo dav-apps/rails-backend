@@ -69,7 +69,7 @@ class ApiEndpointRequestCacheParamDelegate
 	def self.find_by(params)
 		# Try to find the api_endpoint_request_cache_param in the new database
 		api_endpoint_request_cache_param = ApiEndpointRequestCacheParamMigration.find_by(params)
-		return ApiEndpointRequestCacheParamMigration.new(api_endpoint_request_cache_param.attributes) if !api_endpoint_request_cache_param.nil?
+		return ApiEndpointRequestCacheParamDelegate.new(api_endpoint_request_cache_param.attributes) if !api_endpoint_request_cache_param.nil?
 
 		# Try to find the api_endpoint_request_cache_param in the old database
 		api_endpoint_request_cache_param = ApiEndpointRequestCacheParam.find_by(params)

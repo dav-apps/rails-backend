@@ -66,7 +66,7 @@ class ApiDelegate
 	def self.find_by(params)
 		# Try to find the api in the new database
 		a = ApiMigration.find_by(params)
-		return ApiMigration.new(a.attributes) if !a.nil?
+		return ApiDelegate.new(a.attributes) if !a.nil?
 
 		# Try to find the api in the old database
 		a = Api.find_by(params)
