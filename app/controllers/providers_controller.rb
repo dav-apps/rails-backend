@@ -11,10 +11,10 @@ class ProvidersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 			
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
@@ -29,7 +29,7 @@ class ProvidersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_country_supported(country))
 
 			# Check if the user already has a provider
-			ValidationService.raise_validation_error(ValidationService.validate_provider_already_exists(user.provider))
+			ValidationService.raise_validation_error(ValidationService.validate_provider_already_exists(ProviderDelegate.find_by(user_id: user.id)))
 
 			# Create the stripe account
 			account = Stripe::Account.create({
@@ -52,7 +52,7 @@ class ProvidersController < ApplicationController
 			})
 
 			# Create the provider
-			provider = Provider.new(id: user.id, user: user, stripe_account_id: account.id)
+			provider = ProviderDelegate.new(id: user.id, user_id: user.id, stripe_account_id: account.id)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(provider.save))
 
 			# Return the provider
@@ -74,15 +74,15 @@ class ProvidersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			# Check if the provider exists
-			provider = user.provider
+			provider = ProviderDelegate.find_by(user_id: user.id)
 			ValidationService.raise_validation_error(ValidationService.validate_provider_does_not_exist(provider))
 
 			# Return the result

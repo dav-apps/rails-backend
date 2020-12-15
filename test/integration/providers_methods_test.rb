@@ -92,7 +92,7 @@ class ProvidersMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 201
 		
 		# Get the provider and check the account id
-		provider = Provider.find_by(user_id: matt.id)
+		provider = ProviderDelegate.find_by(user_id: matt.id)
 		assert_equal(provider.id, matt.id)
 		assert_equal(provider.user_id, matt.id)
 		assert_equal(provider.stripe_account_id, resp["stripe_account_id"])

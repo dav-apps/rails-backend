@@ -1,20 +1,12 @@
 class ApplicationController < ActionController::API
-   
    def check_authorization(api_key, signature)
-      dev = Dev.find_by(api_key: api_key)
+      dev = DevDelegate.find_by(api_key: api_key)
       
       if !dev
          false
       else
          if api_key == dev.api_key
-            
-            new_sig = Base64.strict_encode64(OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid))
-            
-            if new_sig == signature
-               true
-            else
-               false
-            end
+            Base64.strict_encode64(OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid)) == signature
          else
             false
          end
@@ -75,7 +67,6 @@ class ApplicationController < ActionController::API
                customer.save
             end
          rescue => e
-            
          end
       end
 	end
@@ -94,9 +85,7 @@ class ApplicationController < ActionController::API
 	def get_jwt_from_header(auth_header)
 		# session JWT: header.payload.signature.session_id
 		# Try to get the session id. If there is no session id, this is a normal jwt and the session id is 0
-		if !auth_header
-			return nil
-		end
+		return nil if auth_header.nil?
 
 		jwt_parts = auth_header.split(' ').last.split('.')
 
@@ -107,7 +96,7 @@ class ApplicationController < ActionController::API
 	end
 
 	def get_authorization_header
-		return request.headers['HTTP_AUTHORIZATION']
+		request.headers['HTTP_AUTHORIZATION']
 	end
 	
 	def get_content_type_header
