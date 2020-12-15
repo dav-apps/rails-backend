@@ -12,22 +12,23 @@ class PurchasesController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			object = TableObject.find_by_uuid(object_id)
-			object = TableObject.find_by_id(object_id) if !object
+			object = TableObjectDelegate.find_by(uuid: object_id)
+			object = TableObjectDelegate.find_by(id: object_id) if !object
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_does_not_exist(object))
 
 			# Check if the user of the table object exists
-			provider_user = object.user
+			provider_user = UserDelegate.find_by(id: object.user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(provider_user))
 
 			# Check if the app of the table object belongs to the dev
-			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(object.table.app, dev))
+			t = TableDelegate.find_by(id: object.table_id)
+			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(AppDelegate.find_by(id: t.app_id), dev))
 
 			# Check if the user already purchased the table object
 			ValidationService.raise_validation_error(ValidationService.validate_table_object_already_purchased(user, object))
@@ -58,7 +59,7 @@ class PurchasesController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_currency_supported(currency))
 
 			# If the object belongs to the user, set the price to 0
-			price = 0 if object.user == user
+			price = 0 if object.user_id == user.id
 
 			if price > 0
 				# Check if the user of the table object is a provider
@@ -78,15 +79,16 @@ class PurchasesController < ApplicationController
 			])
 
 			# Create the purchase
-			purchase = Purchase.new(
-				user: user,
-				table_object: object,
+			purchase = PurchaseDelegate.new(
+				user_id: user.id,
+				table_object_id: object.id,
 				product_image: product_image,
 				product_name: product_name,
 				provider_image: provider_image,
 				provider_name: provider_name,
 				price: price,
-				currency: currency
+				currency: currency,
+				completed: false
 			)
 
 			if price > 0
@@ -98,6 +100,8 @@ class PurchasesController < ApplicationController
 				end
 
 				# Create a Stripe PaymentIntent
+				p = ProviderDelegate.find_by(user_id: object.user_id)
+
 				payment_intent = Stripe::PaymentIntent.create({
 					customer: user.stripe_customer_id,
 					amount: price,
@@ -105,7 +109,7 @@ class PurchasesController < ApplicationController
 					confirmation_method: 'manual',
 					application_fee_amount: (price * 0.2).round,
 					transfer_data: {
-						destination: object.user.provider.stripe_account_id
+						destination: p.stripe_account_id
 					}
 				})
 
@@ -133,12 +137,12 @@ class PurchasesController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
 			api_key = auth.split(",")[0]
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			# Get the purchase
-			purchase = Purchase.find_by_id(purchase_id)
+			purchase = PurchaseDelegate.find_by(id: purchase_id)
 			ValidationService.raise_validation_error(ValidationService.validate_purchase_does_not_exist(purchase))
 
 			# Return the result
@@ -158,28 +162,29 @@ class PurchasesController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 
 			api_key = auth.split(",")[0]
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			# Get the purchase
-			purchase = Purchase.find_by_id(purchase_id)
+			purchase = PurchaseDelegate.find_by(id: purchase_id)
 			ValidationService.raise_validation_error(ValidationService.validate_purchase_does_not_exist(purchase))
 
 			# Check if the purchase is already completed
 			ValidationService.raise_validation_error(ValidationService.validate_purchase_already_completed(purchase))
 			
 			# Check if the user already purchased the table object
-			ValidationService.raise_validation_error(ValidationService.validate_table_object_already_purchased(purchase.user, purchase.table_object))
+			ValidationService.raise_validation_error(ValidationService.validate_table_object_already_purchased(UserDelegate.find_by(id: purchase.user_id), TableObjectDelegate.find_by(id: purchase.table_object_id)))
 
 			# Check if the user has a stripe customer
-			ValidationService.raise_validation_error(ValidationService.validate_user_is_stripe_customer(purchase.user))
+			ValidationService.raise_validation_error(ValidationService.validate_user_is_stripe_customer(UserDelegate.find_by(id: purchase.user_id)))
 
 			# Get the payment method of the user
-			customer = Stripe::Customer.retrieve(purchase.user.stripe_customer_id)
+			u = UserDelegate.find_by(id: purchase.user_id)
+			customer = Stripe::Customer.retrieve(u.stripe_customer_id)
 
 			payment_methods = Stripe::PaymentMethod.list({
-				customer: purchase.user.stripe_customer_id,
+				customer: u.stripe_customer_id,
 				type: 'card',
 			})
 			

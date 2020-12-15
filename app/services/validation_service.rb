@@ -258,7 +258,8 @@ class ValidationService
 
 	def self.validate_user_of_table_object_is_provider(table_object)
 		error_code = 1118
-		!table_object.user.provider ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		provider = ProviderDelegate.find_by(user_id: table_object.user_id)
+		provider.nil? ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_purchase_already_completed(purchase)
@@ -268,7 +269,7 @@ class ValidationService
 
 	def self.validate_table_object_already_purchased(user, table_object)
 		error_code = 1121
-		Purchase.find_by(user: user, table_object: table_object, completed: true) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		PurchaseDelegate.find_by(user_id: user.id, table_object_id: table_object.id, completed: true) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.authenticate_user(user, password)

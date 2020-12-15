@@ -191,7 +191,7 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 201
 		
 		# Compare response with purchase in database
-		purchase = Purchase.find_by_id(resp["id"])
+		purchase = PurchaseDelegate.find_by(id: resp["id"])
 		assert_equal(purchase.id, resp["id"])
 		assert_equal(purchase.user_id, resp["user_id"])
 		assert_equal(purchase.table_object_id, resp["table_object_id"])
@@ -285,7 +285,7 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 201
 
 		# Compare response with purchase in database
-		purchase = Purchase.find_by_id(resp["id"])
+		purchase = PurchaseDelegate.find_by(id: resp["id"])
 		assert_equal(purchase.id, resp["id"])
 		assert_equal(purchase.user_id, resp["user_id"])
 		assert_equal(purchase.table_object_id, resp["table_object_id"])
@@ -309,7 +309,7 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(false, resp["completed"])
 
 		# Get the stripe customer of the user
-		matt = User.find_by_id(matt.id)
+		matt = UserDelegate.find_by(id: matt.id)
 		assert_not_nil(matt.stripe_customer_id)
 
 		customer = Stripe::Customer.retrieve(matt.stripe_customer_id)
@@ -322,7 +322,8 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(price, payment_intent["amount"])
 		assert_equal((price * 0.2).round, payment_intent["application_fee_amount"])
 		assert_equal(currency, payment_intent["currency"])
-		assert_equal(obj.user.provider.stripe_account_id, payment_intent["transfer_data"]["destination"])
+		p = ProviderDelegate.find_by(user_id: obj.user_id)
+		assert_equal(p.stripe_account_id, payment_intent["transfer_data"]["destination"])
 		assert_equal("requires_payment_method", payment_intent["status"])
 
 		# Cancel the Payment intent
@@ -499,7 +500,7 @@ class PurchasesMethodsTest < ActionDispatch::IntegrationTest
 		assert(!resp["completed"])
 
 		# Get the purchase from the database
-		purchase = Purchase.find_by_id(resp["id"])
+		purchase = PurchaseDelegate.find_by(id: resp["id"])
 
 		# Get the payment intent
 		payment_intent = Stripe::PaymentIntent.retrieve(purchase.payment_intent_id)
