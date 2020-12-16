@@ -102,4 +102,22 @@ class AppDelegate
 		a = App.find_by(params)
 		return a.nil? ? nil : AppDelegate.new(a.attributes)
 	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the apps from the new database
+		AppMigration.where(params).each do |app|
+			result.push(AppDelegate.new(app.attributes))
+		end
+
+		# Get the apps from the old database
+		App.where(params).each do |app|
+			# Check if the app is already in the results
+			next if result.any? { |a| a.id == app.id }
+			result.push(AppDelegate.new(app.attributes))
+		end
+
+		return result
+	end
 end

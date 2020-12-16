@@ -10,18 +10,18 @@ class DevsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
          dev_id = jwt_signature_validation[1][0]["dev_id"]
          
-         user = User.find_by_id(user_id)
+         user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
          ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
          
          ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-         user_dev = Dev.find_by(user_id: user.id)
+         user_dev = DevDelegate.find_by(user_id: user.id)
          ValidationService.raise_validation_error(ValidationService.validate_dev_already_exists(user_dev))
          
-         user_dev = Dev.new(user_id: user.id)
+         user_dev = DevDelegate.new(user_id: user.id)
          ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user_dev.save))
 
          result = user_dev
@@ -43,19 +43,20 @@ class DevsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
          dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-         user = User.find_by_id(user_id)
+         user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
          ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
          ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-         # Return the dev object
-         result = user.dev.attributes
+			# Return the dev object
+			user_dev = DevDelegate.find_by(user_id: user.id)
+			result = user_dev.attributes
 
-         apps_array = Array.new
-         user.dev.apps.each { |app| apps_array.push(app) }
+			apps_array = Array.new
+			AppDelegate.where(dev_id: user_dev.id).each { |app| apps_array.push(app) }
 
          result["apps"] = apps_array
          render json: result, status: 200
@@ -78,20 +79,20 @@ class DevsController < ApplicationController
 			api_key = auth.split(",")[0]
          sig = auth.split(",")[1]
          
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			requested_dev = Dev.find_by(api_key: requested_dev_api_key)
+			requested_dev = DevDelegate.find_by(api_key: requested_dev_api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(requested_dev))
 
 			# Return the data
 			result = requested_dev.attributes
 			
 			apps_array = Array.new
-			requested_dev.apps.each { |app| apps_array.push(app) }
+			AppDelegate.where(dev_id: requested_dev.id).each { |app| apps_array.push(app) }
 
 			result["apps"] = apps_array
 			render json: result, status: 200
@@ -112,17 +113,19 @@ class DevsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 			
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(user.dev))
+			
+			user_dev = DevDelegate.find_by(user_id: user.id)
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(user_dev))
 			
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
-			ValidationService.raise_validation_error(ValidationService.validate_all_apps_deleted(user.dev))
+			ValidationService.raise_validation_error(ValidationService.validate_all_apps_deleted(user_dev))
 
-			user.dev.destroy!
+			DevDelegate.find_by(user_id: user.id).destroy
 			result = {}
 			render json: result, status: 200
 		rescue RuntimeError => e
@@ -142,17 +145,17 @@ class DevsController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
-			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(user.dev))
+			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(DevDelegate.find_by(user_id: user.id)))
 
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			# Generate new keys
-			user_dev = user.dev
+			user_dev = DevDelegate.find_by(user_id: user.id)
 			user_dev.uuid = SecureRandom.uuid
 			user_dev.api_key = SecureRandom.urlsafe_base64(30)
 			user_dev.secret_key = SecureRandom.urlsafe_base64(40)

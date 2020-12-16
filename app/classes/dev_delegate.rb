@@ -75,6 +75,16 @@ class DevDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the dev in the old database
+		dev = Dev.find_by(id: @id)
+		dev.destroy! if !dev.nil?
+
+		# Delete the dev in the new database
+		dev = DevMigration.find_by(id: @id)
+		dev.destroy! if !dev.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the dev in the new database
 		d = DevMigration.find_by(params)
