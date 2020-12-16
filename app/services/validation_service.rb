@@ -154,12 +154,12 @@ class ValidationService
 
 	def self.validate_table_object_belongs_to_user(obj, user)
 		error_code = 1102
-		obj.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		obj.user_id != user.id ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
    
    def self.validate_session_belongs_to_user(session, user)
       error_code = 1102
-      session.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+      session.user_id != user.id ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
    end
 
 	def self.validate_web_push_subscription_belongs_to_user(subscription, user)
@@ -201,7 +201,7 @@ class ValidationService
 
 	def self.validate_all_apps_deleted(dev)
 		error_code = 1107
-		dev.apps.length != 0 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		AppDelegate.where(dev_id: dev.id).length != 0 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_plan_exists(plan)
@@ -274,7 +274,8 @@ class ValidationService
 
 	def self.authenticate_user(user, password)
 		error_code = 1201
-		!user.authenticate(password) ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
+		p = BCrypt::Password.new(user.password_digest)
+		p != password ? {success: false, error: [error_code, get_error_message(error_code)], status: 401} : {success: true}
 	end
 
 	def self.validate_user_is_confirmed(user)
@@ -300,7 +301,7 @@ class ValidationService
    def self.validate_jwt_signature(jwt, session_id = 0)
       secret = ENV['JWT_SECRET']
       if session_id != 0
-         session = Session.find_by_id(session_id)
+         session = SessionDelegate.find_by(id: session_id)
          if !session
             # Session does not exist
             error_code = 2814

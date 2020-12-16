@@ -41,7 +41,7 @@ class UsersController < ApplicationController
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
 			
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
@@ -59,16 +59,16 @@ class UsersController < ApplicationController
 
 			if app_id != 0
 				# Check if the app belongs to the dev with the api key
-				app_dev = Dev.find_by(api_key: dev_api_key)
+				app_dev = DevDelegate.find_by(api_key: dev_api_key)
 				ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(app_dev))
 
-				app = App.find_by_id(app_id)
+				app = AppDelegate.find_by(id: app_id)
 				ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 				ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, app_dev))
 			end
 
 			# Create the new user
-			user = User.new(email: email, password: password, username: username)
+			user = UserDelegate.new(email: email, password: password, username: username)
 			user.email_confirmation_token = generate_token
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
@@ -81,7 +81,7 @@ class UsersController < ApplicationController
 				secret = SecureRandom.urlsafe_base64(30)
 
 				# Create the session
-				session = Session.new(user_id: user.id, app_id: app_id, secret: secret, exp: Time.at(exp).utc, device_name: device_name, device_type: device_type, device_os: device_os)
+				session = SessionDelegate.new(user_id: user.id, app_id: app_id, secret: secret, exp: Time.at(exp).utc, device_name: device_name, device_type: device_type, device_os: device_os)
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(session.save))
 
 				payload = {:email => user.email, :user_id => user.id, :dev_id => app_dev.id, :exp => exp}
@@ -92,19 +92,18 @@ class UsersController < ApplicationController
 				jwt = JWT.encode(payload, ENV['JWT_SECRET'], ENV['JWT_ALGORITHM'])
 			end
 			
-			UserNotifier.send_verification_email(user).deliver_later
+			UserNotifier.send_verification_email(user.user).deliver_later
 
-			result = Hash.new
-			result = user.attributes.extract!(
-				"id", 
-				"email", 
-				"username",
-				"confirmed",
-				"plan",
-				"used_storage"
-			)
-			result["total_storage"] = UtilsService.get_total_storage(user.plan, user.confirmed)
-			result["jwt"] = jwt
+			result = {
+				id: user.attributes[:id],
+				email: user.attributes[:email],
+				username: user.attributes[:username],
+				confirmed: user.attributes[:confirmed],
+				plan: user.attributes[:plan],
+				used_storage: user.attributes[:used_storage],
+				total_storage: UtilsService.get_total_storage(user.plan, user.confirmed),
+				jwt: jwt
+			}
 			render json: result, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -127,10 +126,10 @@ class UsersController < ApplicationController
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			user = User.find_by(email: email)
+			user = UserDelegate.find_by(email: email)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
@@ -167,15 +166,15 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 			
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			dev_api_key = Dev.find_by(api_key: api_key)
+			dev_api_key = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev_api_key))
 
 			# Return the data
@@ -228,21 +227,21 @@ class UsersController < ApplicationController
 			website_api_key, signature = auth.split(",")
 
 			# Get & validate the website dev
-			website_dev = Dev.find_by(api_key: website_api_key)
+			website_dev = DevDelegate.find_by(api_key: website_api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(website_dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(website_dev))
 
 			# Get & validate the app dev
-			app_dev = Dev.find_by(api_key: app_api_key)
+			app_dev = DevDelegate.find_by(api_key: app_api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(app_dev))
 
 			# Get & validate the app
-			app = App.find_by_id(app_id)
+			app = AppDelegate.find_by(id: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, app_dev))
 
 			# Get & validate the user
-			user = User.find_by(email: email)
+			user = UserDelegate.find_by(email: email)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 			ValidationService.raise_validation_error(ValidationService.authenticate_user(user, password))
 
@@ -250,7 +249,7 @@ class UsersController < ApplicationController
 			secret = SecureRandom.urlsafe_base64(30)
 
 			# Create session
-			session = Session.new(user_id: user.id, app_id: app.id, secret: secret, device_name: device_name, device_type: device_type, device_os: device_os)
+			session = SessionDelegate.new(user_id: user.id, app_id: app.id, secret: secret, device_name: device_name, device_type: device_type, device_os: device_os)
 
 			# Create JWT
 			expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
@@ -270,9 +269,16 @@ class UsersController < ApplicationController
 			# Append the session id at the end of the jwt
 			token = token + ".#{session.id}"
 
-			result = session.attributes.except("secret")
-			result['exp'] = exp.to_i
-			result['jwt'] = token
+			result = {
+				id: session.id,
+				user_id: session.user_id,
+				app_id: session.app_id,
+				device_name: session.device_name,
+				device_type: session.device_type,
+				device_os: session.device_os,
+				exp: exp.to_i,
+				jwt: token
+			}
 			render json: result, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -308,17 +314,17 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			app_dev = Dev.find_by(api_key: api_key)
+			app_dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(app_dev))
 
-			app = App.find_by_id(app_id)
+			app = AppDelegate.find_by(id: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 			ValidationService.raise_validation_error(ValidationService.validate_app_belongs_to_dev(app, app_dev))
 
@@ -326,7 +332,7 @@ class UsersController < ApplicationController
 			secret = SecureRandom.urlsafe_base64(30)
 
 			# Create the session
-			session = Session.new(user_id: user.id, app_id: app.id, secret: secret, device_name: device_name, device_type: device_type, device_os: device_os)
+			session = SessionDelegate.new(user_id: user.id, app_id: app.id, secret: secret, device_name: device_name, device_type: device_type, device_os: device_os)
 
 			# Create the JWT
 			expHours = Rails.env.production? ? jwt_expiration_hours_prod : jwt_expiration_hours_dev
@@ -346,9 +352,16 @@ class UsersController < ApplicationController
 			# Append the session id at the end of the jwt
 			token = "#{token}.#{session.id}"
 
-			result = session.attributes.except("secret")
-			result['exp'] = exp.to_i
-			result['jwt'] = token
+			result = {
+				id: session.id,
+				user_id: session.user_id,
+				app_id: session.app_id,
+				device_name: session.device_name,
+				device_type: session.device_type,
+				device_os: session.device_os,
+				exp: exp.to_i,
+				jwt: token
+			}
 			render json: result, status: 201
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -370,21 +383,28 @@ class UsersController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			# Validate the user and dev from the jwt
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
 			# Get the session
-			session = Session.find_by_id(id)
+			session = SessionDelegate.find_by(id: id)
 			ValidationService.raise_validation_error(ValidationService.validate_session_does_not_exist(session))
 			ValidationService.raise_validation_error(ValidationService.validate_session_belongs_to_user(session, user))
 
 			# Return the session
-			result = session.attributes.except("secret")
-			result["exp"] = session.exp.to_i
+			result = {
+				id: session.id,
+				user_id: session.user_id,
+				app_id: session.app_id,
+				device_name: session.device_name,
+				device_type: session.device_type,
+				device_os: session.device_os,
+				exp: session.exp.to_i
+			}
 			render json: result, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -405,19 +425,19 @@ class UsersController < ApplicationController
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
 			# Validate the user and dev from the jwt
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			# Get the session
-			session = Session.find_by_id(session_id)
+			session = SessionDelegate.find_by(id: session_id)
 			ValidationService.raise_validation_error(ValidationService.validate_session_does_not_exist(session))
 			ValidationService.raise_validation_error(ValidationService.validate_session_belongs_to_user(session, user))
 
 			# Delete the session
-			session.destroy!
+			session.destroy
 
 			render json: {}, status: 200
 		rescue RuntimeError => e
@@ -438,49 +458,46 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			requested_user = User.find_by_id(requested_user_id)
+			requested_user = UserDelegate.find_by(id: requested_user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(requested_user))
 
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_user(user, requested_user))
 
 			# Return the data
-			result = Hash.new
-			[
-				"id", 
-				"email", 
-				"username", 
-				"confirmed", 
-				"created_at", 
-				"updated_at", 
-				"plan"
-			].each do |key|
-				result[key] = requested_user[key]
-			end
-
 			avatar_info = BlobOperationsService.get_avatar_information(requested_user.id)
-			result["avatar"] = avatar_info[0]
-			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = UtilsService.get_total_storage(requested_user.plan, requested_user.confirmed)
-			result["used_storage"] = requested_user.used_storage
-			result["dev"] = requested_user.dev != nil
-			result["provider"] = requested_user.provider != nil
+
+			result = {
+				id: requested_user.id,
+				email: requested_user.email,
+				username: requested_user.username,
+				confirmed: requested_user.confirmed,
+				created_at: requested_user.created_at,
+				updated_at: requested_user.updated_at,
+				plan: requested_user.plan,
+				avatar: avatar_info[0],
+				avatar_etag: avatar_info[1],
+				total_storage: UtilsService.get_total_storage(requested_user.plan, requested_user.confirmed),
+				used_storage: requested_user.used_storage,
+				dev: DevDelegate.find_by(user_id: requested_user.id) != nil,
+				provider: ProviderDelegate.find_by(user_id: requested_user.id) != nil
+			}
 
 			users_apps = Array.new
-			UsersApp.where(user_id: requested_user.id).each do |users_app|
-				app_hash = users_app.app.attributes
+			UsersAppDelegate.where(user_id: requested_user.id).each do |users_app|
+				app_hash = AppDelegate.find_by(id: users_app.app_id).attributes
 				app_hash["used_storage"] = users_app.used_storage
 				users_apps.push(app_hash)
 			end
 
 			result["apps"] = users_apps
 
-			if dev == Dev.first
+			if dev.id == DevDelegate.first.id
 				result["old_email"] = requested_user.old_email
 				result["new_email"] = requested_user.new_email
 				result["period_end"] = requested_user.period_end
@@ -505,38 +522,35 @@ class UsersController < ApplicationController
 
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			# Return the data
-			result = Hash.new
-			[
-				"id", 
-				"email", 
-				"username", 
-				"confirmed", 
-				"created_at", 
-				"updated_at", 
-				"plan"
-			].each do |key|
-				result[key] = user[key]
-			end
-
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
-			result["avatar"] = avatar_info[0]
-			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = UtilsService.get_total_storage(user.plan, user.confirmed)
-			result["used_storage"] = user.used_storage
-			result["dev"] = user.dev != nil
-			result["provider"] = user.provider != nil
+
+			result = {
+				id: user.id,
+				email: user.email,
+				username: user.username,
+				confirmed: user.confirmed,
+				created_at: user.created_at,
+				updated_at: user.updated_at,
+				plan: user.plan,
+				avatar: avatar_info[0],
+				avatar_etag: avatar_info[1],
+				total_storage: UtilsService.get_total_storage(user.plan, user.confirmed),
+				used_storage: user.used_storage,
+				dev: DevDelegate.find_by(user_id: user.id) != nil,
+				provider: ProviderDelegate.find_by(user_id: user.id) != nil
+			}
 
 			users_apps = Array.new
-			UsersApp.where(user: user).each do |users_app|
-				app_hash = users_app.app.attributes
+			UsersAppDelegate.where(user_id: user.id).each do |users_app|
+				app_hash = App.find_by(id: users_app.app_id).attributes
 				app_hash["used_storage"] = users_app.used_storage
 				users_apps.push(app_hash)
 			end
@@ -566,46 +580,41 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			# Return the data
-			result = Hash.new
-			[
-				"id", 
-				"email", 
-				"username", 
-				"confirmed", 
-				"created_at", 
-				"updated_at", 
-				"plan", 
-				"total_storage",
-				"used_storage"
-			].each do |key|
-				result[key] = user[key]
-			end
-
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
-			result["avatar"] = avatar_info[0]
-			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = UtilsService.get_total_storage(user.plan, user.confirmed)
-			result["used_storage"] = user.used_storage
-			result["dev"] = user.dev != nil
-			result["provider"] = user.provider != nil
+
+			result = {
+				id: user.id,
+				email: user.email,
+				username: user.username,
+				confirmed: user.confirmed,
+				created_at: user.created_at,
+				updated_at: user.updated_at,
+				plan: user.plan,
+				avatar: avatar_info[0],
+				avatar_etag: avatar_info[1],
+				total_storage: UtilsService.get_total_storage(user.plan, user.confirmed),
+				used_storage: user.used_storage,
+				dev: DevDelegate.find_by(user_id: user.id) != nil,
+				provider: ProviderDelegate.find_by(user_id: user.id) != nil
+			}
 
 			users_apps = Array.new
-			UsersApp.where(user_id: user.id).each do |users_app|
-				app_hash = users_app.app.attributes
+			UsersAppDelegate.where(user_id: user.id).each do |users_app|
+				app_hash = App.find_by(id: users_app.app_id).attributes
 				app_hash["used_storage"] = users_app.used_storage
 				users_apps.push(app_hash)
 			end
 
 			result["apps"] = users_apps
 			
-			if dev == Dev.first
+			if dev.id == DevDelegate.first.id
 				result["old_email"] = user.old_email
 				result["new_email"] = user.new_email
 				result["period_end"] = user.period_end
@@ -631,10 +640,10 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
@@ -702,29 +711,39 @@ class UsersController < ApplicationController
 			
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
-			result = user.attributes.except(
-				"email_confirmation_token", 
-				"password_confirmation_token", 
-				"new_password", 
-				"password_digest",
-				"stripe_customer_id"
-			)
-
 			avatar_info = BlobOperationsService.get_avatar_information(user.id)
-			result["avatar"] = avatar_info[0]
-			result["avatar_etag"] = avatar_info[1]
-			result["total_storage"] = UtilsService.get_total_storage(user.plan, user.confirmed)
-			result["used_storage"] = user.used_storage
-			result["dev"] = user.dev != nil
-			result["provider"] = user.provider != nil
-			result["apps"] = user.apps
+
+			result = {
+				id: user.id,
+				email: user.email,
+				username: user.username,
+				confirmed: user.confirmed,
+				created_at: user.created_at,
+				updated_at: user.updated_at,
+				new_email: user.new_email,
+				plan: user.plan,
+				avatar: avatar_info[0],
+				avatar_etag: avatar_info[1],
+				total_storage: UtilsService.get_total_storage(user.plan, user.confirmed),
+				used_storage: user.used_storage,
+				dev: DevDelegate.find_by(user_id: user.id) != nil,
+				provider: ProviderDelegate.find_by(user_id: user.id) != nil
+			}
+			
+			apps = Array.new
+			UsersAppDelegate.where(user_id: user.id).each do |users_app|
+				app = AppDelegate.find_by(id: users_app.app_id)
+				apps.push(app) if !app.nil?
+			end
+
+			result["apps"] = apps
 			
 			if email_changed
-				UserNotifier.send_change_email_email(user).deliver_later
+				UserNotifier.send_change_email_email(user.user).deliver_later
 			end
 			
 			if password_changed
-				UserNotifier.send_change_password_email(user).deliver_later
+				UserNotifier.send_change_password_email(user.user).deliver_later
 			end
 
 			render json: result, status: 200
@@ -745,10 +764,10 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
@@ -800,11 +819,11 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			# Check if the tokens match the tokens of the user
@@ -853,21 +872,21 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			app = App.find_by_id(app_id)
+			app = App.find_by(id: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			# Check if the password confirmation token matches the password confirmation token of the user
 			ValidationService.raise_validation_error(ValidationService.validate_password_confirmation_token_of_user(user, password_confirmation_token))
 
 			# Check if the user uses the app
-			ua = UsersApp.find_by(user_id: user_id, app_id: app_id)
+			ua = UsersAppDelegate.find_by(user_id: user_id, app_id: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_user_of_app(ua))
 
 			# Clear the password confirmation token
@@ -876,7 +895,7 @@ class UsersController < ApplicationController
 
 			# Delete user app association
 			if ua
-				ua.destroy!
+				ua.destroy
 			end
 
 			# Remove the app data
@@ -905,11 +924,11 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_authorization(auth))
 			api_key = auth.split(",")[0]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			# Check if the user is already confirmed
@@ -942,10 +961,10 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
@@ -956,7 +975,7 @@ class UsersController < ApplicationController
 			user.email_confirmation_token = generate_token
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
-			UserNotifier.send_verification_email(user).deliver_later
+			UserNotifier.send_verification_email(user.user).deliver_later
 			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -976,10 +995,10 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
@@ -989,7 +1008,7 @@ class UsersController < ApplicationController
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
-			UserNotifier.send_delete_account_email(user).deliver_later
+			UserNotifier.send_delete_account_email(user.user).deliver_later
 			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -1014,18 +1033,18 @@ class UsersController < ApplicationController
 			user_id = jwt_signature_validation[1][0]["user_id"]
 			dev_id = jwt_signature_validation[1][0]["dev_id"]
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
-			dev = Dev.find_by_id(dev_id)
+			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			app = App.find_by_id(app_id)
+			app = AppDelegate.find_by(id: app_id)
 			ValidationService.raise_validation_error(ValidationService.validate_app_does_not_exist(app))
 
 			# Find the relationship between user and app
-			ua = UsersApp.find_by(user_id: user.id, app_id: app.id)
+			ua = UsersAppDelegate.find_by(user_id: user.id, app_id: app.id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_is_user_of_app(ua))
 
 			# Generate password_confirmation_token
@@ -1034,7 +1053,7 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
 			# Send email
-			UserNotifier.send_remove_app_email(user, app).deliver_later
+			UserNotifier.send_remove_app_email(user.user, app.app).deliver_later
 			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -1059,11 +1078,11 @@ class UsersController < ApplicationController
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by(email: email)
+			user = UserDelegate.find_by(email: email)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			# Generate password confirmation token
@@ -1071,7 +1090,7 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
 			# Send the password reset email
-			UserNotifier.send_password_reset_email(user).deliver_later
+			UserNotifier.send_password_reset_email(user.user).deliver_later
 			render json: {}, status: 200
 		rescue RuntimeError => e
 			validations = JSON.parse(e.message)
@@ -1103,11 +1122,11 @@ class UsersController < ApplicationController
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			# Check if the password confirmation token matches the password confirmation token of the user
@@ -1118,7 +1137,7 @@ class UsersController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_password_too_long(password))
 
 			# Save the new password
-			user.password = password
+			user.password_digest = BCrypt::Password.create(password)
 			user.password_confirmation_token = nil
 
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
@@ -1146,11 +1165,11 @@ class UsersController < ApplicationController
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			# Check if the password confirmation token matches the password confirmation token of the user
@@ -1188,11 +1207,11 @@ class UsersController < ApplicationController
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 
 			# Check if the email confirmation token matches the email confirmation token of the user
@@ -1211,7 +1230,7 @@ class UsersController < ApplicationController
 			save_email_to_stripe_customer(user)
 
 			# Send email to reset new email
-			UserNotifier.send_reset_new_email_email(user).deliver_later
+			UserNotifier.send_reset_new_email_email(user.user).deliver_later
 
 			render json: {}, status: 200
 		rescue RuntimeError => e
@@ -1231,11 +1250,11 @@ class UsersController < ApplicationController
 			api_key = auth.split(",")[0]
 			sig = auth.split(",")[1]
 
-			dev = Dev.find_by(api_key: api_key)
+			dev = DevDelegate.find_by(api_key: api_key)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 			ValidationService.raise_validation_error(ValidationService.validate_dev_is_first_dev(dev))
 
-			user = User.find_by_id(user_id)
+			user = UserDelegate.find_by(id: user_id)
 			ValidationService.raise_validation_error(ValidationService.validate_user_does_not_exist(user))
 			ValidationService.raise_validation_error(ValidationService.validate_old_email_empty(user.old_email))
 

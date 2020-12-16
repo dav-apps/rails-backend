@@ -224,8 +224,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		device_os = "Windows"
 
 		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=#{app.id}",
-				headers: {'Authorization' => auth},
-				params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
+			headers: {'Authorization' => auth},
+			params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
 		resp = JSON.parse response.body
 		
 		assert_response 201
@@ -235,7 +235,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
 		jwt = resp['jwt']
 		session_id = jwt.split('.').last.to_i
-		session = Session.find_by_id(session_id)
+		session = SessionDelegate.find_by(id: session_id)
 
 		assert_not_nil(session)
 		assert_equal(resp["id"], session.user_id)
@@ -253,7 +253,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:TestApp)
 
 		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=#{app.id}",
-				headers: {'Authorization' => auth}
+			headers: {'Authorization' => auth}
 		resp = JSON.parse response.body
 
 		assert_response 400
@@ -275,8 +275,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		device_os = "Windows"
 
 		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=#{app.id}",
-				headers: {'Authorization' => auth},
-				params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
+			headers: {'Authorization' => auth},
+			params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 403
@@ -294,8 +294,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		device_os = "Windows"
 
 		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=#{app.id}",
-				headers: {'Authorization' => auth},
-				params: {api_key: "blablabla", device_name: device_name, device_type: device_type, device_os: device_os}.to_json
+			headers: {'Authorization' => auth},
+			params: {api_key: "blablabla", device_name: device_name, device_type: device_type, device_os: device_os}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 404
@@ -313,8 +313,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		device_os = "Windows"
 
 		post "/v1/auth/signup?email=#{email}&password=#{password}&username=#{username}&app_id=-20",
-				headers: {'Authorization' => auth},
-				params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
+			headers: {'Authorization' => auth},
+			params: {api_key: dev.api_key, device_name: device_name, device_type: device_type, device_os: device_os}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 404
@@ -354,8 +354,16 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt_dev = devs(:matt)
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "schachmatt",
+				api_key: matt_dev.api_key,
+				app_id: apps(:TestApp).id,
+				device_name: "Surface Book",
+				device_type: "Laptop",
+				device_os: "Windows 10"
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 401
@@ -368,8 +376,16 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt_dev = devs(:matt)
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "schachmatt",
+				api_key: matt_dev.api_key,
+				app_id: apps(:TestApp).id,
+				device_name: "Surface Book",
+				device_type: "Laptop",
+				device_os: "Windows 10"
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 403
@@ -381,8 +397,16 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => "asdasdasd", "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "schachmatt",
+				api_key: "asdasdasd",
+				app_id: apps(:TestApp).id,
+				device_name: "Surface Book",
+				device_type: "Laptop",
+				device_os: "Windows 10"
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 404
@@ -395,8 +419,16 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt_dev = devs(:matt)
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => -20, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "schachmatt",
+				api_key: matt_dev.api_key,
+				app_id: -20,
+				device_name: "Surface Book",
+				device_type: "Laptop",
+				device_os: "Windows 10"
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 404
@@ -409,8 +441,16 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt_dev = devs(:matt)
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => apps(:Cards).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "schachmatt",
+				api_key: matt_dev.api_key,
+				app_id: apps(:Cards).id,
+				device_name: "Surface Book",
+				device_type: "Laptop",
+				device_os: "Windows 10"
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 403
@@ -422,8 +462,16 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt_dev = devs(:matt)
 
 		post "/v1/auth/session", 
-				params: {"email" => "bla@example.com", "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: "bla@example.com",
+				password: "schachmatt",
+				api_key: matt_dev.api_key,
+				app_id: apps(:TestApp).id,
+				device_name: "Surface Book",
+				device_type: "Laptop",
+				device_os: "Windows 10"
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 404
@@ -436,8 +484,16 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt_dev = devs(:matt)
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "asdasdasd", "api_key" => matt_dev.api_key, "app_id" => apps(:TestApp).id, "device_name" => "Surface Book", "device_type" => "Laptop", "device_os" => "Windows 10"}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "asdasdasd",
+				api_key: matt_dev.api_key,
+				app_id: apps(:TestApp).id,
+				device_name: "Surface Book",
+				device_type: "Laptop",
+				device_os: "Windows 10"
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 401
@@ -456,13 +512,21 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		device_os = "Windows 10"
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => app_id, "device_name" => device_name, "device_type" => device_type, "device_os" => device_os}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "schachmatt",
+				api_key: matt_dev.api_key,
+				app_id: app_id,
+				device_name: device_name,
+				device_type: device_type,
+				device_os: device_os
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 201
 
-		session = Session.find_by_id(resp["id"])
+		session = SessionDelegate.find_by(id: resp["id"])
 		assert_not_nil(session)
 		assert_equal(user_id, session.user_id)
 		assert_equal(app_id, session.app_id)
@@ -487,8 +551,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		api_key = devs(:matt).api_key
 
 		post "/v1/auth/session/jwt",
-				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
-				params: {app_id: app.id, api_key: api_key}.to_json
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {app_id: app.id, api_key: api_key}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 400
@@ -512,8 +576,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		api_key = devs(:matt).api_key
 
 		post "/v1/auth/session/jwt", 
-				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
-				params: {app_id: 1, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {app_id: 1, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 403
@@ -525,8 +589,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:TestApp)
 
 		post "/v1/auth/session/jwt",
-				headers: {Authorization: jwt, "Content-Type": 'application/json'},
-				params: {app_id: app.id, api_key: "blablabla", device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+			headers: {Authorization: jwt, "Content-Type": 'application/json'},
+			params: {app_id: app.id, api_key: "blablabla", device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -538,8 +602,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		api_key = devs(:matt).api_key
 
 		post "/v1/auth/session/jwt",
-				headers: {Authorization: jwt, "Content-Type": 'application/json'},
-				params: {app_id: -20, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+			headers: {Authorization: jwt, "Content-Type": 'application/json'},
+			params: {app_id: -20, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -552,8 +616,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:Cards)
 
 		post "/v1/auth/session/jwt",
-				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
-				params: {app_id: app.id, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {app_id: app.id, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 403
@@ -566,8 +630,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		api_key = devs(:matt).api_key
 
 		post "/v1/auth/session/jwt",
-				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
-				params: {app_id: app.id, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {app_id: app.id, api_key: api_key, device_name: "Surface Book", device_type: "Laptop", device_os: "Windows 10"}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 201
@@ -667,17 +731,25 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		device_os = "Windows 10"
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => app_id, "device_name" => device_name, "device_type" => device_type, "device_os" => device_os}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "schachmatt",
+				api_key: matt_dev.api_key,
+				app_id: app_id,
+				device_name: device_name,
+				device_type: device_type,
+				device_os: device_os
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 201
 
 		# Delete the session
-		session = Session.find_by_id(resp["id"])
-		session.destroy!
+		session = SessionDelegate.find_by(id: resp["id"])
+		session.destroy
 		
-		session = Session.find_by_id(resp["id"])
+		session = SessionDelegate.find_by(id: resp["id"])
 		assert_nil(session)
 
 		# Try to delete the session through the endpoint
@@ -701,8 +773,16 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		device_os = "Windows 10"
 
 		post "/v1/auth/session", 
-				params: {"email" => matt.email, "password" => "schachmatt", "api_key" => matt_dev.api_key, "app_id" => app_id, "device_name" => device_name, "device_type" => device_type, "device_os" => device_os}.to_json,
-				headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
+			params: {
+				email: matt.email,
+				password: "schachmatt",
+				api_key: matt_dev.api_key,
+				app_id: app_id,
+				device_name: device_name,
+				device_type: device_type,
+				device_os: device_os
+			}.to_json,
+			headers: {'Authorization' => auth_token, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 201
@@ -713,7 +793,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 200
 
-		session = Session.find_by_id(resp["id"])
+		session = SessionDelegate.find_by(id: resp["id"])
 		assert_nil(session)
 	end
 	# End delete_session tests
@@ -801,22 +881,18 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse(response.body)
 
 		assert_response 200
-		[
-			"id",
-			"email",
-			"username",
-			"confirmed",
-			"created_at",
-			"updated_at",
-			"plan",
-			"old_email",
-			"new_email",
-			"period_end",
-			"subscription_status",
-			"stripe_customer_id"
-		].each do |key|
-			assert_equal(matt[key], resp[key])
-		end
+		assert_equal(matt.id, resp["id"])
+		assert_equal(matt.email, resp["email"])
+		assert_equal(matt.username, resp["username"])
+		assert_equal(matt.confirmed, resp["confirmed"])
+		assert_equal(matt.created_at, resp["created_at"])
+		assert_equal(matt.updated_at, resp["updated_at"])
+		assert_equal(matt.plan, resp["plan"])
+		assert_equal(matt.old_email, resp["old_email"])
+		assert_equal(matt.new_email, resp["new_email"])
+		assert_equal(matt.period_end, resp["period_end"])
+		assert_equal(matt.subscription_status, resp["subscription_status"])
+		assert_equal(matt.stripe_customer_id, resp["stripe_customer_id"])	
 	end
 
 	test "Can get user with session jwt" do
@@ -1099,8 +1175,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       file1Path = "test/fixtures/files/test.png"
 
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", 
-				params: File.open(file1Path, "rb").read, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'image/png'}
+			params: File.open(file1Path, "rb").read,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'image/png'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1122,8 +1198,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {test: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
+         params: {test: "test"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
@@ -1135,8 +1211,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {test: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {test: "test"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1148,8 +1224,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {email: "testemail"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+      	params: {email: "testemail"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1161,8 +1237,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {username: "d"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {username: "d"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1174,8 +1250,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {username: "#{'d' * 30}"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+         params: {username: "#{'d' * 30}"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1187,8 +1263,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {password: "c"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+         params: {password: "c"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1200,8 +1276,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {password: "#{'n' * 40}"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+         params: {password: "#{'n' * 40}"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1215,11 +1291,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       new_password = "testpassword"
       
 		put "/v1/auth/user", 
-            params: {password: new_password}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+         params: {password: new_password}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
-      matt = User.find_by_id(matt.id)
+      matt = UserDelegate.find_by(id: matt.id)
       
       assert_response 200
       assert_not_nil(matt.new_password)
@@ -1232,11 +1308,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {email: "test14@example.com"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+         params: {email: "test14@example.com"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      matt = User.find_by_id(matt.id)
+      matt = UserDelegate.find_by(id: matt.id)
 
       assert_response 200
       assert_equal(resp["new_email"], matt.new_email)
@@ -1247,11 +1323,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {username: "newtestuser"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+         params: {username: "newtestuser"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      matt = User.find_by_id(matt.id)
+		matt = UserDelegate.find_by(id: matt.id)
       
       assert_response 200
       assert_equal(resp["username"], matt.username)
@@ -1262,11 +1338,11 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-            params: {email: "newemail@test.com", password: "hello password"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {email: "newemail@test.com", password: "hello password"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      matt = User.find_by_id(matt.id)
+      matt = UserDelegate.find_by(id: matt.id)
       
       assert_response 200
       assert_equal(resp["new_email"], matt.new_email)
@@ -1277,13 +1353,13 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
-            params: {page1: "Hello World", page2: "Hallo Welt"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+         params: {page1: "Hello World", page2: "Hallo Welt"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
 		put "/v1/auth/user", 
-            params: {email: "newemail@test.com", password: "hello password"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+         params: {email: "newemail@test.com", password: "hello password"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
       
       assert_response 200
@@ -1305,8 +1381,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       avatar_content = Base64.encode64(avatar.read)
 
 		put "/v1/auth/user", 
-				params: {avatar: avatar_content}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {avatar: avatar_content}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp2 = JSON.parse response.body
       avatar_etag2 = resp2["avatar_etag"]
 
@@ -1366,7 +1442,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 201
 
 		# Get the user and check if the stripe_customer_id matches the stripe_customer_id in the result
-		matt = User.find_by_id(matt.id)
+		matt = UserDelegate.find_by(id: matt.id)
 		assert_equal(matt.stripe_customer_id, resp["stripe_customer_id"])
 
 		# Get the stripe customer and delete it
@@ -1384,7 +1460,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 201
 
 		# Get the user and check if the stripe_customer_id matches the stripe_customer_id in the result
-		cato = User.find_by_id(cato.id)
+		cato = UserDelegate.find_by(id: cato.id)
 		assert_equal(cato.stripe_customer_id, resp["stripe_customer_id"])
 
 		# Get the stripe customer and delete it
@@ -1409,8 +1485,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		tester = users(:tester2)
 
 		delete "/v1/auth/user/#{tester.id}",
-				params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 403
@@ -1422,8 +1498,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		tester = users(:tester2)
 
 		delete "/v1/auth/user/#{tester.id}",
-				params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth}
+			params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth}
 		resp = JSON.parse(response.body)
 
 		assert_response 415
@@ -1435,8 +1511,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       tester = users(:tester2)
 
       delete "/v1/auth/user/#{tester.id}",
-				params: {email_confirmation_token: "blabla", password_confirmation_token: "blablabla"}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: "blabla", password_confirmation_token: "blablabla"}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
       
       assert_response 400
@@ -1448,8 +1524,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       tester = users(:tester2)
 
       delete "/v1/auth/user/#{tester.id}",
-				params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: tester.email_confirmation_token, password_confirmation_token: tester.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
 		
       assert_response 200
@@ -1471,8 +1547,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:TestApp)
 
 		delete "/v1/auth/app/#{app.id}", 
-				params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
-				headers: {'Authorization' => auth, 'Content-Type': 'application/json'}
+			params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
+			headers: {'Authorization' => auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
 
       assert_response 403
@@ -1485,8 +1561,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:TestApp)
 
 		delete "/v1/auth/app/#{app.id}",
-				params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth}
+			params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth}
 		resp = JSON.parse(response.body)
 
 		assert_response 415
@@ -1499,8 +1575,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:davApp)
 
 		delete "/v1/auth/app/#{app.id}",
-				params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1512,8 +1588,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		tester = users(:tester2)
 
 		delete "/v1/auth/app/-123",
-				params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1525,8 +1601,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:TestApp)
 
 		delete "/v1/auth/app/#{app.id}",
-				params: {user_id: -123, password_confirmation_token: "blablabla"}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {user_id: -123, password_confirmation_token: "blablabla"}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1539,8 +1615,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:TestApp)
 
 		delete "/v1/auth/app/#{app.id}",
-				params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {user_id: tester.id, password_confirmation_token: tester.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 200
@@ -1563,8 +1639,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		tester = users(:tester)
 
 		post "/v1/auth/user/#{tester.id}/confirm",
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'},
-				params: {email_confirmation_token: tester.email_confirmation_token}.to_json
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'},
+			params: {email_confirmation_token: tester.email_confirmation_token}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 403
@@ -1576,8 +1652,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		tester = users(:tester)
 
 		post "/v1/auth/user/#{tester.id}/confirm",
-				headers: {'Authorization': auth, 'Content-Type': 'application/xml'},
-				params: {email_confirmation_token: tester.email_confirmation_token}.to_json
+			headers: {'Authorization': auth, 'Content-Type': 'application/xml'},
+			params: {email_confirmation_token: tester.email_confirmation_token}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 415
@@ -1588,8 +1664,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		auth = generate_auth_token(devs(:sherlock))
 
 		post "/v1/auth/user/-123/confirm",
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'},
-				params: {email_confirmation_token: "blablabla"}.to_json
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'},
+			params: {email_confirmation_token: "blablabla"}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1601,8 +1677,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		tester = users(:tester)
 
 		post "/v1/auth/user/#{tester.id}/confirm",
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'},
-				params: {email_confirmation_token: "blablablabla"}.to_json
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'},
+			params: {email_confirmation_token: "blablablabla"}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 400
@@ -1614,8 +1690,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		tester = users(:tester)
 
 		post "/v1/auth/user/#{tester.id}/confirm",
-				headers: {'Authorization': auth, 'Content-TYpe': 'application/json'},
-				params: {email_confirmation_token: tester.email_confirmation_token}.to_json
+			headers: {'Authorization': auth, 'Content-TYpe': 'application/json'},
+			params: {email_confirmation_token: tester.email_confirmation_token}.to_json
 		resp = JSON.parse(response.body)
 
 		assert_response 200
@@ -1710,8 +1786,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:Cards)
 
 		post "/v1/auth/send_remove_app_email", 
-				params: {app_id: app.id}.to_json,
-				headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
+			params: {app_id: app.id}.to_json,
+			headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 403
@@ -1724,8 +1800,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:Cards)
 
 		post "/v1/auth/send_remove_app_email",
-				params: {app_id: app.id}.to_json,
-				headers: {'Authorization': jwt}
+			params: {app_id: app.id}.to_json,
+			headers: {'Authorization': jwt}
 		resp = JSON.parse(response.body)
 
 		assert_response 415
@@ -1738,8 +1814,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:TestApp)
 
 		post "/v1/auth/send_remove_app_email", 
-				params: {app_id: app.id}.to_json,
-				headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
+			params: {app_id: app.id}.to_json,
+			headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1752,8 +1828,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app_id = -123
 
 		post "/v1/auth/send_remove_app_email", 
-				params: {app_id: app_id}.to_json,
-				headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
+			params: {app_id: app_id}.to_json,
+			headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1766,8 +1842,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:Cards)
 
 		post "/v1/auth/send_remove_app_email", 
-				params: {app_id: app.id}.to_json,
-				headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
+			params: {app_id: app.id}.to_json,
+			headers: {'Authorization': jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 200
@@ -1788,8 +1864,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		auth = generate_auth_token(devs(:matt))
 
 		post "/v1/auth/send_password_reset_email?email=#{matt.email}", 
-				params: {email: matt.email}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email: matt.email}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 		
 		assert_response 403
@@ -1801,8 +1877,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 
 		post "/v1/auth/send_password_reset_email", 
-				params: {email: matt.email}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/xml'}
+			params: {email: matt.email}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/xml'}
 		resp = JSON.parse(response.body)
 
 		assert_response 415
@@ -1813,8 +1889,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		auth = generate_auth_token(devs(:sherlock))
 
 		post "/v1/auth/send_password_reset_email", 
-				params: {email: "bla@dav-apps.tech"}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email: "bla@dav-apps.tech"}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1826,8 +1902,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		auth = generate_auth_token(devs(:sherlock))
       
 		post "/v1/auth/send_password_reset_email", 
-				params: {email: matt.email}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email: matt.email}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
       
       assert_response 200
@@ -1849,8 +1925,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       password = "newpassword"
 
 		post "/v1/auth/set_password", 
-				params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
-				headers: {'Authorization': auth}
+			params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
+			headers: {'Authorization': auth}
 		resp = JSON.parse(response.body)
 		
 		assert_response 415
@@ -1863,8 +1939,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		password = "newpassword"
 		
 		post "/v1/auth/set_password", 
-				params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 403
@@ -1875,8 +1951,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		auth = generate_auth_token(devs(:sherlock))
 
 		post "/v1/auth/set_password", 
-				params: {user_id: -123, password_confirmation_token: "blablabla", password: "newpassword"}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {user_id: -123, password_confirmation_token: "blablabla", password: "newpassword"}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 404
@@ -1889,8 +1965,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       password = "newpassword"
 
 		post "/v1/auth/set_password", 
-				params: {user_id: matt.id, password_confirmation_token: "blabla", password: password}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {user_id: matt.id, password_confirmation_token: "blabla", password: password}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
 
       assert_response 400
@@ -1903,8 +1979,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       password = "newpassword"
 
 		post "/v1/auth/set_password",
-				params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {user_id: matt.id, password_confirmation_token: matt.password_confirmation_token, password: password}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
 
       assert_response 200
@@ -1927,8 +2003,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		
 		post "/v1/auth/user/#{matt.id}/save_new_password",
-				params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 403
@@ -1940,8 +2016,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		
 		post "/v1/auth/user/#{matt.id}/save_new_password",
-				params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': "application/xml"}
+			params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': "application/xml"}
 		resp = JSON.parse(response.body)
 
 		assert_response 415
@@ -1953,8 +2029,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       
 		post "/v1/auth/user/#{matt.id}/save_new_password",
-				params: {password_confirmation_token: "aasdasdasdad"}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {password_confirmation_token: "aasdasdasdad"}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
       
       assert_response 400
@@ -1968,8 +2044,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt.save
       
 		post "/v1/auth/user/#{matt.id}/save_new_password",
-				params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
       resp = JSON.parse(response.body)
       
       assert_response 400
@@ -1981,8 +2057,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       
 		post "/v1/auth/user/#{matt.id}/save_new_password",
-				params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {password_confirmation_token: matt.password_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 200
@@ -2005,8 +2081,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 
 		post "/v1/auth/user/#{matt.id}/save_new_email",
-				params: {email_confirmation_token: matt.email_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: matt.email_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 403
@@ -2018,8 +2094,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 
 		post "/v1/auth/user/#{matt.id}/save_new_email",
-				params: {email_confirmation_token: matt.email_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/xml'}
+			params: {email_confirmation_token: matt.email_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/xml'}
 		resp = JSON.parse(response.body)
 
 		assert_response 415
@@ -2031,8 +2107,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt = users(:matt)
 		
 		post "/v1/auth/user/#{matt.id}/save_new_email",
-				params: {email_confirmation_token: "blablabla"}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: "blablabla"}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 400
@@ -2046,8 +2122,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		matt.save
 
 		post "/v1/auth/user/#{matt.id}/save_new_email",
-				params: {email_confirmation_token: matt.email_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: matt.email_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 400
@@ -2061,12 +2137,12 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		old_email = matt.email
 		
 		post "/v1/auth/user/#{matt.id}/save_new_email",
-				params: {email_confirmation_token: matt.email_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: matt.email_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		# Check if the new email was saved
-		matt = User.find_by_id(matt.id)
+		matt = UserDelegate.find_by(id: matt.id)
 		assert_equal(new_email, matt.email)
 		assert_equal(old_email, matt.old_email)
 		assert_nil(matt.new_email)
@@ -2080,14 +2156,14 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		original_email = torera.email
 
 		post "/v1/auth/user/#{torera.id}/save_new_email",
-				params: {email_confirmation_token: torera.email_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: torera.email_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 200
 
 		# Check if the email was updated on stripe
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
    	assert_equal(torera.email, customer.email)
 
@@ -2098,8 +2174,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		torera.save
 
 		post "/v1/auth/user/#{torera.id}/save_new_email",
-				params: {email_confirmation_token: email_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: email_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 200
@@ -2165,7 +2241,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 
 		# Check if the email fields were updated
-		matt = User.find_by_id(matt.id)
+		matt = UserDelegate.find_by(id: matt.id)
 		assert_equal(old_email, matt.email)
 		assert_nil(matt.old_email)
 	end
@@ -2182,7 +2258,7 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 
 		# Check if the email was updated on stripe
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		customer = Stripe::Customer.retrieve(torera.stripe_customer_id)
 		assert_equal(torera.email, customer.email)
 
@@ -2193,8 +2269,8 @@ class AuthMethodsTest < ActionDispatch::IntegrationTest
 		torera.save
 
 		post "/v1/auth/user/#{torera.id}/save_new_email", 
-				params: {email_confirmation_token: email_confirmation_token}.to_json,
-				headers: {'Authorization': auth, 'Content-Type': 'application/json'}
+			params: {email_confirmation_token: email_confirmation_token}.to_json,
+			headers: {'Authorization': auth, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 200
