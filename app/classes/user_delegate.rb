@@ -23,7 +23,7 @@ class UserDelegate
 		attributes.transform_keys!(&:to_sym)
 
 		@id = attributes[:id]
-		@username = attributes[:username]
+		@username = !attributes[:first_name].nil? ? attributes[:first_name] : attributes[:username]
 		@email = attributes[:email]
 		@confirmed = attributes[:confirmed]
 		@password_digest = attributes[:password_digest]

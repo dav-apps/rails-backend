@@ -81,6 +81,16 @@ class UsersAppDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the users_app in the old database
+		users_app = UsersApp.find_by(id: @id)
+		users_app.destroy! if !users_app.nil?
+
+		# Delete the users_app in the new database
+		users_app = UsersAppMigration.find_by(id: @id)
+		users_app.destroy! if !users_app.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the users_app in the new database
 		users_app = UsersAppMigration.find_by(params)

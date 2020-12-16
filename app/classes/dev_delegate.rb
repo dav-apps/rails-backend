@@ -85,6 +85,14 @@ class DevDelegate
 		dev.destroy! if !dev.nil?
 	end
 
+	def self.first
+		dev = DevMigration.first
+		return dev if !dev.nil?
+
+		dev = Dev.first
+		return dev.nil? ? nil : dev
+	end
+
 	def self.find_by(params)
 		# Try to find the dev in the new database
 		d = DevMigration.find_by(params)
