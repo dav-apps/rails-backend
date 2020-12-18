@@ -41,8 +41,8 @@ class UsersAppDelegate
 		@users_app.app_id = @app_id
 		@users_app.used_storage = @used_storage
 		@users_app.last_active = @last_active
-		@users_app.created_at = @created_at
-		@users_app.updated_at = @updated_at
+		@users_app.created_at = @created_at.nil? ? Time.now : @created_at
+		@users_app.updated_at = @updated_at.nil? ? Time.now : @updated_at
 		delete_old = false
 
 		# Check the id
@@ -68,6 +68,8 @@ class UsersAppDelegate
 
 		if @users_app.save
 			@id = @users_app.id
+			@created_at = @users_app.created_at
+			@updated_at = @users_app.updated_at
 
 			if delete_old
 				# Check if the users_app is still in the old database

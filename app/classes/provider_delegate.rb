@@ -56,6 +56,8 @@ class ProviderDelegate
 
 		if @provider.save
 			@id = @provider.id
+			@created_at = @provider.created_at
+			@updated_at = @provider.updated_at
 
 			if delete_old
 				# Check if the provider is still in the old database

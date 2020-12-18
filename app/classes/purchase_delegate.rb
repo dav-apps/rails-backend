@@ -92,6 +92,8 @@ class PurchaseDelegate
 
 		if @purchase.save
 			@id = @purchase.id
+			@created_at = @purchase.created_at
+			@updated_at = @purchase.updated_at
 
 			if delete_old
 				# Check if the purchase is still in the old database

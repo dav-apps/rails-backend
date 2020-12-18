@@ -4,7 +4,6 @@ class TableObjectDelegate
 		:user_id,
 		:table_id,
 		:uuid,
-		:visibility,
 		:file,
 		:created_at,
 		:updated_at
@@ -16,7 +15,6 @@ class TableObjectDelegate
 		@user_id = attributes[:user_id]
 		@table_id = attributes[:table_id]
 		@uuid = attributes[:uuid]
-		@visibility = attributes[:visibility]
 		@file = attributes[:file]
 		@created_at = attributes[:created_at]
 		@updated_at = attributes[:updated_at]
@@ -31,7 +29,6 @@ class TableObjectDelegate
 			user_id: @user_id,
 			table_id: @table_id,
 			uuid: @uuid,
-			visibility: @visibility,
 			file: @file,
 			created_at: @created_at,
 			updated_at: @updated_at
@@ -71,6 +68,8 @@ class TableObjectDelegate
 
 		if @table_object.save
 			@id = @table_object.id
+			@created_at = @table_object.created_at
+			@updated_at = @table_object.updated_at
 
 			if delete_old
 				# Check if the table object is still in the old database
@@ -82,6 +81,16 @@ class TableObjectDelegate
 		end
 
 		return false
+	end
+
+	def destroy
+		# Delete the table_object in the old database
+		table_object = TableObject.find_by(id: @id)
+		table_object.destroy! if !table_object.nil?
+
+		# Delete the app in the new database
+		table_object = TableObjectMigration.find_by(id: @id)
+		table_object.destroy! if !table_object.nil?
 	end
 
 	def self.find_by(params)

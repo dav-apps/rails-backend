@@ -76,6 +76,7 @@ class SessionDelegate
 
 		if @session.save
 			@id = @session.id
+			@created_at = @session.created_at
 
 			if delete_old
 				# Check if the session is still in the old database

@@ -112,6 +112,8 @@ class UserDelegate
 
 		if @user.save
 			@id = @user.id
+			@created_at = @user.created_at
+			@updated_at = @user.updated_at
 
 			if delete_old
 				# Check if the user is still in the old database

@@ -72,4 +72,21 @@ class ApiDelegate
 		a = Api.find_by(params)
 		return a.nil? ? nil : ApiDelegate.new(a.attributes)
 	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the apis from the new database
+		ApiMigration.where(params).each do |api|
+			result.push(ApiDelegate.new(api.attributes))
+		end
+
+		Api.where(params).each do |api|
+			# Check if the api is already in the results
+			next if result.any? { |a| a.id == api.id }
+			result.push(ApiDelegate.new(api.attributes))
+		end
+
+		return result
+	end
 end

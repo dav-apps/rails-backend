@@ -62,6 +62,8 @@ class DevDelegate
 
 		if @dev.save
 			@id = @dev.id
+			@created_at = @dev.created_at
+			@updated_at = @dev.updated_at
 
 			if delete_old
 				# Check if the dev is still in the old database

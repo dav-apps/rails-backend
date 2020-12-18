@@ -56,6 +56,8 @@ class ApiEndpointRequestCacheDelegate
 
 		if @api_endpoint_request_cache.save
 			@id = @api_endpoint_request_cache.id
+			@created_at = @api_endpoint_request_cache.created_at
+			@updated_at = @api_endpoint_request_cache.updated_at
 
 			if delete_old
 				# Check if the api_endpoint_request_cache is still in the old database

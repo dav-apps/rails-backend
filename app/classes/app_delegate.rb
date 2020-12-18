@@ -80,6 +80,8 @@ class AppDelegate
 
 		if @app.save
 			@id = @app.id
+			@created_at = @app.created_at
+			@updated_at = @app.updated_at
 
 			if delete_old
 				# Check if the app is still in the old database
@@ -91,6 +93,16 @@ class AppDelegate
 		end
 
 		return false
+	end
+
+	def destroy
+		# Delete the app in the old database
+		app = App.find_by(id: @id)
+		app.destroy! if !app.nil?
+
+		# Delete the app in the new database
+		app = AppMigration.find_by(id: @id)
+		app.destroy! if !app.nil?
 	end
 
 	def self.find_by(params)

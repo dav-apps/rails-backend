@@ -60,6 +60,8 @@ class TableDelegate
 
 		if @table.save
 			@id = @table.id
+			@created_at = @table.created_at
+			@updated_at = @table.updated_at
 
 			if delete_old
 				# Check if the table is still in the old database
@@ -73,6 +75,16 @@ class TableDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the table in the old database
+		table = Table.find_by(id: @id)
+		table.destroy! if !table.nil?
+
+		# Delete the table in the new database
+		table = TableMigration.find_by(id: @id)
+		table.destroy! if !table.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the table in the new database
 		table = TableMigration.find_by(params)
@@ -81,5 +93,23 @@ class TableDelegate
 		# Try to find the table in the old database
 		table = Table.find_by(params)
 		return table.nil? ? nil : TableDelegate.new(table.attributes)
+	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the tables from the new database
+		TableMigration.where(params).each do |table|
+			result.push(TableDelegate.new(table.attributes))
+		end
+
+		# Get the tables from the old database
+		Table.where(params).each do |table|
+			# Check if the table is already in the results
+			next if result.any? { |t| t.id == table.id }
+			result.push(TableDelegate.new(table.attributes))
+		end
+
+		return result
 	end
 end
