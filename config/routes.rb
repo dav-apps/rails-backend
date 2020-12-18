@@ -69,11 +69,6 @@ Rails.application.routes.draw do
 
   match '/v1/apps/app/:id/exception', to: 'apps#create_exception_event', via: :post
   
-  match '/v1/apps/object/:id/access_token', to: 'apps#create_access_token', via: 'post'
-  match '/v1/apps/object/:id/access_token', to: 'apps#get_access_token', via: 'get'
-  match '/v1/apps/object/:id/access_token/:token', to: 'apps#add_access_token_to_object', via: 'put'
-  match '/v1/apps/object/:id/access_token/:token', to: 'apps#remove_access_token_from_object', via: 'delete'
-  
   match '/v1/apps/notification', to: 'apps#create_notification', via: 'post'
   match '/v1/apps/notification/:uuid', to: 'apps#get_notification', via: 'get'
   match '/v1/apps/notifications', to: 'apps#get_all_notifications', via: 'get'

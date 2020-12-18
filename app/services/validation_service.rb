@@ -164,7 +164,7 @@ class ValidationService
 
 	def self.validate_web_push_subscription_belongs_to_user(subscription, user)
 		error_code = 1102
-		subscription.user != user ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
+		subscription.user_id != user.id ? {success: false, error: [error_code, get_error_message(error_code)], status: 403} : {success: true}
 	end
 
 	def self.validate_unknown_validation_error(saved)
@@ -401,11 +401,6 @@ class ValidationService
 	def self.validate_object_missing(object)
 		error_code = 2116
 		object.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
-	end
-
-	def self.validate_access_token_missing(token)
-		error_code = 2117
-		!token || token.length < 1 ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_api_key_missing(api_key)
@@ -933,11 +928,6 @@ class ValidationService
 		!event ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
 	end
 
-	def self.validate_access_token_does_not_exist(token)
-		error_code = 2809
-		!token ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
-	end
-
 	def self.validate_notification_does_not_exist(notification)
 		error_code = 2812
 		!notification ? {success: false, error: [error_code, get_error_message(error_code)], status: 404} : {success: true}
@@ -1079,8 +1069,6 @@ class ValidationService
 			"Missing field: object_id"
 		when 2116
 			"Missing field: object"
-		when 2117
-			"Missing field: access_token"
 		when 2118
 			"Missing field: api_key"
 		when 2120
@@ -1267,8 +1255,6 @@ class ValidationService
 			"Resource does not exist: Event"
 		when 2808
 			"Resource does not exist: EventLog"
-		when 2809
-			"Resource does not exist: AccessToken"
 		when 2812
 			"Resource does not exist: Notification"
 		when 2813
@@ -1301,8 +1287,6 @@ class ValidationService
 			"Resource already exists: Event"
 		when 2908
 			"Resource already exists: EventLog"
-		when 2909
-			"Resource already exists: AccessToken"
 		when 2910
 			"Resource already exists: Provider"
 		else

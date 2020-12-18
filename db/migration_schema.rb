@@ -245,6 +245,7 @@ ActiveRecord::Schema.define(version: 2020_12_15_210915) do
     t.string "endpoint"
     t.string "p256dh"
     t.string "auth"
+    t.datetime "created_at", precision: 6, null: false
     t.index ["uuid"], name: "index_web_push_subscriptions_on_uuid", unique: true
   end
 

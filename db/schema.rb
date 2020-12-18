@@ -160,7 +160,7 @@ ActiveRecord::Schema.define(version: 2020_10_20_215445) do
     t.datetime "updated_at"
   end
 
-  create_table "exception_events", options: "ENGINE=InnoDB DEFAULT CHARSET=latin1", force: :cascade do |t|
+  create_table "exception_events", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.integer "app_id"
     t.datetime "created_at"
     t.string "name"
@@ -192,7 +192,7 @@ ActiveRecord::Schema.define(version: 2020_10_20_215445) do
     t.text "value"
   end
 
-  create_table "property_types", options: "ENGINE=InnoDB DEFAULT CHARSET=latin1", force: :cascade do |t|
+  create_table "property_types", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.integer "table_id"
     t.string "name"
     t.integer "data_type", default: 0
