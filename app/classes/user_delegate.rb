@@ -127,6 +127,43 @@ class UserDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the devs of the user
+		DevDelegate.where(user_id: @id).each { |dev| dev.destroy }
+
+		# Delete the notifications of the user
+		NotificationDelegate.where(user_id: @id).each { |notification| notification.destroy }
+
+		# Delete the providers of the user
+		ProviderDelegate.where(user_id: @id).each { |provider| provider.destroy }
+
+		# Delete the purchases of the user
+		PurchaseDelegate.where(user_id: @id).each { |purchase| purchase.destroy }
+
+		# Delete the sessions of the user
+		SessionDelegate.where(user_id: @id).each { |session| session.destroy }
+
+		# Delete the table_objects of the user
+		TableObjectDelegate.where(user_id: @id).each { |table_object| table_object.destroy }
+
+		# Delete the table_object_user_accesses of the user
+		TableObjectUserAccess.where(user_id: @id).each { |user_access| user_access.destroy }
+
+		# Delete the users_apps of the user
+		UsersAppDelegate.where(user_id: @id).each { |users_app| users_app.destroy }
+
+		# Delete the web_push_subscriptions of the user
+		WebPushSubscriptionDelegate.where(user_id: @id).each { |web_push_subscription| web_push_subscription.destroy }
+
+		# Delete the user in the old database
+		user = User.find_by(id: @id)
+		user.destroy! if !user.nil?
+
+		# Delete the user in the new database
+		user = UserMigration.find_by(id: @id)
+		user.destroy! if !user.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the user in the new database
 		u = UserMigration.find_by(params)
@@ -135,5 +172,23 @@ class UserDelegate
 		# Try to find the user in the old database
 		u = User.find_by(params)
 		return u.nil? ? nil : UserDelegate.new(u.attributes)
+	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the users from the new database
+		UserMigration.where(params).each do |user|
+			result.push(UserDelegate.new(user.attributes))
+		end
+
+		# Get the users from the old database
+		User.where(params).each do |user|
+			# Check if the user is already in the results
+			next if result.any? { |u| u.id == user.id }
+			result.push(UserDelegate.new(user.attributes))
+		end
+
+		return result
 	end
 end

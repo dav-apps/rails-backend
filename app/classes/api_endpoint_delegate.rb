@@ -72,6 +72,19 @@ class ApiEndpointDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the api_endpoint_request_caches of the api_endpoint
+		ApiEndpointRequestCacheDelegate.where(api_endpoint_id: @id).each { |api_endpoint_request_cache| api_endpoint_request_cache.destroy }
+
+		# Delete the api_endpoint in the old database
+		api_endpoint = ApiEndpoint.find_by(id: @id)
+		api_endpoint.destroy! if !api_endpoint.nil?
+
+		# Delete the api_endpoint in the new database
+		api_endpoint = ApiEndpointMigration.find_by(id: @id)
+		api_endpoint.destroy! if !api_endpoint.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the api_endpoint in the new database
 		api_endpoint = ApiEndpointMigration.find_by(params)

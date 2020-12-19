@@ -96,4 +96,22 @@ class WebPushSubscriptionDelegate
 		subscription = WebPushSubscription.find_by(params)
 		return subscription.nil? ? nil : WebPushSubscriptionDelegate.new(subscription.attributes)
 	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the web_push_subscriptions from the new database
+		WebPushSubscriptionMigration.where(params).each do |web_push_subscription|
+			result.push(WebPushSubscriptionDelegate.new(web_push_subscription.attributes))
+		end
+
+		# Get the web_push_subscriptions from the old database
+		WebPushSubscription.where(params).each do |web_push_subscription|
+			# Check if the web_push_subscription is already in the results
+			next if result.any? { |s| s.id == web_push_subscription.id }
+			result.push(WebPushSubscriptionDelegate.new(web_push_subscription.attributes))
+		end
+
+		return result
+	end
 end

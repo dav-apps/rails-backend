@@ -107,6 +107,16 @@ class PurchaseDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the purchase in the old database
+		purchase = Purchase.find_by(id: @id)
+		purchase.destroy! if !purchase.nil?
+
+		# Delete the purchase in the new database
+		purchase = PurchaseMigration.find_by(id: @id)
+		purchase.destroy! if !purchase.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the purchase in the new database
 		purchase = PurchaseMigration.find_by(params)
@@ -115,5 +125,23 @@ class PurchaseDelegate
 		# Try to find the purchase in the old database
 		purchase = Purchase.find_by(params)
 		return purchase.nil? ? nil : PurchaseDelegate.new(purchase.attributes)
+	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the purchases from the new database
+		PurchaseMigration.where(params).each do |purchase|
+			result.push(PurchaseDelegate.new(purchase.attributes))
+		end
+
+		# Get the purchases from the old database
+		Purchase.where(params).each do |purchase|
+			# Check if the purchase is already in the results
+			next if result.any? { |p| p.id == purchase.id }
+			result.push(PurchaseDelegate.new(purchase.attributes))
+		end
+
+		return result
 	end
 end

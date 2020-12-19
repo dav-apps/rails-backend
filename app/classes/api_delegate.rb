@@ -63,6 +63,28 @@ class ApiDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the api_endpoints of the api
+		ApiEndpointDelegate.where(api_id: @id).each { |api_endpoint| api_endpoint.destroy }
+
+		# Delete the api_env_vars of the api
+		ApiEnvVarDelegate.where(api_id: @id).each { |api_env_var| api_env_var.destroy }
+
+		# Delete the api_errors of the api
+		ApiErrorDelegate.where(api_id: @id).each { |api_error| api_error.destroy }
+
+		# Delete the api_functions of the api
+		ApiFunctionDelegate.where(api_id: @id).each { |api_function| api_function.destroy }
+
+		# Delete the api in the old database
+		api = Api.find_by(id: @id)
+		api.destroy! if !api.nil?
+
+		# Delete the api in the new database
+		api = ApiMigration.find_by(id: @id)
+		api.destroy! if !api.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the api in the new database
 		a = ApiMigration.find_by(params)

@@ -76,6 +76,15 @@ class TableDelegate
 	end
 
 	def destroy
+		# Delete the collections of the table
+		CollectionDelegate.where(table_id: @id).each { |collection| collection.destroy }
+
+		# Delete the property_types of the table
+		PropertyTypeDelegate.where(table_id: @id).each { |property_type| property_type.destroy }
+
+		# Delete the table_objects of the table
+		TableObjectDelegate.where(table_id: @id).each { |table_object| table_object.destroy }
+
 		# Delete the table in the old database
 		table = Table.find_by(id: @id)
 		table.destroy! if !table.nil?

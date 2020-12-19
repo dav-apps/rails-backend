@@ -66,6 +66,16 @@ class ApiEndpointRequestCacheParamDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the api_endpoint_request_cache_param in the old database
+		api_endpoint_request_cache_param = ApiEndpointRequestCacheParam.find_by(id: @id)
+		api_endpoint_request_cache_param.destroy! if !api_endpoint_request_cache_param.nil?
+
+		# Delete the api_endpoint_request_cache_param in the new database
+		api_endpoint_request_cache_param = ApiEndpointRequestCacheParamMigration.find_by(id: @id)
+		api_endpoint_request_cache_param.destroy! if !api_endpoint_request_cache_param.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the api_endpoint_request_cache_param in the new database
 		api_endpoint_request_cache_param = ApiEndpointRequestCacheParamMigration.find_by(params)

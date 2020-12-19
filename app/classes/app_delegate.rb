@@ -96,6 +96,27 @@ class AppDelegate
 	end
 
 	def destroy
+		# Delete the tables of the app
+		TableDelegate.where(app_id: @id).each { |table| table.destroy }
+
+		# Delete the apis of the app
+		ApiDelegate.where(app_id: @id).each { |api| api.destroy }
+
+		# Delete the active_app_users of the app
+		ActiveAppUserDelegate.where(app_id: @id).each { |active_app_user| active_app_user.destroy }
+
+		# Delete the exception_events of the app
+		ExceptionEventDelegate.where(app_id: @id).each { |exception_event| exception_event.destroy }
+
+		# Delete the notifications of the app
+		NotificationDelegate.where(app_id: @id).each { |notification| notification.destroy }
+
+		# Delete the sessions of the app
+		SessionDelegate.where(app_id: @id).each { |session| session.destroy }
+
+		# Delete the users_apps of the app
+		UsersAppDelegate.where(app_id: @id).each { |users_app| users_app.destroy }
+
 		# Delete the app in the old database
 		app = App.find_by(id: @id)
 		app.destroy! if !app.nil?

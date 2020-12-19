@@ -77,6 +77,16 @@ class ActiveAppUserDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the active_app_user in the old database
+		active_app_user = ActiveAppUser.find_by(id: @id)
+		active_app_user.destroy! if !active_app_user.nil?
+
+		# Delete the active_app_user in the new database
+		active_app_user = ActiveAppUserMigration.find_by(id: @id)
+		active_app_user.destroy! if !active_app_user.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the active_app_user in the new database
 		active_app_user = ActiveAppUserMigration.find_by(params)

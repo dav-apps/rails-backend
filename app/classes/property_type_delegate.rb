@@ -69,6 +69,16 @@ class PropertyTypeDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the property_type in the old database
+		property_type = PropertyType.find_by(id: @id)
+		property_type.destroy! if !property_type.nil?
+
+		# Delete the property_type in the new database
+		property_type = PropertyTypeMigration.find_by(id: @id)
+		property_type.destroy! if !property_type.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the property_type in the new database
 		property_type = PropertyTypeMigration.find_by(params)

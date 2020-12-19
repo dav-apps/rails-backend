@@ -84,6 +84,18 @@ class TableObjectDelegate
 	end
 
 	def destroy
+		# Delete the properties of the table_object
+		PropertyDelegate.where(table_object_id: @id).each { |property| property.destroy }
+
+		# Delete the purchases of the table_object
+		PurchaseDelegate.where(table_object_id: @id).each { |purchase| purchase.destroy }
+
+		# Delete the table_object_collections of the table_object
+		TableObjectCollectionDelegate.where(table_object_id: @id).each { |obj_c| obj_c.destroy }
+
+		# Delete the table_object_user_accesses of the table_object
+		TableObjectUserAccess.where(table_object_id: @id).each { |user_access| user_access.destroy }
+
 		# Delete the table_object in the old database
 		table_object = TableObject.find_by(id: @id)
 		table_object.destroy! if !table_object.nil?

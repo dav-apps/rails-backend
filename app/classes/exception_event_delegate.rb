@@ -103,4 +103,22 @@ class ExceptionEventDelegate
 		exception_event = ExceptionEvent.find_by(params)
 		return exception_event.nil? ? nil : ExceptionEventDelegate.new(exception_event.attributes)
 	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the exception_events from the new database
+		ExceptionEventMigration.where(params).each do |exception_event|
+			result.push(ExceptionEventDelegate.new(exception_event.attributes))
+		end
+
+		# Get the exception_events from the old database
+		ExceptionEvent.where(params).each do |exception_event|
+			# Check if the exception_event is already in the results
+			next if result.any? { |e| e.id == exception_event.id }
+			result.push(ExceptionEventDelegate.new(exception_event.attributes))
+		end
+
+		return result
+	end
 end

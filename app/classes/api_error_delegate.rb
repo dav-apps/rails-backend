@@ -66,6 +66,16 @@ class ApiErrorDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the api_error in the old database
+		api_error = ApiError.find_by(id: @id)
+		api_error.destroy! if !api_error.nil?
+
+		# Delete the api_error in the new database
+		api_error = ApiErrorMigration.find_by(id: @id)
+		api_error.destroy! if !api_error.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the api_error in the new database
 		api_error = ApiErrorMigration.find_by(params)

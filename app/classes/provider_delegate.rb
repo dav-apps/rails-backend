@@ -71,6 +71,16 @@ class ProviderDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the provider in the old database
+		provider = Provider.find_by(id: @id)
+		provider.destroy! if !provider.nil?
+
+		# Delete the provider in the new database
+		provider = ProviderMigration.find_by(id: @id)
+		provider.destroy! if !provider.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the provider in the new database
 		provider = ProviderMigration.find_by(params)
@@ -79,5 +89,23 @@ class ProviderDelegate
 		# Try to find the provider in the old database
 		provider = Provider.find_by(params)
 		return provider.nil? ? nil : ProviderDelegate.new(provider.attributes)
+	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the providers from the new database
+		ProviderMigration.where(params).each do |provider|
+			result.push(ProviderDelegate.new(provider.attributes))
+		end
+
+		# Get the providers from the old database
+		Provider.where(params).each do |provider|
+			# Check if the provider is already in the results
+			next if result.any? { |p| p.id == provider.id }
+			result.push(ProviderDelegate.new(provider.attributes))
+		end
+
+		return result
 	end
 end

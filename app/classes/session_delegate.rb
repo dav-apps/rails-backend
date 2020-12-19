@@ -109,4 +109,22 @@ class SessionDelegate
 		session = Session.find_by(params)
 		return session.nil? ? nil : SessionDelegate.new(session.attributes)
 	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the sessions from the new database
+		SessionMigration.where(params).each do |session|
+			result.push(SessionDelegate.new(session.attributes))
+		end
+
+		# Get the sessions from the old database
+		Session.where(params).each do |session|
+			# Check if the session is already in the results
+			next if result.any? { |s| s.id == session.id }
+			result.push(SessionDelegate.new(session.attributes))
+		end
+
+		return result
+	end
 end

@@ -69,6 +69,16 @@ class ApiEnvVarDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the api_env_var in the old database
+		api_env_var = ApiEnvVar.find_by(id: @id)
+		api_env_var.destroy! if !api_env_var.nil?
+
+		# Delete the api_env_var in the new database
+		api_env_var = ApiEnvVarMigration.find_by(id: @id)
+		api_env_var.destroy! if !api_env_var.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the api_env_var in the new database
 		api_env_var = ApiEnvVarMigration.find_by(params)

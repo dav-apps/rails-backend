@@ -78,6 +78,9 @@ class DevDelegate
 	end
 
 	def destroy
+		# Delete the apps of the dev
+		AppDelegate.where(dev_id: @id).each { |app| app.destroy }
+
 		# Delete the dev in the old database
 		dev = Dev.find_by(id: @id)
 		dev.destroy! if !dev.nil?
@@ -103,5 +106,23 @@ class DevDelegate
 		# Try to find the dev in the old database
 		d = Dev.find_by(params)
 		return d.nil? ? nil : DevDelegate.new(d.attributes)
+	end
+
+	def self.where(params)
+		result = Array.new
+
+		# Get the devs from the new database
+		DevMigration.where(params).each do |dev|
+			result.push(DevDelegate.new(dev.attributes))
+		end
+
+		# Get the devs from the old database
+		Dev.where(params).each do |dev|
+			# Check if the dev is already in the results
+			next if result.any? { |d| d.id == dev.id }
+			result.push(DevDelegate.new(dev.attributes))
+		end
+
+		return result
 	end
 end

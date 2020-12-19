@@ -69,6 +69,16 @@ class ApiFunctionDelegate
 		return false
 	end
 
+	def destroy
+		# Delete the api_function in the old database
+		api_function = ApiFunction.find_by(id: @id)
+		api_function.destroy! if !api_function.nil?
+
+		# Delete the api_function in the new database
+		api_function = ApiFunctionMigration.find_by(id: @id)
+		api_function.destroy! if !api_function.nil?
+	end
+
 	def self.find_by(params)
 		# Try to find the api_function in the new database
 		api_function = ApiFunctionMigration.find_by(params)
