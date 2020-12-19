@@ -6,7 +6,7 @@ class TableObjectHolder
 		@properties = Array.new
 		@values = Hash.new
 
-		obj.properties.each do |prop|
+		PropertyDelegate.where(table_object_id: obj.id).each do |prop|
 			@properties.push(prop)
 			@values[prop.name] = prop.value
 		end

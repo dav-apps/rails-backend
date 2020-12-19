@@ -58,7 +58,7 @@ class DavExpressionRunner
 					parts.each do |part|
 						if current_var.is_a?(Hash)
 							current_var = current_var[part]
-						elsif current_var.is_a?(TableObject) && part == "properties"
+						elsif current_var.is_a?(TableObjectDelegate) && part == "properties"
 							current_var = current_var.properties
 						elsif current_var.is_a?(TableObjectHolder) && part == "properties"
 							holder = current_var
@@ -83,7 +83,7 @@ class DavExpressionRunner
 								return prop.value
 							else
 								# Create a new property
-								prop = Property.new(table_object: holder.obj, name: last_part, value: execute_command(command[2], vars))
+								prop = PropertyDelegate.new(table_object_id: holder.obj.id, name: last_part, value: execute_command(command[2], vars))
 								prop.save
 								holder.values[last_part] = prop.value
 								holder.properties.push(prop)
@@ -250,7 +250,7 @@ class DavExpressionRunner
 				error["name"] = "decode_jwt"
 				
 				if session_id != 0
-					session = Session.find_by_id(session_id)
+					session = SessionDelegate.find_by(id: session_id)
 
 					if !session
 						# Session does not exist
@@ -414,9 +414,9 @@ class DavExpressionRunner
 					# It's a comment. Ignore this command
 					return nil
 				when "User.get"		# id
-					return User.find_by_id(execute_command(command[1], vars).to_i)
+					return UserDelegate.find_by(id: execute_command(command[1], vars).to_i)
 				when "Table.get"		# id
-					table = Table.find_by(id: execute_command(command[1], vars).to_i)
+					table = TableDelegate.find_by(id: execute_command(command[1], vars).to_i)
 
 					if table && table.app_id != @api.app_id
 						# Action not allowed error
@@ -428,7 +428,7 @@ class DavExpressionRunner
 						return table
 					end
 				when "Table.get_table_objects"		# id, user_id
-					table = Table.find_by(id: execute_command(command[1], vars).to_i)
+					table = TableDelegate.find_by(id: execute_command(command[1], vars).to_i)
 					return nil if !table
 
 					if table.app_id != @api.app_id
@@ -439,15 +439,15 @@ class DavExpressionRunner
 						return @errors
 					end
 
-					objects = table.table_objects.where(user_id: execute_command(command[2], vars).to_i).to_a
+					objects = TableObjectDelegate.where(table_id: table.id, user_id: execute_command(command[2], vars).to_i).to_a
 					
 					holders = Array.new
 					objects.each{ |obj| holders.push(TableObjectHolder.new(obj)) }
 
 					return holders
-				when "TableObject.create"	# user_id, table_id, properties, visibility?
+				when "TableObject.create"	# user_id, table_id, properties
 					# Get the table
-					table = Table.find_by(id: execute_command(command[2], vars))
+					table = TableDelegate.find_by(id: execute_command(command[2], vars))
 					error = Hash.new
 					
 					# Check if the table exists
@@ -465,7 +465,7 @@ class DavExpressionRunner
 					end
 
 					# Check if the user exists
-					user = User.find_by(id: execute_command(command[1], vars))
+					user = UserDelegate.find_by(id: execute_command(command[1], vars))
 					if !user
 						error["code"] = 2
 						@errors.push(error)
@@ -473,11 +473,11 @@ class DavExpressionRunner
 					end
 
 					# Create the table object
-					obj = TableObject.new
-					obj.user = user
-					obj.table = table
-					obj.visibility = execute_command(command[4].to_i, vars) if command[4]
-					obj.uuid = SecureRandom.uuid
+					obj = TableObjectDelegate.new(
+						user_id: user.id,
+						table_id: table.id,
+						uuid: SecureRandom.uuid
+					)
 
 					if !obj.save
 						# Unexpected error
@@ -489,10 +489,11 @@ class DavExpressionRunner
 					# Create the properties
 					properties = execute_command(command[3], vars)
 					properties.each do |key, value|
-						prop = Property.new
-						prop.table_object_id = obj.id
-						prop.name = key
-						prop.value = value
+						prop = PropertyDelegate.new(
+							table_object_id: obj.id,
+							name: key,
+							value: value
+						)
 						prop.save
 					end
 
@@ -500,7 +501,7 @@ class DavExpressionRunner
 					return TableObjectHolder.new(obj)
 				when "TableObject.create_file"	# user_id, table_id, ext, type, file
 					# Get the table
-					table = Table.find_by(id: execute_command(command[2], vars))
+					table = TableDelegate.find_by(id: execute_command(command[2], vars))
 					error = Hash.new
 
 					# Check if the table exists
@@ -518,7 +519,7 @@ class DavExpressionRunner
 					end
 
 					# Check if the user exists
-					user = User.find_by(id: execute_command(command[1], vars))
+					user = UserDelegate.find_by(id: execute_command(command[1], vars))
 					if !user
 						error["code"] = 2
 						@errors.push(error)
@@ -526,11 +527,12 @@ class DavExpressionRunner
 					end
 
 					# Create the table object
-					obj = TableObject.new
-					obj.user = user
-					obj.table = table
-					obj.uuid = SecureRandom.uuid
-					obj.file = true
+					obj = TableObjectDelegate.new(
+						user_id: user.id,
+						table_id: table.id,
+						uuid: SecureRandom.uuid,
+						file: true
+					)
 
 					ext = execute_command(command[3], vars)
 					type = execute_command(command[4], vars)
@@ -568,24 +570,24 @@ class DavExpressionRunner
 					end
 
 					# Save extension as property
-					ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+					ext_prop = PropertyDelegate.new(table_object_id: obj.id, name: "ext", value: ext)
 
 					# Save etag as property
-					etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+					etag_prop = PropertyDelegate.new(table_object_id: obj.id, name: "etag", value: etag)
 
 					# Save the file size as property
-					size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+					size_prop = PropertyDelegate.new(table_object_id: obj.id, name: "size", value: file_size)
 
 					# Save the content type as property
-					type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
+					type_prop = PropertyDelegate.new(table_object_id: obj.id, name: "type", value: type)
 
 					# Update the used storage
 					UtilsService.update_used_storage(user.id, table.app_id, file_size)
 
 					# Save that user uses the app
-					users_app = UsersApp.find_by(app_id: table.app_id, user_id: user.id)
+					users_app = UsersAppDelegate.find_by(app_id: table.app_id, user_id: user.id)
 					if !users_app
-						users_app = UsersApp.create(app_id: table.app_id, user_id: user.id)
+						users_app = UsersAppDelegate.new(app_id: table.app_id, user_id: user.id)
 						users_app.save
 					end
 
@@ -598,11 +600,11 @@ class DavExpressionRunner
 
 					return TableObjectHolder.new(obj)
 				when "TableObject.get"	# uuid
-					obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+					obj = TableObjectDelegate.find_by(uuid: execute_command(command[1], vars))
 					return nil if !obj
 
 					# Check if the table of the table object belongs to the same app as the api
-					if obj.table.app_id != @api.app_id
+					if TableDelegate.find_by(id: obj.table_id).app_id != @api.app_id
 						error["code"] = 0
 						@errors.push(error)
 						return @errors
@@ -610,11 +612,11 @@ class DavExpressionRunner
 
 					return TableObjectHolder.new(obj)
 				when "TableObject.get_file"	# uuid
-					obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+					obj = TableObjectDelegate.find_by(uuid: execute_command(command[1], vars))
 					return nil if !obj.file
 
 					# Check if the table of the table object belongs to the same app as the api
-					if obj.table.app_id != @api.app_id
+					if TableDelegate.find_by(id: obj.table_id).app_id != @api.app_id
 						error["code"] = 0
 						@errors.push(error)
 						return @errors
@@ -622,7 +624,7 @@ class DavExpressionRunner
 
 					Azure.config.storage_account_name = ENV["AZURE_STORAGE_ACCOUNT"]
 					Azure.config.storage_access_key = ENV["AZURE_STORAGE_ACCESS_KEY"]
-					filename = "#{obj.table.app.id}/#{obj.id}"
+					filename = "#{TableDelegate.find_by(id: obj.table_id).app_id}/#{obj.id}"
 
 					# Download the file
 					begin
@@ -633,7 +635,7 @@ class DavExpressionRunner
 					end
 				when "TableObject.update"	# uuid, properties
 					# Get the table object
-					obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+					obj = TableObjectDelegate.find_by(uuid: execute_command(command[1], vars))
 					error = Hash.new
 
 					# Check if the table object exists
@@ -651,7 +653,7 @@ class DavExpressionRunner
 					end
 
 					# Check if the table of the table object belongs to the same app as the api
-					if obj.table.app_id != @api.app_id
+					if TableDelegate.find_by(id: obj.table_id).app_id != @api.app_id
 						error["code"] = 2
 						@errors.push(error)
 						return @errors
@@ -661,12 +663,12 @@ class DavExpressionRunner
 					properties = execute_command(command[2], vars)
 					properties.each do |key, value|
 						next if !value
-						prop = Property.find_by(table_object_id: obj.id, name: key)
+						prop = PropertyDelegate.find_by(table_object_id: obj.id, name: key)
 
 						if value.length > 0
-							if !prop
+							if prop.nil?
 								# Create the property
-								new_prop = Property.new(name: key, value: value, table_object_id: obj.id)
+								new_prop = PropertyDelegate.new(name: key, value: value, table_object_id: obj.id)
 								ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
 							else
 								# Update the property
@@ -675,14 +677,14 @@ class DavExpressionRunner
 							end
 						elsif prop
 							# Delete the property
-							prop.destroy!
+							prop.destroy
 						end
 					end
 
 					return TableObjectHolder.new(obj)
 				when "TableObject.update_file"	# uuid, ext, type, file
 					# Get the table object
-					obj = TableObject.find_by(uuid: execute_command(command[1], vars))
+					obj = TableObjectDelegate.find_by(uuid: execute_command(command[1], vars))
 					error = Hash.new
 
 					# Check if the table object exists
@@ -700,22 +702,22 @@ class DavExpressionRunner
 					end
 
 					# Check if the table of the table object belongs to the same app as the api
-					if obj.table.app_id != @api.app_id
+					if TableDelegate.find_by(id: obj.table_id).app_id != @api.app_id
 						error["code"] = 2
 						@errors.push(error)
 						return @errors
 					end
 
 					# Get the properties
-					ext_prop = Property.find_by(table_object_id: obj.id, name: "ext")
-					etag_prop = Property.find_by(table_object_id: obj.id, name: "etag")
-					size_prop = Property.find_by(table_object_id: obj.id, name: "size")
-					type_prop = Property.find_by(table_object_id: obj.id, name: "type")
+					ext_prop = PropertyDelegate.find_by(table_object_id: obj.id, name: "ext")
+					etag_prop = PropertyDelegate.find_by(table_object_id: obj.id, name: "etag")
+					size_prop = PropertyDelegate.find_by(table_object_id: obj.id, name: "size")
+					type_prop = PropertyDelegate.find_by(table_object_id: obj.id, name: "type")
 
 					ext = execute_command(command[2], vars)
 					type = execute_command(command[3], vars)
 					file = execute_command(command[4], vars)
-					user = obj.user
+					user = UserDelegate.find_by(id: obj.user_id)
 
 					file_size = file.size
 					old_file_size = size_prop ? size_prop.value.to_i : 0
@@ -731,7 +733,7 @@ class DavExpressionRunner
 
 					begin
 						# Upload the new file
-						blob = BlobOperationsService.upload_blob(obj.table.app_id, obj.id, StringIO.new(file))
+						blob = BlobOperationsService.upload_blob(TableDelegate.find_by(id: obj.table_id).app_id, obj.id, StringIO.new(file))
 						etag = blob.properties[:etag]
 						etag = etag[1...etag.size-1]
 					rescue Exception => e
@@ -742,31 +744,31 @@ class DavExpressionRunner
 
 					# Update or create the properties
 					if !ext_prop
-						ext_prop = Property.new(table_object_id: obj.id, name: "ext", value: ext)
+						ext_prop = PropertyDelegate.new(table_object_id: obj.id, name: "ext", value: ext)
 					else
 						ext_prop.value = ext
 					end
 
 					if !etag_prop
-						etag_prop = Property.new(table_object_id: obj.id, name: "etag", value: etag)
+						etag_prop = PropertyDelegate.new(table_object_id: obj.id, name: "etag", value: etag)
 					else
 						etag_prop.value = etag
 					end
 
 					if !size_prop
-						size_prop = Property.new(table_object_id: obj.id, name: "size", value: file_size)
+						size_prop = PropertyDelegate.new(table_object_id: obj.id, name: "size", value: file_size)
 					else
 						size_prop.value = file_size
 					end
 
 					if !type_prop
-						type_prop = Property.new(table_object_id: obj.id, name: "type", value: type)
+						type_prop = PropertyDelegate.new(table_object_id: obj.id, name: "type", value: type)
 					else
 						type_prop.value = type
 					end
 
 					# Update the used storage
-					UtilsService.update_used_storage(obj.user.id, obj.table.app_id, file_size_diff)
+					UtilsService.update_used_storage(obj.user_id, TableDelegate.find_by(id: obj.table_id).app_id, file_size_diff)
 
 					# Save the properties
 					if !ext_prop.save || !etag_prop.save || !size_prop.save || !type_prop.save
@@ -785,7 +787,7 @@ class DavExpressionRunner
 
 					if table_object_id.is_a?(String)
 						# Get the id of the table object
-						obj = TableObject.find_by(uuid: table_object_id)
+						obj = TableObjectDelegate.find_by(uuid: table_object_id)
 
 						if !obj
 							error["code"] = 0
@@ -797,7 +799,7 @@ class DavExpressionRunner
 					end
 
 					# Try to find the table
-					table = Table.find_by_id(table_alias)
+					table = TableDelegate.find_by(id: table_alias)
 					if !table
 						error["code"] = 1
 						@errors.push(error)
@@ -805,10 +807,10 @@ class DavExpressionRunner
 					end
 
 					# Find the access and return it
-					access = TableObjectUserAccess.find_by(table_object_id: table_object_id, user_id: user_id, table_alias: table_alias)
+					access = TableObjectUserAccessDelegate.find_by(table_object_id: table_object_id, user_id: user_id, table_alias: table_alias)
 
 					if !access
-						access = TableObjectUserAccess.new(table_object_id: table_object_id, user_id: user_id, table_alias: table_alias)
+						access = TableObjectUserAccessDelegate.new(table_object_id: table_object_id, user_id: user_id, table_alias: table_alias)
 						access.save
 					end
 
@@ -820,10 +822,10 @@ class DavExpressionRunner
 
 					if table_object_id.is_a?(String)
 						# Get the table object by uuid
-						obj = TableObject.find_by_uuid(table_object_id)
+						obj = TableObjectDelegate.find_by(uuid: table_object_id)
 					else
 						# Get the table object by id
-						obj = TableObject.find_by_id(table_object_id)
+						obj = TableObjectDelegate.find_by(id: table_object_id)
 					end
 
 					if !obj
@@ -833,20 +835,20 @@ class DavExpressionRunner
 					end
 
 					# Try to find the collection
-					collection = Collection.find_by(name: collection_name, table: obj.table)
+					collection = CollectionDelegate.find_by(name: collection_name, table_id: obj.table_id)
 
 					if !collection
 						# Create the collection
-						collection = Collection.new(name: collection_name, table: obj.table)
+						collection = CollectionDelegate.new(name: collection_name, table_id: obj.table_id)
 						collection.save
 					end
 
 					# Try to find the TableObjectCollection
-					obj_collection = TableObjectCollection.find_by(table_object: obj, collection: collection)
+					obj_collection = TableObjectCollectionDelegate.find_by(table_object_id: obj.id, collection_id: collection.id)
 
 					if !obj_collection
 						# Create the TableObjectCollection
-						obj_collection = TableObjectCollection.new(table_object: obj, collection: collection)
+						obj_collection = TableObjectCollectionDelegate.new(table_object_id: obj.id, collection_id: collection.id)
 						obj_collection.save
 					end
 				when "Collection.remove_table_object"	# collection_name, table_object_id
@@ -856,10 +858,10 @@ class DavExpressionRunner
 
 					if table_object_id.is_a?(String)
 						# Get the table object by uuid
-						obj = TableObject.find_by_uuid(table_object_id)
+						obj = TableObjectDelegate.find_by(uuid: table_object_id)
 					else
 						# Get the table object by id
-						obj = TableObject.find_by_id(table_object_id)
+						obj = TableObjectDelegate.find_by(id: table_object_id)
 					end
 
 					if !obj
@@ -869,7 +871,7 @@ class DavExpressionRunner
 					end
 
 					# Find the collection
-					collection = Collection.find_by(name: collection_name, table: obj.table)
+					collection = CollectionDelegate.find_by(name: collection_name, table_id: obj.table_id)
 
 					if !collection
 						error["code"] = 1
@@ -878,10 +880,10 @@ class DavExpressionRunner
 					end
 
 					# Find the TableObjectCollection
-					obj_collection = TableObjectCollection.find_by(table_object: obj, collection: collection)
+					obj_collection = TableObjectCollectionDelegate.find_by(table_object_id: obj.id, collection_id: collection.id)
 
 					if obj_collection
-						obj_collection.destroy!
+						obj_collection.destroy
 					end
 				when "Collection.get_table_objects"	# table_id, collection_name
 					error = Hash.new
@@ -889,7 +891,7 @@ class DavExpressionRunner
 					collection_name = execute_command(command[2], vars)
 
 					# Try to find the table
-					table = Table.find_by_id(table_id)
+					table = TableDelegate.find_by(id: table_id)
 
 					if !table
 						error["code"] = 0
@@ -898,11 +900,16 @@ class DavExpressionRunner
 					end
 
 					# Try to find the collection
-					collection = Collection.find_by(name: collection_name, table: table)
+					collection = CollectionDelegate.find_by(name: collection_name, table_id: table.id)
 
 					if collection
 						holders = Array.new
-						collection.table_objects.each{ |obj| holders.push(TableObjectHolder.new(obj)) }
+
+						# Get the table object of the collection and add them to the TableObjectHolder
+						TableObjectCollectionDelegate.where(collection_id: collection.id).each do |obj_c|
+							obj = TableObjectDelegate.find_by(id: obj_c.table_object_id)
+							holders.push(TableObjectHolder.new(obj)) if !obj.nil?
+						end
 
 						return holders
 					end
@@ -919,14 +926,14 @@ class DavExpressionRunner
 					objects = Array.new
 
 					if all_user
-						TableObject.where(table_id: table_id).each do |table_object|
+						TableObjectDelegate.where(table_id: table_id).each do |table_object|
 							if exact
 								# Look for the exact property value
-								property = Property.find_by(table_object: table_object, name: property_name, value: property_value)
+								property = PropertyDelegate.find_by(table_object_id: table_object.id, name: property_name, value: property_value)
 								objects.push(table_object) if property
 							else
 								# Look for the properties that contain the property value
-								properties = Property.where(table_object: table_object, name: property_name)
+								properties = PropertyDelegate.where(table_object_id: table_object.id, name: property_name)
 
 								contains_value = false
 								properties.each do |prop|
@@ -939,14 +946,14 @@ class DavExpressionRunner
 							end
 						end
 					else
-						TableObject.where(user_id: user_id, table_id: table_id).each do |table_object|
+						TableObjectDelegate.where(user_id: user_id, table_id: table_id).each do |table_object|
 							if exact
 								# Look for the exact property value
-								property = Property.find_by(table_object: table_object, name: property_name, value: property_value)
+								property = PropertyDelegate.find_by(table_object_id: table_object.id, name: property_name, value: property_value)
 								objects.push(table_object) if property
 							else
 								# Look for properties that contain the property value
-								properties = Property.where(table_object: table_object, name: property_name)
+								properties = PropertyDelegate.where(table_object_id: table_object.id, name: property_name)
 		
 								contains_value = false
 								properties.each do |prop|
@@ -969,7 +976,7 @@ class DavExpressionRunner
 					purchase_id = execute_command(command[1], vars)
 					user_id = execute_command(command[2], vars)
 
-					purchase = Purchase.find_by_id(purchase_id)
+					purchase = PurchaseDelegate.find_by(id: purchase_id)
 
 					if !purchase
 						error["code"] = 0
@@ -977,7 +984,7 @@ class DavExpressionRunner
 						return @errors
 					end
 
-					user = User.find_by(id: user_id)
+					user = UserDelegate.find_by(id: user_id)
 
 					if !user
 						error["code"] = 1
@@ -985,7 +992,7 @@ class DavExpressionRunner
 						return @errors
 					end
 
-					if purchase.user != user
+					if purchase.user_id != user.id
 						error["code"] = 2
 						@errors.push(error)
 						return @errors
@@ -997,20 +1004,20 @@ class DavExpressionRunner
 						return @errors
 					end
 
-					return TableObjectHolder.new(purchase.table_object)
+					return TableObjectHolder.new(TableObjectDelegate.find_by(id: purchase.table_object_id))
 				when "Purchase.find_by_user_and_table_object"		# user_id, table_object_id
 					user_id = execute_command(command[1], vars)
 					table_object_id = execute_command(command[2], vars)
 
 					if table_object_id.class == Integer
 						# table_object_id is id
-						return Purchase.find_by(user_id: user_id, table_object_id: table_object_id, completed: true)
+						return PurchaseDelegate.find_by(user_id: user_id, table_object_id: table_object_id, completed: true)
 					else
 						# table_object_id is uuid
-						table_object = TableObject.find_by(uuid: table_object_id)
+						table_object = TableObjectDelegate.find_by(uuid: table_object_id)
 						
 						return nil if !table_object
-						return Purchase.find_by(user_id: user_id, table_object_id: table_object.id, completed: true)
+						return PurchaseDelegate.find_by(user_id: user_id, table_object_id: table_object.id, completed: true)
 					end
 				when "Math.round"	# var, rounding = 2
 					var = execute_command(command[1], vars)
@@ -1173,19 +1180,19 @@ class DavExpressionRunner
 				if last_part == "round"
 					return var.round
 				end
-			elsif var.class == User
-				return var[last_part]
-			elsif var.class == Table
+			elsif var.class == UserDelegate
+				return var.attributes[last_part.to_sym]
+			elsif var.class == TableDelegate
 				if last_part == "table_objects"
-					return var.table_objects.to_a
+					return TableObjectDelegate.where(table_id: var.id)
 				else
-					return var[last_part]
+					return var.attributes[last_part.to_sym]
 				end
-			elsif var.class == TableObject
+			elsif var.class == TableObjectDelegate
 				if last_part == "properties"
-					return var.properties
+					return PropertyDelegate.where(table_object_id: var.id)
 				else
-					return var[last_part]
+					return var.attributes[last_part.to_sym]
 				end
 			elsif var.class.to_s == "Property::ActiveRecord_Associations_CollectionProxy"
 				props = var.where(name: last_part)
@@ -1193,9 +1200,9 @@ class DavExpressionRunner
 				return nil
 			elsif var.class == TableObjectHolder
 				return var.values if last_part == "properties"
-				return var.obj[last_part]
-			elsif var.class == Purchase
-				return var[last_part]
+				return var.obj.attributes[last_part.to_sym]
+			elsif var.class == PurchaseDelegate
+				return var.attributes[last_part.to_sym]
 			end
 		elsif command.to_s.include?('#')
 			parts = command.to_s.split('#')
