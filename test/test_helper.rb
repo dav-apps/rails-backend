@@ -24,11 +24,11 @@ class ActiveSupport::TestCase
       dev.api_key + "," + Base64.strict_encode64(OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha256'), dev.secret_key, dev.uuid))
    end
 
-   def generate_table_object_etag(object)
+	def generate_table_object_etag(object)
 		# id,table_id,user_id,visibility,uuid,file,property1Name:property1Value,property2Name:property2Value,...
-		etag_string = "#{object.id},#{object.table_id},#{object.user_id},#{object.visibility},#{object.uuid},#{object.file}"
+		etag_string = "#{object.id},#{object.table_id},#{object.user_id},0,#{object.uuid},#{object.file}"
 
-		object.properties.each do |prop|
+		PropertyDelegate.where(table_object_id: object.id).each do |prop|
 			etag_string += ",#{prop.name}:#{prop.value}"
 		end
 

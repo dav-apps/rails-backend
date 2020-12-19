@@ -243,20 +243,23 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		app = apps(:TestApp)
 
 		# Create active app users
-		first_active_user = ActiveAppUser.create(
-			app: app,
+		first_active_user = ActiveAppUserDelegate.new(
+			app_id: app.id,
 			time: (Time.now - 1.days).beginning_of_day,
 			count_daily: 1, 
 			count_monthly: 5,
 			count_yearly: 17
 		)
-		second_active_user = ActiveAppUser.create(
-			app: app,
+		first_active_user.save
+
+		second_active_user = ActiveAppUserDelegate.new(
+			app_id: app.id,
 			time: (Time.now - 3.days).beginning_of_day,
 			count_daily: 6, 
 			count_monthly: 9,
 			count_yearly: 20
 		)
+		second_active_user.save
 
 		get "/v1/apps/app/#{app.id}/active_users", headers: {'Authorization' => jwt}
 		resp = JSON.parse(response.body)
@@ -346,8 +349,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
-				params: {test: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
+			params: {test: "test"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
@@ -362,8 +365,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       users(:matt).destroy!
       
 		put "/v1/apps/app/#{test_app_id}", 
-				params: {name: "TestApp12133"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "TestApp12133"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 404
@@ -374,8 +377,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(users(:matt), "schachmatt", devs(:matt)).body)["jwt"]
       
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
-				params: {name: "TestApp121314"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "TestApp121314"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -387,8 +390,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
-				params: {name: "#{'o' * 35}", description: "#{'o' * 510}"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "#{'o' * 35}", description: "#{'o' * 510}"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -402,8 +405,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
-				params: {name: "a", description: "a"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "a", description: "a"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -442,8 +445,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
-				params: {name: new_name, description: new_desc}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: new_name, description: new_desc}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -459,8 +462,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
-				params: {link_play: link_play, link_windows: link_windows}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {link_play: link_play, link_windows: link_windows}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -473,8 +476,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
-				params: {link_play: ""}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {link_play: ""}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -489,8 +492,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		put "/v1/apps/app/#{apps(:TestApp).id}", 
-				params: {link_play: link_play, link_windows: link_windows}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {link_play: link_play, link_windows: link_windows}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse(response.body)
 
       assert_response 400
@@ -505,13 +508,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		app_id = apps(:TestApp).id
 		
 		put "/v1/apps/app/#{app_id}",
-				params: {published: new_published}.to_json,
-				headers: {Authorization: jwt, 'Content-Type': 'application/json'}
+			params: {published: new_published}.to_json,
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'}
 		resp = JSON.parse(response.body)
 
 		assert_response 200
 		
-		app = App.find_by_id(app_id)
+		app = AppDelegate.find_by(id: app_id)
 		assert_equal(new_published, app.published)
 	end
    # End update_app tests
@@ -699,9 +702,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(device_family, resp["device_family"])
 		assert_equal(locale, resp["locale"])
 
-		exception = ExceptionEvent.find_by_id(resp["id"])
+		exception = ExceptionEventDelegate.find_by(id: resp["id"])
 		assert_not_nil(exception)
-		assert_equal(app, exception.app)
+		assert_equal(app.id, exception.app_id)
 		assert_equal(name, exception.name)
 		assert_equal(message, exception.message)
 		assert_equal(stack_trace, exception.stack_trace)
@@ -726,8 +729,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
+			params: {"test": "test"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
@@ -739,11 +742,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=NewTable&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
-      assert(Table.find_by(name: "NewTable"))
+      assert(TableDelegate.find_by(name: "NewTable"))
    end
    
    test "Can't create a new table in create_object with too short table_name" do
@@ -751,8 +754,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=N&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -764,8 +767,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=#{"n"*220}&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -777,8 +780,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=New Table name&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -790,8 +793,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
       post "/v1/apps/object?table_id=133&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 404
@@ -803,8 +806,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -816,7 +819,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -828,8 +831,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
-				params: {"": "a"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"": "a"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -841,74 +844,22 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
-				params: {"#{'n' * 220}": "#{'n' * 65500}"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"#{'n' * 220}": "#{'n' * 65500}"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
       assert_equal(2306, resp["errors"][0][0])
       assert_equal(2307, resp["errors"][1][0])
    end
-   
-   test "Can't create object with visibility > 2" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=5&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      assert_equal(0, resp["visibility"])
-   end
-   
-   test "Can't create object with visibility < 0" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=-4&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      assert_equal(0, resp["visibility"])
-   end
-   
-   test "Can't create object with visibility that is not an integer" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=hello&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      assert_equal(0, resp["visibility"])
-   end
-   
-   test "Can create object with another visibility" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", 
-				params: {"test": "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      assert_equal(2, resp["visibility"])
-   end
 
    test "Can't create object and upload file without ext parameter" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=2&app_id=#{apps(:TestApp).id}", 
-				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'text/plain'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}", 
+			params: "Hallo Welt! Dies wird eine Textdatei.", 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'text/plain'}
       resp = JSON.parse response.body
 
       assert_response 415
@@ -921,9 +872,9 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		content_type = 'text/plain'
 		ext = "txt"
 
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
-				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+			params: "Hallo Welt! Dies wird eine Textdatei.", 
+			headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -946,8 +897,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		content_type = 'text/plain'
 		ext = "txt"
 
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
-				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+			headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
 		assert_response 201
@@ -967,7 +918,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=txt", headers: {'Authorization' => jwt}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=txt", headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 415
@@ -980,12 +931,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       uuid = SecureRandom.uuid
 
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&uuid=#{uuid}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+		resp = JSON.parse response.body
 
       assert_response 201
-		object = TableObject.find_by(uuid: uuid)
+		object = TableObjectDelegate.find_by(uuid: uuid)
 		assert_not_nil(object)
 		assert_equal(uuid, resp["uuid"])
 		assert_equal(generate_table_object_etag(object), resp["etag"])
@@ -996,8 +947,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&uuid=#{table_objects(:third).uuid}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1009,13 +960,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=png", 
-				params: File.open('test/fixtures/files/test.png', 'rb').read,
-				headers: {'Authorization' => jwt, "Content-Type": "image/png"}
+			params: File.open('test/fixtures/files/test.png', 'rb').read,
+			headers: {'Authorization' => jwt, "Content-Type": "image/png"}
       resp = JSON.parse response.body
       
 		assert_response 201
 
-		object = TableObject.find_by_id(resp["id"])
+		object = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(object)
 
       assert_equal(tables(:card).id, resp["table_id"])
@@ -1032,8 +983,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1044,8 +995,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		jwt = generate_session_jwt(matt, devs(:sherlock), apps(:Cards).id, "schachmatt")
 
 		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1057,8 +1008,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       uuid = SecureRandom.uuid
 
 		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}&uuid=#{uuid}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1070,29 +1021,27 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
-				params: {"test": "test"}.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"test": "test"}.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
       assert_equal(1102, resp["errors"][0][0])
    end
 
-   test "Can create object with table_id and another visibility and upload text file" do
+   test "Can create object with table_id and upload text file" do
       matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-		visibility = 1
 		ext = "txt"
 		content_type = 'text/plain'
 
-		post "/v1/apps/object?table_id=#{tables(:note).id}&visibility=#{visibility}&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
-				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+		post "/v1/apps/object?table_id=#{tables(:note).id}&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+			params: "Hallo Welt! Dies wird eine Textdatei.", 
+			headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
       assert_response 201
       assert_not_nil(resp["id"])
-		assert_equal(resp["visibility"], visibility)
 		
 		# Check if the properties were created
 		assert_equal(ext, resp["properties"]["ext"])
@@ -1118,12 +1067,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		third_property_value = 12.34
 
 		post "/v1/apps/object?table_id=#{tables(:note).id}&app_id=#{apps(:TestApp).id}",
-				headers: {Authorization: jwt, 'Content-Type': 'application/json'},
-				params: {
-					"#{first_property_name}": first_property_value,
-					"#{second_property_name}": second_property_value,
-					"#{third_property_name}": third_property_value
-				}.to_json
+			headers: {Authorization: jwt, 'Content-Type': 'application/json'},
+			params: {
+				"#{first_property_name}": first_property_value,
+				"#{second_property_name}": second_property_value,
+				"#{third_property_name}": third_property_value
+			}.to_json
 		resp = JSON.parse response.body
 		
 		assert_response 201
@@ -1132,12 +1081,12 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(second_property_value, resp["properties"][second_property_name])
 		assert_equal(third_property_value, resp["properties"][third_property_name])
 		
-		obj = TableObject.find_by_id(resp["id"])
+		obj = TableObjectDelegate.find_by(id: resp["id"])
 
 		assert_not_nil(obj)
-		assert_equal(first_property_value.to_s, obj.properties[0].value)
-		assert_equal(second_property_value.to_s, obj.properties[1].value)
-		assert_equal(third_property_value.to_s, obj.properties[2].value)
+		assert_equal(first_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: first_property_name).value)
+		assert_equal(second_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: second_property_name).value)
+		assert_equal(third_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: third_property_name).value)
 	end
 	
 	test "create_object should not create a property when the property has no value" do
@@ -1150,16 +1099,15 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		properties = {"#{first_property_name}": first_property_value, "#{second_property_name}": second_property_value}
 
 		post "/v1/apps/object?table_id=#{tables(:note).id}&app_id=#{apps(:TestApp).id}", 
-				params: properties.to_json, 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: properties.to_json, 
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 		
 		assert_response 201
-		obj = TableObject.find_by_id(resp["id"])
+		obj = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(obj)
-		assert_equal(1, obj.properties.count)
-		assert_equal(second_property_name, obj.properties.first.name)
-		assert_equal(second_property_value, obj.properties.first.value)
+		assert_equal(1, PropertyDelegate.where(table_object_id: obj.id).count)
+		assert_equal(second_property_value, PropertyDelegate.find_by(table_object_id: obj.id, name: second_property_name).value)
 	end
 
 	test "create_object should update the last_active fields of the user and the users_app" do
@@ -1171,13 +1119,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		old_updated_at = matt.updated_at
 		
 		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:Cards).id}", 
-				params: '{"test": "test"}', 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: '{"test": "test"}',
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
 		assert_response 201
-		matt = User.find_by_id(matt.id)
-      matt_cards = UsersApp.find_by_id(matt_cards.id)
+		matt = UserDelegate.find_by(id: matt.id)
+      matt_cards = UsersAppDelegate.find_by(id: matt_cards.id)
 
 		assert_not_equal(old_last_active, matt.last_active)
       assert_not_equal(old_users_app_last_active, matt_cards.last_active)
@@ -1189,7 +1137,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
 		post "/v1/apps/object?table_id=#{tables(:card).id}&app_id=#{apps(:TestApp).id}",
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 		
 		assert_response 403
@@ -1228,7 +1176,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
 		assert_response 200
-		object = TableObject.find_by_id(resp["id"])
+		object = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(object)
 		assert_equal(table_objects(:first).id, resp["id"])
 		assert_equal(generate_table_object_etag(object), resp["etag"])
@@ -1258,7 +1206,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse(response.body)
 
 		assert_response 200
-		object = TableObject.find_by_id(resp["id"])
+		object = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(object)
 		assert_equal(generate_table_object_etag(object), resp["etag"])
 	end
@@ -1272,7 +1220,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
 		assert_response 200
-		object = TableObject.find_by_id(resp["id"])
+		object = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(object)
 		assert_equal(table_objects(:first).id, resp["id"])
 		assert_equal(generate_table_object_etag(object), resp["etag"])
@@ -1288,7 +1236,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse(response.body)
 
 		assert_response 200
-		object = TableObject.find_by_id(resp["id"])
+		object = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(object)
 		assert_equal(generate_table_object_etag(object), resp["etag"])
 	end
@@ -1304,50 +1252,21 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(1102, resp["errors"][0][0])
    end
    
-   test "Can't get object without access token and JWT" do
+   test "Can't get object without JWT" do
       get "/v1/apps/object/#{table_objects(:second).id}"
       resp = JSON.parse response.body
       
-      assert_response 400
+      assert_response 401
       assert_equal(2102, resp["errors"][0][0])
-      assert_equal(2117, resp["errors"][1][0])
-   end
-   
-   test "Can get object with access token without logging in" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      object_id = table_objects(:third).id
-      
-      post "/v1/apps/object/#{object_id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 201
-      
-      token = resp["token"]
-      
-      get "/v1/apps/object/#{object_id}?access_token=#{token}"
-      resp = JSON.parse response.body
-      
-      assert_response 200
-   end
-   
-   test "Can get protected object as another user" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      
-      get "/v1/apps/object/#{table_objects(:first).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 200
    end
 
    test "Can't get protected object with uploaded file as another user" do
       matt = users(:matt)
       matts_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=1&app_id=#{apps(:TestApp).id}&ext=txt", 
-				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Authorization' => matts_jwt, 'Content-Type' => 'text/plain'}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=txt", 
+			params: "Hallo Welt! Dies wird eine Textdatei.",
+			headers: {'Authorization' => matts_jwt, 'Content-Type' => 'text/plain'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1366,23 +1285,6 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       
       assert_response 200
    end
-   
-   test "Can get public object as logged in user" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      
-      get "/v1/apps/object/#{table_objects(:eight).id}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-   end
-   
-   test "Can get public object without being logged in" do
-      get "/v1/apps/object/#{table_objects(:eight).id}"
-      resp = JSON.parse response.body
-      
-      assert_response 200
-   end
 
    test "Can get object with uploaded file" do
       matt = users(:matt)
@@ -1391,13 +1293,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		content_type = 'text/plain'
 
 		# Create the object with file
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
-				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
-      resp = JSON.parse response.body
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{ext}", 
+			params: "Hallo Welt! Dies wird eine Textdatei.",
+			headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+		resp = JSON.parse response.body
 
 		assert_response 201
-		object = TableObject.find_by_id(resp["id"])
+		object = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(object)
 		assert_equal(generate_table_object_etag(object), resp["etag"])
       assert_not_nil(resp["properties"]["etag"])
@@ -1421,7 +1323,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
    end
 
    test "Can get object with uuid" do
-      get "/v1/apps/object/#{table_objects(:eight).uuid}"
+		matt = users(:matt)
+      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
+
+      get "/v1/apps/object/#{table_objects(:eight).uuid}", headers: {Authorization: jwt}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1436,14 +1341,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		ext = "txt"
 		content_type = 'text/plain'
 
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{ext}&uuid=#{uuid}", 
-				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{ext}&uuid=#{uuid}", 
+			params: "Hallo Welt! Dies wird eine Textdatei.",
+			headers: {'Authorization' => jwt, 'Content-Type' => content_type}
       resp = JSON.parse response.body
 
 		assert_response 201
 		
-		object = TableObject.find_by_id(resp["id"])
+		object = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(object)
 		assert_equal(generate_table_object_etag(object), resp["etag"])
 
@@ -1479,8 +1384,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		
 		# Check the last_active field of the user
 		assert_response 200
-		matt = User.find_by_id(matt.id)
-      matt_cards = UsersApp.find_by_id(matt_cards.id)
+		matt = UserDelegate.find_by(id: matt.id)
+      matt_cards = UsersAppDelegate.find_by(id: matt_cards.id)
 
 		assert_not_equal(old_last_active, matt.last_active)
       assert_not_equal(old_users_app_last_active, matt_cards.last_active)
@@ -1540,19 +1445,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		file_content = "Hello World! This is a text file."
 
 		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{ext}",
-				params: file_content,
-				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+			params: file_content,
+			headers: {'Authorization' => jwt, 'Content-Type' => content_type}
 		resp = JSON.parse response.body
 
 		assert_response 201
-		obj = TableObject.find_by_id(resp["id"])
+		obj = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(obj)
 
 		# Try to get the file of the object with auth
 		auth = generate_auth_token(devs(:matt))
 
 		get "/v1/apps/object/#{resp["id"]}/auth?file=true", 
-				headers: {'Authorization' => auth}
+			headers: {'Authorization' => auth}
 		resp2 = response.body
 
 		assert_response 200
@@ -1573,19 +1478,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		file_content = "Hello World! This is a text file."
 
 		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{ext}",
-				params: file_content,
-				headers: {'Authorization' => jwt, 'Content-Type' => content_type}
+			params: file_content,
+			headers: {'Authorization' => jwt, 'Content-Type' => content_type}
 		resp = JSON.parse(response.body)
 
 		assert_response 201
-		obj = TableObject.find_by_id(resp["id"])
+		obj = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(obj)
 
 		# Try to get the file of the object with auth and uuid
 		auth = generate_auth_token(devs(:matt))
 
 		get "/v1/apps/object/#{resp["uuid"]}/auth?file=true", 
-				headers: {'Authorization' => auth}
+			headers: {'Authorization' => auth}
 		resp2 = response.body
 
 		assert_response 200
@@ -1650,7 +1555,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:dav)).body)["jwt"]
       
 		put "/v1/apps/object/#{table_objects(:second).id}", 
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -1662,8 +1567,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/object/#{table_objects(:first).id}", 
-				params: {"": "a"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"": "a"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1675,8 +1580,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/object/#{table_objects(:first).id}", 
-				params: {"#{'n' * 220}": "#{'n' * 65500}"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"#{'n' * 220}": "#{'n' * 65500}"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -1694,8 +1599,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_property_value = properties(:second1).value
       
 		put "/v1/apps/object/#{table_object.id}", 
-				params: {"#{first_property_name}": first_property_value}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"#{first_property_name}": first_property_value}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -1739,88 +1644,49 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(fifth_property_value, resp["properties"][fifth_property_name])
 		assert_equal(sixth_property_value, resp["properties"][sixth_property_name])
 
-		obj = TableObject.find_by_id(resp["id"])
+		obj = TableObjectDelegate.find_by(id: resp["id"])
 
 		assert_not_nil(obj)
-		assert_equal(first_property_value.to_s, obj.properties.find{ |prop| prop.name == first_property_name }.value)
-		assert_equal(second_property_value.to_s, obj.properties.find{ |prop| prop.name == second_property_name }.value)
-		assert_equal(third_property_value.to_s, obj.properties.find{ |prop| prop.name == third_property_name }.value)
-		assert_equal(fourth_property_value.to_s, obj.properties.find{ |prop| prop.name == fourth_property_name }.value)
-		assert_equal(fifth_property_value.to_s, obj.properties.find{ |prop| prop.name == fifth_property_name }.value)
-		assert_equal(sixth_property_value.to_s, obj.properties.find{ |prop| prop.name == sixth_property_name }.value)
+		
+		assert_equal(first_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: first_property_name).value)
+		assert_equal(second_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: second_property_name).value)
+		assert_equal(third_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: third_property_name).value)
+		assert_equal(fourth_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: fourth_property_name).value)
+		assert_equal(fifth_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: fifth_property_name).value)
+		assert_equal(sixth_property_value.to_s, PropertyDelegate.find_by(table_object_id: obj.id, name: sixth_property_name).value)
 
 		# Check the property types
-		first_type = obj.table.property_types.find{ |type| type.name == first_property_name }
-		assert_equal(first_type.data_type, 2)
-
-		second_type = obj.table.property_types.find{ |type| type.name == second_property_name }
-		assert_equal(second_type.data_type, 1)
-
-		third_type = obj.table.property_types.find{ |type| type.name == third_property_name }
-		assert_equal(third_type.data_type, 3)
-
-		fourth_type = obj.table.property_types.find{ |type| type.name == fourth_property_name }
-		assert_equal(fourth_type.data_type, 2)
-
-		fifth_type = obj.table.property_types.find{ |type| type.name == fifth_property_name }
-		assert_equal(fifth_type.data_type, 1)
-
-		sixth_type = obj.table.property_types.find{ |type| type.name == sixth_property_name }
-		assert_equal(sixth_type.data_type, 3)
+		assert_equal(PropertyTypeDelegate.find_by(table_id: obj.table_id, name: first_property_name).data_type, 2)
+		assert_equal(PropertyTypeDelegate.find_by(table_id: obj.table_id, name: second_property_name).data_type, 1)
+		assert_equal(PropertyTypeDelegate.find_by(table_id: obj.table_id, name: third_property_name).data_type, 3)
+		assert_equal(PropertyTypeDelegate.find_by(table_id: obj.table_id, name: fourth_property_name).data_type, 2)
+		assert_equal(PropertyTypeDelegate.find_by(table_id: obj.table_id, name: fifth_property_name).data_type, 1)
+		assert_equal(PropertyTypeDelegate.find_by(table_id: obj.table_id, name: sixth_property_name).data_type, 3)
 	end
-   
-   test "Can update object with new visibility" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-		put "/v1/apps/object/#{table_objects(:first).id}?visibility=2", 
-				params: {test: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-		resp = JSON.parse response.body
-      
-		assert_response 200
-		object = TableObject.find_by_id(resp["id"])
-		assert_not_nil(object)
-		assert_equal(generate_table_object_etag(object), resp["etag"])
-      assert_equal(2, resp["visibility"])
-   end
-   
-   test "Can't update an object with invalid visibility" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      
-		put "/v1/apps/object/#{table_objects(:first).id}?visibility=hello", 
-				params: {test: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(0, resp["visibility"])
-   end
 
 	test "Can't update object without content type header" do
 		matt = users(:matt)
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 
 		put "/v1/apps/object/#{table_objects(:third).uuid}", 
-				params: {page1: "test", page2: "test2"}.to_json,
-				headers: {'Authorization' => jwt}
+			params: {page1: "test", page2: "test2"}.to_json,
+			headers: {'Authorization' => jwt}
       resp = JSON.parse response.body
 
       assert_response 415
 		assert_equal(1104, resp["errors"][0][0])
 	end
 
-   test "Can update visibility and ext of object with file" do
+   test "Can update ext of object with file" do
       matt = users(:matt)
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 		old_ext = "txt"
 		old_content_type = 'text/plain'
 
       # Create object
-		post "/v1/apps/object?table_name=#{tables(:note).name}&visibility=0&app_id=#{apps(:TestApp).id}&ext=#{old_ext}", 
-				params: "Hallo Welt! Dies wird eine Textdatei.", 
-				headers: {'Authorization' => jwt, 'Content-Type' => old_content_type}
+		post "/v1/apps/object?table_name=#{tables(:note).name}&app_id=#{apps(:TestApp).id}&ext=#{old_ext}", 
+			params: "Hallo Welt! Dies wird eine Textdatei.",
+			headers: {'Authorization' => jwt, 'Content-Type' => old_content_type}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -1830,16 +1696,14 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 		new_ext = "html"
 		new_content_type = 'text/html'
-      new_visibility = 2
 
       # Update object
-		put "/v1/apps/object/#{resp["id"]}?visibility=#{new_visibility}&ext=#{new_ext}", 
-				params: "<p>Hallo Welt! Dies ist eine HTML-Datei.</p>", 
-				headers: {'Authorization' => jwt, 'Content-Type' => new_content_type}
-      resp = JSON.parse response.body
+		put "/v1/apps/object/#{resp["id"]}?ext=#{new_ext}", 
+			params: "<p>Hallo Welt! Dies ist eine HTML-Datei.</p>",
+			headers: {'Authorization' => jwt, 'Content-Type' => new_content_type}
+		resp = JSON.parse response.body
 
 		assert_response 200
-		assert_equal(new_visibility, resp["visibility"])
 		assert_equal(new_ext, resp["properties"]["ext"])
 		assert_equal(new_content_type, resp["properties"]["type"])
 		assert_not_nil(resp["properties"]["size"])
@@ -1858,8 +1722,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		new_page2 = "Hello World"
       
 		put "/v1/apps/object/#{table_objects(:third).uuid}", 
-				params: {page1: new_page1, page2: new_page2}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {page1: new_page1, page2: new_page2}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -1875,8 +1739,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		new_page2 = "Hello World"
       
 		put "/v1/apps/object/#{obj.uuid}", 
-				params: {page1: new_page1, page2: new_page2}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {page1: new_page1, page2: new_page2}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 200
@@ -1893,13 +1757,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		old_content_type = 'image/png'
 
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&ext=#{old_ext}", 
-				params: File.open(file1Path, "rb").read, 
-				headers: {'Authorization' => jwt, 'Content-Type' => old_content_type}
+			params: File.open(file1Path, "rb").read,
+			headers: {'Authorization' => jwt, 'Content-Type' => old_content_type}
       resp = JSON.parse response.body
       
 		assert_response 201
 
-		object1 = TableObject.find_by_id(resp["id"])
+		object1 = TableObjectDelegate.find_by(id: resp["id"])
 		assert_not_nil(object1)
 		object_etag = resp["etag"]
       etag = resp["properties"]["etag"]
@@ -1914,13 +1778,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		new_content_type = 'audio/mpeg'
 
 		put "/v1/apps/object/#{resp["id"]}?ext=#{new_ext}", 
-				params: File.open(file2Path, "rb").read, 
-				headers: {'Authorization' => jwt, 'Content-Type' => new_content_type}
+			params: File.open(file2Path, "rb").read,
+			headers: {'Authorization' => jwt, 'Content-Type' => new_content_type}
       resp2 = JSON.parse response.body
       
 		assert_response 200
 
-		object2 = TableObject.find_by_id(resp2["id"])
+		object2 = TableObjectDelegate.find_by(id: resp2["id"])
 		assert_not_nil(object2)
 		object_etag2 = resp2["etag"]
       etag2 = resp2["properties"]["etag"]
@@ -1945,13 +1809,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		properties = '{"page3": ""}'
 		
 		put "/v1/apps/object/#{table_object.id}", 
-				params: properties, 
-				headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
+			params: properties,
+			headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
 		resp = JSON.parse response.body
 
 		assert_response 200
-		obj = TableObject.find_by_id(table_object.id)
-		assert_equal(old_properties_count, obj.properties.count)
+		obj = TableObjectDelegate.find_by(id: table_object.id)
+		assert_equal(old_properties_count, PropertyDelegate.where(table_object_id: obj.id).count)
 	end
 
 	test "update_object removes existing property if the value is empty" do
@@ -1962,13 +1826,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		properties = {page2: ""}
 
 		put "/v1/apps/object/#{table_object.id}", 
-				params: properties.to_json, 
-				headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
+			params: properties.to_json,
+			headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
 		resp = JSON.parse response.body
 
 		assert_response 200
-		obj = TableObject.find_by_id(table_object.id)
-		assert_equal(old_properties_count - 1, obj.properties.count)
+		obj = TableObjectDelegate.find_by(id: table_object.id)
+		assert_equal(old_properties_count - 1, PropertyDelegate.where(table_object_id: obj.id).count)
 	end
 
 	test "update_object removes existing property if the value is nil" do
@@ -1979,13 +1843,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		properties = {page2: nil}
 
 		put "/v1/apps/object/#{table_object.id}", 
-				params: properties.to_json, 
-				headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
+			params: properties.to_json,
+			headers: {"Authorization" => jwt, "Content-Type" => "application/json"}
 		resp = JSON.parse response.body
 
 		assert_response 200
-		obj = TableObject.find_by_id(table_object.id)
-		assert_equal(old_properties_count - 1, obj.properties.count)
+		obj = TableObjectDelegate.find_by(id: table_object.id)
+		assert_equal(old_properties_count - 1, PropertyDelegate.where(table_object_id: obj.id).count)
 	end
 
 	test "update_object should update the last_active fields of the user and the users_app" do
@@ -1999,13 +1863,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		old_updated_at = matt.updated_at
 
 		put "/v1/apps/object/#{table_objects(:third).uuid}", 
-				params: {page1: new_page1, page2: new_page2}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {page1: new_page1, page2: new_page2}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
 		assert_response 200
-      matt = User.find_by_id(matt.id)
-      matt_cards = UsersApp.find_by_id(matt_cards.id)
+      matt = UserDelegate.find_by(id: matt.id)
+      matt_cards = UsersAppDelegate.find_by(id: matt_cards.id)
 
       assert_not_equal(old_last_active, matt.last_active)
       assert_not_equal(old_users_app_last_active, matt_cards.last_active)
@@ -2079,8 +1943,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 		
 		assert_response 200
-      matt = User.find_by_id(matt.id)
-      matt_cards = UsersApp.find_by_id(matt_cards.id)
+      matt = UserDelegate.find_by(id: matt.id)
+      matt_cards = UsersAppDelegate.find_by(id: matt_cards.id)
 
       assert_not_equal(old_last_active, matt.last_active)
       assert_not_equal(old_users_app_last_active, matt_cards.last_active)
@@ -2119,7 +1983,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 201
 		
-		access = TableObjectUserAccess.find_by_id(resp["id"])
+		access = TableObjectUserAccessDelegate.find_by(id: resp["id"])
 		assert_not_nil(access)
 		assert_equal(resp["table_object_id"], access.table_object_id)
 		assert_equal(resp["user_id"], access.user_id)
@@ -2127,7 +1991,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_equal(access.table_object_id, obj.id)
 		assert_equal(access.user_id, matt.id)
-		assert_equal(access.table_alias, obj.table.id)
+		assert_equal(access.table_alias, obj.table_id)
 	end
 
 	test "Can add object with uuid" do
@@ -2140,7 +2004,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 201
 		
-		access = TableObjectUserAccess.find_by_id(resp["id"])
+		access = TableObjectUserAccessDelegate.find_by(id: resp["id"])
 		assert_not_nil(access)
 		assert_equal(resp["table_object_id"], access.table_object_id)
 		assert_equal(resp["user_id"], access.user_id)
@@ -2148,7 +2012,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		
 		assert_equal(access.table_object_id, obj.id)
 		assert_equal(access.user_id, matt.id)
-		assert_equal(access.table_alias, obj.table.id)
+		assert_equal(access.table_alias, obj.table_id)
 	end
 
 	test "Can add object with table alias" do
@@ -2162,7 +2026,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 201
 		
-		access = TableObjectUserAccess.find_by_id(resp["id"])
+		access = TableObjectUserAccessDelegate.find_by(id: resp["id"])
 		assert_not_nil(access)
 		assert_equal(resp["table_object_id"], access.table_object_id)
 		assert_equal(resp["user_id"], access.user_id)
@@ -2184,7 +2048,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 
 		assert_response 201
 		
-		access = TableObjectUserAccess.find_by_id(resp["id"])
+		access = TableObjectUserAccessDelegate.find_by(id: resp["id"])
 		assert_not_nil(access)
 		assert_equal(resp["table_object_id"], access.table_object_id)
 		assert_equal(resp["user_id"], access.user_id)
@@ -2252,7 +2116,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 		
 		# Check if the TableObjectUserAccess was deleted
-		access = TableObjectUserAccess.find_by_id(access.id)
+		access = TableObjectUserAccessDelegate.find_by(id: access.id)
 		assert_nil(access)
 	end
 
@@ -2260,7 +2124,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		cato = users(:cato)
 		obj = table_objects(:third)
 		access = table_object_user_accesses(:catoAccessThirdTableObject)
-		jwt = generate_session_jwt(cato, devs(:sherlock), obj.table.app_id, "123456")
+		jwt = generate_session_jwt(cato, devs(:sherlock), TableDelegate.find_by(id: obj.table_id).app_id, "123456")
 
 		delete "/v1/apps/object/#{obj.id}/access", headers: {Authorization: jwt}
 		resp = JSON.parse(response.body)
@@ -2268,7 +2132,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 		
 		# Check if the TableObjectUserAccess was deleted
-		access = TableObjectUserAccess.find_by_id(access.id)
+		access = TableObjectUserAccessDelegate.find_by(id: access.id)
 		assert_nil(access)
 	end
 
@@ -2284,7 +2148,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 		
 		# Check if the TableObjectUserAccess was deleted
-		access = TableObjectUserAccess.find_by_id(access.id)
+		access = TableObjectUserAccessDelegate.find_by(id: access.id)
 		assert_nil(access)
 	end
 
@@ -2300,7 +2164,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_response 200
 		
 		# Check if the TableObjectUserAccess was deleted
-		access = TableObjectUserAccess.find_by_id(access.id)
+		access = TableObjectUserAccessDelegate.find_by(id: access.id)
 		assert_nil(access)
 	end
 	# End remove_object tests
@@ -2485,10 +2349,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_equal(apps(:Cards).id, resp["app_id"])
       resp["table_objects"].each do |e|
-			obj = TableObject.find_by_id(e["id"])
+			obj = TableObjectDelegate.find_by(id: e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
-			assert_equal(users(:matt).id, obj.user.id)
+			assert_equal(users(:matt).id, obj.user_id)
       end
 	end
 
@@ -2524,10 +2388,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_equal(apps(:Cards).id, resp["app_id"])
       resp["table_objects"].each do |e|
-			obj = TableObject.find_by_id(e["id"])
+			obj = TableObjectDelegate.find_by(id: e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
-			assert_equal(users(:matt).id, obj.user.id)
+			assert_equal(users(:matt).id, obj.user_id)
       end
 	end
 
@@ -2601,8 +2465,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert_response 200
-      matt = User.find_by_id(matt.id)
-      matt_cards = UsersApp.find_by_id(matt_cards.id)
+      matt = UserDelegate.find_by(id: matt.id)
+      matt_cards = UsersAppDelegate.find_by(id: matt_cards.id)
 
       assert_not_equal(old_last_active, matt.last_active)
       assert_not_equal(old_users_app_last_active, matt_cards.last_active)
@@ -2651,10 +2515,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_equal(apps(:Cards).id, resp["app_id"])
       resp["table_objects"].each do |e|
-         obj = TableObject.find_by_id(e["id"])
+         obj = TableObjectDelegate.find_by(id: e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
-			assert_equal(users(:matt).id, obj.user.id)
+			assert_equal(users(:matt).id, obj.user_id)
       end
 	end
 
@@ -2692,7 +2556,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
          obj = TableObject.find_by_id(e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
-			assert_equal(users(:matt).id, obj.user.id)
+			assert_equal(users(:matt).id, obj.user_id)
       end
 	end
 	
@@ -2765,8 +2629,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		resp = JSON.parse response.body
 
 		assert_response 200
-      matt = User.find_by_id(matt.id)
-      matt_cards = UsersApp.find_by_id(matt_cards.id)
+      matt = UserDelegate.find_by(id: matt.id)
+      matt_cards = UsersAppDelegate.find_by(id: matt_cards.id)
 
       assert_not_equal(old_last_active, matt.last_active)
       assert_not_equal(old_users_app_last_active, matt_cards.last_active)
@@ -2835,8 +2699,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/auth/user", 
-				params: {name: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
+			params: {name: "test"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/xml'}
       resp = JSON.parse response.body
       
       assert_response 415
@@ -2848,8 +2712,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
       
 		put "/v1/apps/table/#{tables(:note).id}", 
-				params: {name: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "test"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -2861,8 +2725,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/table/#{tables(:davTable).id}", 
-				params: {name: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "test"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -2874,8 +2738,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/table/#{tables(:note).id}", 
-				params: {name: "#{'n' * 220}"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "#{'n' * 220}"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -2887,8 +2751,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/table/#{tables(:note).id}", 
-				params: {name: "t"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "t"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -2900,8 +2764,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/table/#{tables(:note).id}", 
-				params: {name: "Test name"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "Test name"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 400
@@ -2915,8 +2779,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/table/#{tables(:note).id}", 
-				params: {name: new_name}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: new_name}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 200
@@ -2929,8 +2793,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
       
 		put "/v1/apps/table/#{tables(:card).id}", 
-				params: {name: "test"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {name: "test"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 403
@@ -2970,7 +2834,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       resp = JSON.parse response.body
       
       assert_response 200
-      assert_nil(Table.find_by_id(table_id))
+      assert_nil(TableDelegate.find_by(id: table_id))
    end
    
    test "Can't delete tables of the first dev" do
@@ -2984,336 +2848,21 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_equal(1102, resp["errors"][0][0])
    end
    # End delete_table tests
-   
-   # create_access_token tests
-   test "Missing fields in create_access_token" do
-      post "/v1/apps/object/1/access_token"
-      resp = JSON.parse response.body
-      
-      assert(response.status == 400 || response.status ==  401)
-      assert_equal(2102, resp["errors"][0][0])
-   end
-   
-   test "Can't create access tokens for objects of another user" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      object = table_objects(:fourth)
-      
-      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
-   
-   test "Can't create access tokens for objects of the apps of another dev" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      object = table_objects(:seventh)
 
-      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-	end
-	
-	test "Can create access token" do
-		matt = users(:matt)
-		obj = table_objects(:first)
-		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-
-		post "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
-		resp = JSON.parse response.body
-
-		assert_response 201
-
-		access_token = AccessToken.find_by_id(resp["id"])
-		assert_equal(resp["token"], access_token.token)
-	end
-
-	test "Can create access token with session jwt" do
-		matt = users(:matt)
-		obj = table_objects(:first)
-		jwt = generate_session_jwt(matt, devs(:sherlock), obj.table.app_id, "schachmatt")
-
-		post "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
-		resp = JSON.parse response.body
-
-		assert_response 201
-
-		access_token = AccessToken.find_by_id(resp["id"])
-		assert_equal(resp["token"], access_token.token)
-	end
-   # End create_access_token tests
-
-   # get_access_token tests
-   test "Missing fields in get_access_token" do
-      get "/v1/apps/object/1/access_token"
-      resp = JSON.parse response.body
-
-      assert_response 401
-      assert_equal(2102, resp["errors"][0][0])
-   end
-
-   test "Can get access token" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      obj = table_objects(:sixth)
-
-      get "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert_not_nil(resp["access_token"][0]["id"])
-	end
-	
-	test "Can get access token with session jwt" do
-      sherlock = users(:sherlock)
-		obj = table_objects(:sixth)
-		jwt = generate_session_jwt(sherlock, devs(:sherlock), obj.table.app_id, "sherlocked")
-
-      get "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-      
-      assert_response 200
-      assert_not_nil(resp["access_token"][0]["id"])
-   end
-
-   test "Can't get access token of object of another user" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      obj = table_objects(:third)
-
-      get "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
-
-   test "Can't get access token of object of the app of another dev" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      obj = table_objects(:seventh)
-
-      get "/v1/apps/object/#{obj.id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
-   # End get_access_token
-
-   # add_access_token_to_object tests
-   test "Missing fields in add_access_token_to_object" do
-      put "/v1/apps/object/1/access_token/token"
-      resp = JSON.parse response.body
-
-      assert_response 401
-      assert_equal(2102, resp["errors"][0][0])
-   end
-
-   test "Can add access token to object" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      access_token = access_tokens(:first_test_token)
-      object = table_objects(:sixth)
-
-      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 200
-		assert_equal(access_token.id, resp["id"])
-		assert_equal(access_token.token, resp["token"])
-	end
-	
-	test "Can add access token to object with session jwt" do
-      sherlock = users(:sherlock)
-      access_token = access_tokens(:first_test_token)
-		object = table_objects(:sixth)
-		jwt = generate_session_jwt(sherlock, devs(:sherlock), object.table.app_id, "sherlocked")
-
-      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 200
-		assert_equal(access_token.id, resp["id"])
-		assert_equal(access_token.token, resp["token"])
-   end
-
-   test "Can't add access token to object of another user" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      access_token = access_tokens(:first_test_token)
-      object = table_objects(:third)
-
-      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
-
-   test "Can't add access token to object of the table of another dev" do
-      sherlock = users(:sherlock)
-      jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-      access_token = access_tokens(:first_test_token)
-      object = table_objects(:seventh)
-
-      put "/v1/apps/object/#{object.id}/access_token/#{access_token.token}", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 403
-      assert_equal(1102, resp["errors"][0][0])
-   end
-   # End add_access_token_to_object tests
-
-   # remove_access_token_from_object tests
-   test "Missing fields in remove_access_token_from_object" do
-      put "/v1/apps/object/1/access_token/token"
-      resp = JSON.parse response.body
-
-      assert_response 401
-      assert_equal(2102, resp["errors"][0][0])
-   end
-
-   test "Access token will be destroyed in remove_access_token_from_object" do
-      matt = users(:matt)
-      jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      object = table_objects(:third)
-
-      # Create new access_token and add it to an object
-      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 201
-      token = resp["token"]
-
-      # Try to get the object as not logged in user
-      get "/v1/apps/object/#{object.id}?access_token=#{token}"
-      resp2 = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(resp2["id"], object.id)
-
-      # Remove the access token from the object and check if the access token was deleted
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => jwt}
-      assert_response 200
-      
-      get "/v1/apps/object/#{object.id}?access_token=#{token}"
-      resp3 = JSON.parse response.body
-      assert_response 403
-	end
-	
-	test "Access token will be destroyed in remove_access_token_from_object with session jwt" do
-      matt = users(:matt)
-		object = table_objects(:third)
-		jwt = generate_session_jwt(matt, devs(:sherlock), object.table.app_id, "schachmatt")
-
-      # Create new access_token and add it to an object
-      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => jwt}
-      resp = JSON.parse response.body
-
-      assert_response 201
-      token = resp["token"]
-
-      # Try to get the object as not logged in user
-      get "/v1/apps/object/#{object.id}?access_token=#{token}"
-      resp2 = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(resp2["id"], object.id)
-
-      # Remove the access token from the object and check if the access token was deleted
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => jwt}
-      assert_response 200
-      
-      get "/v1/apps/object/#{object.id}?access_token=#{token}"
-      resp3 = JSON.parse response.body
-      assert_response 403
-   end
-
-   test "Can't remove access token from object of another user" do
-      matt = users(:matt)
-      matt_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      object = table_objects(:third)
-      sherlock = users(:sherlock)
-      sherlock_jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
-
-      # Create new access_token and add it to an object
-      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => matt_jwt}
-      resp = JSON.parse response.body
-
-      assert_response 201
-      token = resp["token"]
-
-      # Try to get the object as not logged in user
-      get "/v1/apps/object/#{object.id}?access_token=#{token}"
-      resp2 = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(resp2["id"], object.id)
-
-      # Try to remove the access token as another user
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => sherlock_jwt}
-      resp3 = JSON.parse response.body
-
-      assert_response 403
-      assert_equal(1102, resp3["errors"][0][0])
-
-      # Remove the access token
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => matt_jwt}
-      assert_response 200
-   end
-
-   test "Can't remove access token from object of the table of another dev" do
-      matt = users(:matt)
-      mattXmatt_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
-      mattXsherlock_jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
-      object = table_objects(:eight)
-
-      # Create new access_token and add it to an object
-      post "/v1/apps/object/#{object.id}/access_token", headers: {'Authorization' => mattXmatt_jwt}
-      resp = JSON.parse response.body
-
-      assert_response 201
-      token = resp["token"]
-
-      # Try to get the object as not logged in user
-      get "/v1/apps/object/#{object.id}?access_token=#{token}"
-      resp2 = JSON.parse response.body
-      
-      assert_response 200
-      assert_equal(resp2["id"], object.id)
-
-      # Try to remove the access token with another jwt
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => mattXsherlock_jwt}
-      resp3 = JSON.parse response.body
-
-      assert_response 403
-      assert_equal(1102, resp3["errors"][0][0])
-
-      # Remove the access token
-      delete "/v1/apps/object/#{object.id}/access_token/#{token}", headers: {'Authorization' => mattXmatt_jwt}
-      assert_response 200
-   end
-   # End remove_access_token_from_object tests
-   
    # users_apps tests
    test "UsersApp object will be created when the user creates a table object" do
       tester = users(:tester)
       jwt = (JSON.parse login_user(tester, "testpassword", devs(:sherlock)).body)["jwt"]
       
-      assert_nil(UsersApp.find_by(user_id: tester.id))
+      assert_nil(UsersAppDelegate.find_by(user_id: tester.id))
 		post "/v1/apps/object?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}",  
-				params: {"page1": "Hello World", "page2": "Hallo Welt"}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"page1": "Hello World", "page2": "Hallo Welt"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse(response.body)
       
       object_id = resp["id"]
       assert_response 201
-      assert_not_nil(UsersApp.find_by(user_id: tester.id))
+      assert_not_nil(UsersAppDelegate.find_by(user_id: tester.id))
    end
 	# End users_apps tests
 
@@ -3346,8 +2895,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		interval = 121221
 
 		post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}",
-            params: {test: "testvalue"}.to_json,
-            headers: {'Authorization' => jwt}
+			params: {test: "testvalue"}.to_json,
+			headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_response 415
@@ -3365,24 +2914,19 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_property_value = "testtest"
 
 		post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}",
-            params: {"#{first_property_name}": first_property_value, "#{second_property_name}": second_property_value}.to_json,
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"#{first_property_name}": first_property_value, "#{second_property_name}": second_property_value}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
       assert_response 201
 
-		notification = Notification.find_by_id(resp["id"])
+		notification = NotificationDelegate.find_by(id: resp["id"])
       assert_not_nil(notification)
       assert_not_nil(resp["uuid"])
 		assert_equal(interval, resp["interval"])
 
-		first_property = notification.notification_properties.first
-		second_property = notification.notification_properties.second
-
-		assert_equal(first_property_name, first_property.name)
-		assert_equal(first_property_value, first_property.value)
-		assert_equal(second_property_name, second_property.name)
-		assert_equal(second_property_value, second_property.value)
+		assert_equal(first_property_value, NotificationPropertyDelegate.find_by(notification_id: notification.id, name: first_property_name).value)
+		assert_equal(second_property_value, NotificationPropertyDelegate.find_by(notification_id: notification.id, name: second_property_name).value)
    end
    
    test "Can create a notification with uuid" do
@@ -3392,11 +2936,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       uuid = SecureRandom.uuid
 
       post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&uuid=#{uuid}",
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 201
-      notification = Notification.find_by_id(resp["id"])
+      notification = NotificationDelegate.find_by(id: resp["id"])
       assert_not_nil(notification)
       assert_equal(0, notification.interval)
       assert_equal(time, notification.time.to_time.to_i)
@@ -3411,11 +2955,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       uuid = SecureRandom.uuid
 
       post "/v1/apps/notification?app_id=#{app.id}&time=#{time}&uuid=#{uuid}",
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
       assert_response 201
-      notification = Notification.find_by_id(resp["id"])
+      notification = NotificationDelegate.find_by(id: resp["id"])
       assert_not_nil(notification)
       assert_equal(0, notification.interval)
       assert_equal(time, notification.time.to_time.to_i)
@@ -3429,7 +2973,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       uuid = notifications(:TestNotification).uuid
 
       post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&uuid=#{uuid}",
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
@@ -3444,8 +2988,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       interval = 20000
 
       post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}&uuid=#{uuid}",
-            params: {"#{'hello' * 100}": "testtest"}.to_json,
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {"#{'hello' * 100}": "testtest"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
       
 		assert_response 400
@@ -3460,8 +3004,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       interval = 20000
 
       post "/v1/apps/notification?app_id=#{apps(:TestApp).id}&time=#{time}&interval=#{interval}&uuid=#{uuid}",
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
-            params: {testkey: "#{'a' * 65100}"}.to_json
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+			params: {testkey: "#{'a' * 65100}"}.to_json
       resp = JSON.parse response.body
       
       assert_response 400
@@ -3648,7 +3192,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		new_interval = 123123
 
 		put "/v1/apps/notification/#{notification.uuid}?time=#{new_time}&interval=#{new_interval}",
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -3664,7 +3208,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		new_interval = 123123
 
 		put "/v1/apps/notification/#{notification.uuid}?time=#{new_time}&interval=#{new_interval}",
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -3684,8 +3228,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		third_property_value = "Hello World!"
 
 		put "/v1/apps/notification/#{notification.uuid}",
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
-				params: {"#{first_property_name}": first_property_value, "#{second_property_name}": second_property_value, "#{third_property_name}": third_property_value}.to_json
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+			params: {"#{first_property_name}": first_property_value, "#{second_property_name}": second_property_value, "#{third_property_name}": third_property_value}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -3704,8 +3248,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_property_value = notification_properties(:TestNotificationSecondProperty).value
 
 		put "/v1/apps/notification/#{notification.uuid}",
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
-				params: {"#{first_property_name}": first_property_value}.to_json
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+			params: {"#{first_property_name}": first_property_value}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -3722,8 +3266,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		second_property_value = notification_properties(:TestNotificationSecondProperty).value
 		
 		put "/v1/apps/notification/#{notification.uuid}",
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
-				params: {"#{first_property_name}": ""}.to_json
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+			params: {"#{first_property_name}": ""}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 200
@@ -3737,8 +3281,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		first_property_name = notification_properties(:TestNotificationFirstProperty).name
 
 		put "/v1/apps/notification/#{notification.uuid}",
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
-				params: {"#{first_property_name}": "#{'a' * 65100}"}.to_json
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+			params: {"#{first_property_name}": "#{'a' * 65100}"}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 400
@@ -3752,8 +3296,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		first_property_name = notification_properties(:TestNotificationFirstProperty).name
 
 		put "/v1/apps/notification/#{notification.uuid}",
-				headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
-				params: {"#{'test' * 100}": "blabla"}.to_json
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'},
+			params: {"#{'test' * 100}": "blabla"}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 400
@@ -3767,8 +3311,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		first_property_name = notification_properties(:TestNotificationFirstProperty).name
 
 		put "/v1/apps/notification/#{notification.uuid}",
-				headers: {'Authorization' => jwt},
-				params: {"#{first_property_name}": "blabla"}.to_json
+			headers: {'Authorization' => jwt},
+			params: {"#{first_property_name}": "blabla"}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 415
@@ -3783,8 +3327,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		property_value ="Test"
 
 		put "/v1/apps/notification/#{uuid}",
-				headers: {'Authorization' => jwt},
-				params: {"#{property_name}": property_value}.to_json
+			headers: {'Authorization' => jwt},
+			params: {"#{property_name}": property_value}.to_json
 		resp = JSON.parse response.body
 
 		assert_response 404
@@ -3796,11 +3340,11 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		notification = notifications(:TestNotification)
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 		property_name = "title"
-		property_value ="Test"
+		property_value = "Test"
 
 		put "/v1/apps/notification/#{notification.uuid}",
-				headers: {'Authorization' => jwt},
-				params: {"#{property_name}": property_value}
+			headers: {'Authorization' => jwt},
+			params: {"#{property_name}": property_value}
 		resp = JSON.parse response.body
 
 		assert_response 403
@@ -3889,8 +3433,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
       post "/v1/apps/subscription",
-            params: {p256dh: "blabla", auth: "blabla"}.to_json,
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {p256dh: "blabla", auth: "blabla"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
@@ -3902,8 +3446,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
       post "/v1/apps/subscription",
-            params: {endpoint: "blabla", auth: "blabla"}.to_json,
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {endpoint: "blabla", auth: "blabla"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
@@ -3915,8 +3459,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       jwt = (JSON.parse login_user(matt, "schachmatt", devs(:matt)).body)["jwt"]
 
       post "/v1/apps/subscription",
-            params: {endpoint: "blabla", p256dh: "blabla"}.to_json,
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {endpoint: "blabla", p256dh: "blabla"}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 400
@@ -3931,8 +3475,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       auth = "someauthtoken"
 
       post "/v1/apps/subscription",
-            params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -3949,8 +3493,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       auth = "someauthtoken"
 
       post "/v1/apps/subscription",
-            params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
@@ -3968,8 +3512,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       auth = "someauthtoken"
 
       post "/v1/apps/subscription?uuid=#{uuid}",
-            params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
-            headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
+			params: {endpoint: endpoint, p256dh: p256dh, auth: auth}.to_json,
+			headers: {'Authorization' => jwt, 'Content-Type' => 'application/json'}
       resp = JSON.parse response.body
 
       assert_response 201
