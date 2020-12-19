@@ -472,7 +472,7 @@ class AnalyticsController < ApplicationController
 			ValidationService.raise_validation_error(ValidationService.validate_users_dev_is_dev(user, dev))
 			
 			days = Array.new
-			ActiveUser.where("time >= ? AND time <= ?", start_timestamp, end_timestamp).each do |active_user|
+			ActiveUserDelegate.where("time >= ? AND time <= ?", start_timestamp, end_timestamp).each do |active_user|
 				day = Hash.new
 				day["time"] = active_user.time.to_s
 				day["count_daily"] = active_user.count_daily

@@ -1111,14 +1111,21 @@ class AnalyticsMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(sherlock, "sherlocked", devs(:sherlock)).body)["jwt"]
 
 		# Create active users
-		first_active_user = ActiveUser.create(time: (Time.now - 1.days).beginning_of_day, 
-										count_daily: 3, 
-										count_monthly: 9,
-										count_yearly: 14)
-		second_active_user = ActiveUser.create(time: (Time.now - 3.days).beginning_of_day,
-										count_daily: 5,
-										count_monthly: 8,
-										count_yearly: 21)
+		first_active_user = ActiveUserDelegate.new(
+			time: (Time.now - 1.days).beginning_of_day, 
+			count_daily: 3, 
+			count_monthly: 9,
+			count_yearly: 14
+		)
+		first_active_user.save
+
+		second_active_user = ActiveUserDelegate.new(
+			time: (Time.now - 3.days).beginning_of_day,
+			count_daily: 5,
+			count_monthly: 8,
+			count_yearly: 21
+		)
+		second_active_user.save
 		
 		get "/v1/analytics/active_users", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
