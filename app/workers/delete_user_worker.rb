@@ -2,10 +2,7 @@ class DeleteUserWorker
 	include Sidekiq::Worker
 
 	def perform(user_id)
-		user = User.find_by_id(user_id)
-
-		if user
-			user.destroy!
-		end
+		user = UserDelegate.find_by(id: user_id)
+		user.destroy if !user.nil?
 	end
 end

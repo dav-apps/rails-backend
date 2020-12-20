@@ -20,6 +20,6 @@ class RemoveAppWorkerTest < ActiveSupport::TestCase
 
 		RemoveAppWorker.perform_async(matt.id, cards.id)
 
-		assert_equal(matt.table_objects.where(table_id: card_table.id).count, 0)
+		assert_equal(TableObjectDelegate.where(user_id: matt.id, table_id: card_table.id).count, 0)
 	end
 end

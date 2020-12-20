@@ -8,13 +8,11 @@ class TasksWorker
    end
 
    def get_file_size_of_table_object(obj_id)
-      obj = TableObject.find_by_id(obj_id)
-
-		if !obj
-			return
-		end
+		obj = TableObject.find_by_id(obj_id)
+		return if obj.nil?
 		
-      obj.properties.each do |prop| # Get the size property of the table_object
+		# Get the size property of the table_object
+      PropertyDelegate.where(table_object_id: obj.id).each do |prop|
          if prop.name == "size"
             return prop.value.to_i
          end
@@ -38,10 +36,10 @@ class TasksWorker
 
    # Tasks
 	def update_used_storage_of_users
-		User.all.each do |user|
+		UserMigration.all.each do |user|
 			used_storage = 0
 
-			user.table_objects.where(file: true).each do |obj|
+			TableObjectDelegate.where(user_id: user.id, file: true).each do |obj|
 				used_storage += get_file_size_of_table_object(obj.id)
 			end
 
@@ -51,12 +49,12 @@ class TasksWorker
 	end
 
 	def update_used_storage_of_users_apps
-		UsersApp.all.each do |users_app|
+		UsersAppMigration.all.each do |users_app|
 			# Get the table objects of tables of the app and of the user
 			used_storage = 0
 
-			users_app.app.tables.each do |table|
-				table.table_objects.where(user_id: users_app.user_id, file: true).each do |obj|
+			TableDelegate.where(app_id: users_app.app_id).each do |table|
+				TableObjectDelegate.where(table_id: table.id, user_id: users_app.user_id, file: true).each do |obj|
 					used_storage += get_file_size_of_table_object(obj.id)
 				end
 			end
@@ -67,23 +65,26 @@ class TasksWorker
 	end
 
 	def update_users_apps
-		User.all.each do |user|
-			user.apps.each do |app|
+		UserMigration.all.each do |user|
+			apps = Array.new
+			UsersAppDelegate.where(user_id: user.id).each do |users_app|
+				app = AppDelegate.find_by(id: users_app.app_id)
+				apps.push(app) if !app.nil?
+			end
+
+			apps.each do |app|
 				# Check if the user still uses the app
 				uses_app = false
-				app.tables.each do |table|
+				TableDelegate.where(app_id: app.id).each do |table|
 					if !uses_app
-						uses_app = table.table_objects.where(user_id: user.id).count > 0
+						uses_app = TableObjectDelegate.where(table_id: table.id, user_id: user.id).count > 0
 					end
 				end
 
 				if !uses_app
 					# The user has no table object of the app
-					users_app = UsersApp.find_by(user_id: user.id, app_id: app.id)
-
-					if users_app
-						users_app.destroy!
-					end
+					users_app = UsersAppDelegate.find_by(user_id: user.id, app_id: app.id)
+					users_app.destroy if !users_app.nil?
 				end
 			end
 		end

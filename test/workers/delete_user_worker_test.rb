@@ -15,16 +15,16 @@ class DeleteUserWorkerTest < ActiveSupport::TestCase
 		Sidekiq::Testing.inline!
 		tester = users(:tester2)
 		ua = users_apps(:tester2TestApp)
-		table_objects = tester.table_objects
+		table_objects = TableObjectDelegate.where(user_id: tester.id)
 		assert_equal(1, table_objects.count)
 
 		DeleteUserWorker.perform_async(tester.id)
 
-		ua = UsersApp.find_by_id(ua.id)
+		ua = UsersAppDelegate.find_by(id: ua.id)
 		assert_nil(ua)
 
 		table_objects.each do |obj|
-			obj = TableObject.find_by_id(obj.id)
+			obj = TableObjectDelegate.find_by(id: obj.id)
 			assert_nil(obj)
 		end
 	end
