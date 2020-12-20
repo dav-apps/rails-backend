@@ -559,7 +559,7 @@ class AppsController < ApplicationController
                type_prop = PropertyDelegate.new(table_object_id: obj.id, name: "type", value: type)
 
 					# Update the used storage
-					UtilsService.update_used_storage(user.id, app.id, file_size)
+					UtilsService.update_used_storage(user, app, file_size)
 
 					# Save that user uses the app
 					users_app = UsersAppDelegate.find_by(app_id: app.id, user_id: user.id)
@@ -900,7 +900,7 @@ class AppsController < ApplicationController
 				end
 
 				# Save the new used_storage value
-				UtilsService.update_used_storage(user.id, app.id, file_size_difference)
+				UtilsService.update_used_storage(user, app, file_size_difference)
 
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
@@ -1056,7 +1056,7 @@ class AppsController < ApplicationController
 
 				if size_prop
 					# Save the new used_storage value
-					UtilsService.update_used_storage(user.id, app.id, -size_prop.value.to_i)
+					UtilsService.update_used_storage(user, app, -size_prop.value.to_i)
 				end
 			end
 

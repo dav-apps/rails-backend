@@ -79,7 +79,7 @@ class UserDelegate
 		@user.old_email = @old_email
 		@user.new_email = @new_email
 		@user.new_password = @new_password
-		@user.used_storage = @used_storage
+		@user.used_storage = @used_storage.nil? ? 0 : @used_storage
 		@user.last_active = @last_active
 		@user.stripe_customer_id = @stripe_customer_id
 		@user.plan = @plan

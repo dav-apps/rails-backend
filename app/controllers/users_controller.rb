@@ -607,7 +607,7 @@ class UsersController < ApplicationController
 
 			users_apps = Array.new
 			UsersAppDelegate.where(user_id: user.id).each do |users_app|
-				app_hash = App.find_by(id: users_app.app_id).attributes
+				app_hash = AppDelegate.find_by(id: users_app.app_id).attributes
 				app_hash["used_storage"] = users_app.used_storage
 				users_apps.push(app_hash)
 			end

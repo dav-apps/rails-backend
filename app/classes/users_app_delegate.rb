@@ -39,7 +39,7 @@ class UsersAppDelegate
 		# Copy the values to the users_app
 		@users_app.user_id = @user_id
 		@users_app.app_id = @app_id
-		@users_app.used_storage = @used_storage
+		@users_app.used_storage = @used_storage.nil? ? 0 : @used_storage
 		@users_app.last_active = @last_active
 		@users_app.created_at = @created_at.nil? ? Time.now : @created_at
 		@users_app.updated_at = @updated_at.nil? ? Time.now : @updated_at

@@ -57,26 +57,23 @@ class UtilsService
 		end
 	end
 	
-	def self.update_used_storage(user_id, app_id, storage_change)
-		update_used_storage_of_user(user_id, storage_change)
-		update_used_storage_of_app(user_id, app_id, storage_change)
+	def self.update_used_storage(user, app, storage_change)
+		update_used_storage_of_user(user, storage_change)
+		update_used_storage_of_app(user, app, storage_change)
 	end
 	
-	def self.update_used_storage_of_user(user_id, storage_change)
-		user = User.find_by_id(user_id)
+	def self.update_used_storage_of_user(user, storage_change)
+		return if user.nil?
 
-		if user
-			user.used_storage = user.used_storage += storage_change
-			user.save
-		end
+		user.used_storage = user.used_storage += storage_change
+		user.save
 	end
 
-	def self.update_used_storage_of_app(user_id, app_id, storage_change)
-		users_app = UsersApp.find_by(user_id: user_id, app_id: app_id)
+	def self.update_used_storage_of_app(user, app, storage_change)
+		users_app = UsersAppDelegate.find_by(user_id: user.id, app_id: app.id)
+		return if users_app.nil?
 
-		if users_app
-			users_app.used_storage = users_app.used_storage += storage_change
-			users_app.save
-		end
+		users_app.used_storage = users_app.used_storage += storage_change
+		users_app.save
 	end
 end
