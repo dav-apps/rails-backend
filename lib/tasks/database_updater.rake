@@ -6,10 +6,10 @@ namespace :database_updater do
 
   	desc "Update the used_storage field of users"
   	task update_used_storage_of_users: :environment do
-		User.all.each do |user|
+		UserMigration.all.each do |user|
 			used_storage = 0
 
-			user.table_objects.where(file: true).each do |obj|
+			TableObjectDelegate.where(user_id: user.id, file: true).each do |obj|
 				used_storage += get_file_size_of_table_object(obj.id)
 			end
 
@@ -20,12 +20,12 @@ namespace :database_updater do
 
 	desc "Update the used_storage field of users_apps"
   	task update_used_storage_of_users_apps: :environment do
-		UsersApp.all.each do |users_app|
+		UsersAppMigration.all.each do |users_app|
 			# Get the table objects of tables of the app and of the user
 			used_storage = 0
 
-			users_app.app.tables.each do |table|
-				table.table_objects.where(user_id: users_app.user_id, file: true).each do |obj|
+			TableDelegate.where(app_id: users_app.app_id).each do |table|
+				TableObjectDelegate.where(table_id: table.id, user_id: users_app.user_id, file: true).each do |obj|
 					used_storage += get_file_size_of_table_object(obj.id)
 				end
 			end
@@ -37,24 +37,18 @@ namespace :database_updater do
 
 	desc "Remove unnecessary users_apps objects"
   	task update_users_apps: :environment do
-		User.all.each do |user|
-			user.apps.each do |app|
+		UserMigration.all.each do |user|
+			UsersAppDelegate.where(user_id: user.id).each do |users_app|
 				# Check if the user still uses the app
 				uses_app = false
-				app.tables.each do |table|
-					if !uses_app
-						uses_app = table.table_objects.where(user_id: user.id).count > 0
+				TableDelegate.where(app_id: users_app.app_id).each do |table|
+					if TableObjectDelegate.where(table_id: table.id, user_id: user.id).count > 0
+						uses_app = true
+						break
 					end
 				end
 
-				if !uses_app
-					# The user has no table object of the app
-					users_app = UsersApp.find_by(user_id: user.id, app_id: app.id)
-
-					if users_app
-						users_app.destroy!
-					end
-				end
+				users_app.destroy if !uses_app
 			end
 		end
 	end
@@ -65,20 +59,22 @@ namespace :database_updater do
 		target = 10000
 
 		while i < target
-			obj = TableObject.new
-			obj.table_id = rand(20)
-			obj.user_id = 8
-			obj.uuid = SecureRandom.uuid
+			obj = TableObjectDelegate.new(
+				table_id: rand(20),
+				user_id: 8,
+				uuid: SecureRandom.uuid
+			)
 			obj.save
 
 			number_properties = rand(4) + 1
 			j = 0
 			
 			while j < number_properties
-				prop = Property.new
-				prop.table_object_id = obj.id
-				prop.name = ('a'..'z').to_a.shuffle[0,8].join
-				prop.value = ('a'..'z').to_a.shuffle[0,16].join
+				prop = PropertyDelegate.new(
+					table_object_id: obj.id,
+					name: ('a'..'z').to_a.shuffle[0,8].join,
+					value: ('a'..'z').to_a.shuffle[0,16].join
+				)
 				prop.save
 
 				j += 1
@@ -90,20 +86,20 @@ namespace :database_updater do
 
 	desc "Updates all caches by executing each cached endpoint with the saved combination of params"
 	task update_caches: :environment do
-		Api.all.each do |api|
-			api.api_endpoints.where(caching: true).each do |api_endpoint|
+		ApiMigration.all.each do |api|
+			ApiEndpointMigration.where(api_id: api.id, caching: true).each do |api_endpoint|
 				# Get the environment variables of the api
 				env_vars = Hash.new
-				api.api_env_vars.each do |env_var|
+				ApiEnvVarMigration.where(api_id: api.id).each do |env_var|
 					env_vars[env_var.name] = UtilsService.convert_env_value(env_var.class_name, env_var.value)
 				end
 
-				api_endpoint.api_endpoint_request_caches.each do |cache|
+				ApiEndpointRequestCacheMigration.where(api_endpoint_id: api_endpoint.id).each do |cache|
 					vars = Hash.new
 					vars["env"] = env_vars
 
 					# Get the params
-					cache.api_endpoint_request_cache_params.each do |param|
+					ApiEndpointRequestCacheParamMigration.where(api_endpoint_request_cache_id: cache.id).each do |param|
 						vars[param.name] = param.value
 					end
 
@@ -252,12 +248,12 @@ namespace :database_updater do
 	desc "Get the current active users and create the active user objects in the database"
 	task create_active_users: :environment do
 		# Create active users for each app
-		App.all.each do |app|
-			create_active_user(app.id, app.users_apps)
+		AppDelegate.all.each do |app|
+			create_active_user(app.id, UsersAppDelegate.where(app_id: app.id))
 		end
 
 		# Create active user for all users
-		create_active_user(-1, User.all)
+		create_active_user(-1, UserDelegate.all)
 	end
 
 	def create_active_user(app_id, users)
@@ -275,16 +271,20 @@ namespace :database_updater do
 
 		# Create a ActiveUser object for the app for the current day
 		if app_id > 0
-			ActiveAppUser.create(app_id: app_id, 
-								time: Time.now.beginning_of_day,
-								count_daily: count_daily,
-								count_monthly: count_monthly,
-								count_yearly: count_yearly)
+			ActiveAppUserDelegate.new(
+				app_id: app_id, 
+				time: Time.now.beginning_of_day,
+				count_daily: count_daily,
+				count_monthly: count_monthly,
+				count_yearly: count_yearly
+			).save
 		else
-			ActiveUser.create(time: Time.now.beginning_of_day,
-								count_daily: count_daily,
-								count_monthly: count_monthly,
-								count_yearly: count_yearly)
+			ActiveUserDelegate.new(
+				time: Time.now.beginning_of_day,
+				count_daily: count_daily,
+				count_monthly: count_monthly,
+				count_yearly: count_yearly
+			).save
 		end
 	end
 
@@ -293,13 +293,11 @@ namespace :database_updater do
 	end
 	
 	def get_file_size_of_table_object(obj_id)
-      obj = TableObject.find_by_id(obj_id)
-
-		if !obj
-			return
-		end
+		obj = TableObjectDelegate.find_by(id: obj_id)
+		return if obj.nil?
 		
-      obj.properties.each do |prop| # Get the size property of the table_object
+		# Get the size property of the table_object
+      PropertyDelegate.where(table_object_id: obj.id).each do |prop|
          if prop.name == "size"
             return prop.value.to_i
          end
@@ -311,8 +309,8 @@ namespace :database_updater do
       client = Azure::Blob::BlobService.new
 
       begin
-         # Check if the object is a file
-         blob = client.get_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{obj.table.app_id}/#{obj.id}")
+			# Check if the object is a file
+         blob = client.get_blob(ENV['AZURE_FILES_CONTAINER_NAME'], "#{TableDelegate.find_by(id: obj.table_id).app_id}/#{obj.id}")
          return blob[0].properties[:content_length].to_i # The size of the file in bytes
       rescue Exception => e
          puts e

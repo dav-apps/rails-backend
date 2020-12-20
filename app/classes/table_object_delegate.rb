@@ -40,7 +40,7 @@ class TableObjectDelegate
 		@table_object.user_id = @user_id
 		@table_object.table_id = @table_id
 		@table_object.uuid = @uuid
-		@table_object.file = @file
+		@table_object.file = @file.nil? ? false : @file
 		@table_object.created_at = @created_at
 		@table_object.updated_at = @updated_at
 		delete_old = false

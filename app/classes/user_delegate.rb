@@ -164,6 +164,24 @@ class UserDelegate
 		user.destroy! if !user.nil?
 	end
 
+	def self.all
+		result = Array.new
+
+		# Get all users from the new database
+		UserMigration.all.each do |user|
+			result.push(UserDelegate.new(user.attributes))
+		end
+
+		# Get all users from the old database
+		User.all.each do |user|
+			# Check if the user is already in the results
+			next if result.any? { |u| u.id == user.id }
+			result.push(UserDelegate.new(user.attributes))
+		end
+
+		return result
+	end
+
 	def self.find_by(params)
 		# Try to find the user in the new database
 		u = UserMigration.find_by(params)

@@ -126,6 +126,24 @@ class AppDelegate
 		app.destroy! if !app.nil?
 	end
 
+	def self.all
+		result = Array.new
+
+		# Get all apps from the new database
+		AppMigration.all.each do |app|
+			result.push(AppDelegate.new(app.attributes))
+		end
+
+		# Get all apps from the old database
+		App.all.each do |app|
+			# Check if the app is already in the results
+			next if result.any? { |a| a.id == app.id }
+			result.push(AppDelegate.new(app.attributes))
+		end
+
+		return result
+	end
+
 	def self.find_by(params)
 		# Try to find the app in the new database
 		a = AppMigration.find_by(params)
