@@ -7,10 +7,10 @@ class StripeWebhooksService
 		charge = event.data.object.charge
 		
 		if customer_id
-			user = User.find_by(stripe_customer_id: customer_id)
+			user = UserDelegate.find_by(stripe_customer_id: customer_id)
 		end
 
-      if user
+      if !user.nil?
          # Update the user with new period_end and plan value
          user.period_end = Time.at(period_end) if period_end
          user.subscription_status = 0
@@ -27,8 +27,10 @@ class StripeWebhooksService
 			# Get all apps of the user
 			apps = Array.new		# Array<{id: int, providers: Array<{id: int, count: int}>}>
 
-			user.apps.where(published: true).each do |app|
-				hash = Hash.new
+			UsersAppDelegate.where(user_id: user.id).each do |users_app|
+				app = AppDelegate.find_by(id: users_app.app_id)
+				next if app.nil? || !app.published
+
 				apps.push({
 					id: app.id,
 					providers: Array.new
@@ -37,11 +39,17 @@ class StripeWebhooksService
 
 			if apps.size > 0
 				# Go through each TableObjectUserAccess of the user
-				user.table_object_user_access.each do |access|
-					next if access.table_object.user == user
-					next if !access.table_object.user.provider
-					app_id = access.table_object.table.app.id
-					provider_id = access.table_object.user.provider.id
+				TableObjectUserAccessDelegate.where(user_id: user.id).each do |access|
+					obj = TableObjectDelegate.find_by(id: access.table_object_id)
+					next if obj.nil? || obj.user_id == user.id
+
+					obj_user = UserDelegate.find_by(id: obj.user_id)
+					obj_table = TableDelegate.find_by(id: obj.table_id)
+					obj_user_provider = ProviderDelegate.find_by(user_id: obj_user.id)
+					next if obj_user.nil? || obj_table.nil? || obj_user_provider.nil?
+
+					app_id = obj_table.app_id
+					provider_id = obj_user_provider.id
 
 					# Add the provider to the app
 					app_index = apps.index { |app| app[:id] == app_id }
@@ -79,7 +87,7 @@ class StripeWebhooksService
 
 					app[:providers].each do |provider_hash|
 						# Get the provider
-						provider = Provider.find_by_id(provider_hash[:id])
+						provider = ProviderDelegate.find_by(id: provider_hash[:id])
 						provider_amount = share * provider_hash[:count]
 
 						# Get the connected account from the Stripe API
@@ -113,7 +121,7 @@ class StripeWebhooksService
 			customer_id = event.data.object.customer
 			
 			if customer_id
-				user = User.find_by(stripe_customer_id: customer_id)
+				user = UserDelegate.find_by(stripe_customer_id: customer_id)
 			end
          
          if user
@@ -123,7 +131,7 @@ class StripeWebhooksService
             user.save
 
             # Send the email
-            UserNotifier.send_failed_payment_email(user).deliver_later
+            UserNotifier.send_failed_payment_email(user.user).deliver_later
          end
       end
 
@@ -136,7 +144,7 @@ class StripeWebhooksService
 		customer_id = event.data.object.customer
 		
 		if customer_id
-			user = User.find_by(stripe_customer_id: customer_id)
+			user = UserDelegate.find_by(stripe_customer_id: customer_id)
 		end
 		
 		if user
@@ -166,7 +174,7 @@ class StripeWebhooksService
 		customer_id = event.data.object.customer
 		
 		if customer_id
-			user = User.find_by(stripe_customer_id: customer_id)
+			user = UserDelegate.find_by(stripe_customer_id: customer_id)
 		end
 
       if user
@@ -197,7 +205,7 @@ class StripeWebhooksService
 		customer_id = event.data.object.customer
 		
       if customer_id
-         user = User.find_by(stripe_customer_id: customer_id)
+         user = UserDelegate.find_by(stripe_customer_id: customer_id)
       end
 
       if user

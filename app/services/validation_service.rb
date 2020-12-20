@@ -102,12 +102,8 @@ class ValidationService
 	end
 
 	def self.dev_is_first_dev(dev)
-		first_dev = DevMigration.first
-		return first_dev.id == dev.id if !first_dev.nil?
-
-		first_dev = Dev.first
-		return first_dev.id == dev.id if !first_dev.nil?
-		false
+		first_dev = DevDelegate.first
+		return !first_dev.nil? && first_dev.id == dev.id
 	end
 
 	def self.validate_dev_is_first_dev(dev)
@@ -302,7 +298,7 @@ class ValidationService
       secret = ENV['JWT_SECRET']
       if session_id != 0
          session = SessionDelegate.find_by(id: session_id)
-         if !session
+         if session.nil?
             # Session does not exist
             error_code = 2814
             return [{success: false, error: [error_code, get_error_message(error_code)], status: 404}]
@@ -875,7 +871,7 @@ class ValidationService
 
 	def self.validate_email_taken(email)
 		error_code = 2702
-		User.exists?(email: email) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		(User.exists?(email: email) || UserMigration.exists?(email: email)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_event_name_taken(new_name, old_name, app_id)
@@ -885,17 +881,17 @@ class ValidationService
 
 	def self.validate_table_object_uuid_taken(uuid)
 		error_code = 2704
-		TableObject.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		(TableObject.exists?(uuid: uuid) || TableObjectMigration.exists?(uuid: uuid)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_subscription_uuid_taken(uuid)
 		error_code = 2704
-		WebPushSubscription.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		(WebPushSubscription.exists?(uuid: uuid) || WebPushSubscriptionMigration.exists?(uuid: uuid)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_notification_uuid_taken(uuid)
 		error_code = 2704
-		Notification.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		(Notification.exists?(uuid: uuid) || NotificationMigration.exists?(uuid: uuid)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_user_does_not_exist(user)
@@ -1295,9 +1291,9 @@ class ValidationService
 	end
 
 	def self.check_authorization(api_key, signature)
-      dev = Dev.find_by(api_key: api_key)
+      dev = DevDelegate.find_by(api_key: api_key)
       
-      if !dev
+      if dev.nil?
          false
       else
          if api_key == dev.api_key

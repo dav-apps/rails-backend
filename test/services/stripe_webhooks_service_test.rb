@@ -25,7 +25,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		StripeWebhooksService.InvoicePaymentSucceededEvent(event)
 
 		# The user should now have an active plus plan with the given period_end
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		assert_equal(1, torera.plan)
 		assert_equal(0, torera.subscription_status)
 		assert_equal(period_end, torera.period_end.to_i)
@@ -45,7 +45,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		StripeWebhooksService.InvoicePaymentSucceededEvent(event)
 
 		# The user should now have an active plus plan with the given period_end
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		assert_equal(2, torera.plan)
 		assert_equal(0, torera.subscription_status)
 		assert_equal(period_end, torera.period_end.to_i)
@@ -65,7 +65,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		StripeWebhooksService.InvoicePaymentSucceededEvent(event)
 
 		# The user should now have an active plus plan with the given period_end
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		assert_equal(2, torera.plan)
 		assert_equal(0, torera.subscription_status)
 		assert_equal(period_end, torera.period_end.to_i)
@@ -134,11 +134,12 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		transferred_amount = 400
 
 		# Create a TableObjectUserAccess for Aus meinem Leben
-		TableObjectUserAccess.create(
-			table_object: table_objects(:ausMeinemLebenStoreBook),
+		user_access = TableObjectUserAccessDelegate.new(
+			table_object_id: table_objects(:ausMeinemLebenStoreBook).id,
 			table_alias: tables(:StoreBook).id,
-			user: klaus
+			user_id: klaus.id
 		)
+		user_access.save
 
 		# Get the customer
 		payment_method = Stripe::PaymentMethod.list({
@@ -179,20 +180,20 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 
 		# Get the transfers
 		transfers = Stripe::Transfer.list({limit: 2})
-		firstTransfer = transfers.data[0]
-		secondTransfer = transfers.data[1]
+		first_transfer = transfers.data[0]
+		second_transfer = transfers.data[1]
 
 		assert_equal(400, transferred_amount)
-		assert_equal(transferred_amount, firstTransfer.amount)
-		assert_equal(transferred_amount, secondTransfer.amount)
+		assert_equal(transferred_amount, first_transfer.amount)
+		assert_equal(transferred_amount, second_transfer.amount)
 
-		assert_equal("eur", secondTransfer.currency)
-		assert_equal(providers(:snicket).stripe_account_id, secondTransfer.destination)
-		assert_equal(payment_intent.charges.data[0].id, secondTransfer.source_transaction)
+		assert_equal("eur", first_transfer.currency)
+		assert_equal(providers(:snicket).stripe_account_id, first_transfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, first_transfer.source_transaction)
 
-		assert_equal("eur", firstTransfer.currency)
-		assert_equal(providers(:hindenburg).stripe_account_id, firstTransfer.destination)
-		assert_equal(payment_intent.charges.data[0].id, firstTransfer.source_transaction)
+		assert_equal("eur", second_transfer.currency)
+		assert_equal(providers(:hindenburg).stripe_account_id, second_transfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, second_transfer.source_transaction)
 	end
 
 	test "InvoicePaymentSucceededEvent should create appropriate transfers for multiple providers with user using multiple apps" do
@@ -203,14 +204,19 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		transferred_amount = 200
 
 		# Create a TableObjectUserAccess for Aus meinem Leben
-		TableObjectUserAccess.create(
-			table_object: table_objects(:ausMeinemLebenStoreBook),
+		user_access = TableObjectUserAccessDelegate.new(
+			table_object_id: table_objects(:ausMeinemLebenStoreBook).id,
 			table_alias: tables(:StoreBook).id,
-			user: klaus
+			user_id: klaus.id
 		)
+		user_access.save
 
 		# Create a UsersApp for another app
-		UsersApp.create(app: apps(:Cards), user: klaus)
+		users_app = UsersAppDelegate.new(
+			app_id: apps(:Cards).id,
+			user_id: klaus.id
+		)
+		users_app.save
 
 		# Get the customer
 		payment_method = Stripe::PaymentMethod.list({
@@ -251,20 +257,20 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 
 		# Get the transfers
 		transfers = Stripe::Transfer.list({limit: 2})
-		firstTransfer = transfers.data[0]
-		secondTransfer = transfers.data[1]
+		first_transfer = transfers.data[0]
+		second_transfer = transfers.data[1]
 
 		assert_equal(200, transferred_amount)
-		assert_equal(transferred_amount, firstTransfer.amount)
-		assert_equal(transferred_amount, secondTransfer.amount)
+		assert_equal(transferred_amount, first_transfer.amount)
+		assert_equal(transferred_amount, second_transfer.amount)
 
-		assert_equal("eur", secondTransfer.currency)
-		assert_equal(providers(:snicket).stripe_account_id, secondTransfer.destination)
-		assert_equal(payment_intent.charges.data[0].id, secondTransfer.source_transaction)
+		assert_equal("eur", first_transfer.currency)
+		assert_equal(providers(:snicket).stripe_account_id, first_transfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, first_transfer.source_transaction)
 
-		assert_equal("eur", firstTransfer.currency)
-		assert_equal(providers(:hindenburg).stripe_account_id, firstTransfer.destination)
-		assert_equal(payment_intent.charges.data[0].id, firstTransfer.source_transaction)
+		assert_equal("eur", second_transfer.currency)
+		assert_equal(providers(:hindenburg).stripe_account_id, second_transfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, second_transfer.source_transaction)
 	end
 
 	test "InvoicePaymentSucceededEvent should create appropriate transfers for multiple providers and multiple objects of the same provider with user using multiple apps" do
@@ -275,20 +281,23 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		transferred_amount = 133
 
 		# Create a TableObjectUserAccess for Aus meinem Leben and Series of Unfortunate Events 2
-		TableObjectUserAccess.create(
-			table_object: table_objects(:ausMeinemLebenStoreBook),
+		user_access = TableObjectUserAccessDelegate.new(
+			table_object_id: table_objects(:ausMeinemLebenStoreBook).id,
 			table_alias: tables(:StoreBook).id,
-			user: klaus
+			user_id: klaus.id
 		)
+		user_access.save
 
-		TableObjectUserAccess.create(
-			table_object: table_objects(:seriesOfUnfortunateEventsSecondStoreBook),
+		user_access = TableObjectUserAccessDelegate.new(
+			table_object_id: table_objects(:seriesOfUnfortunateEventsSecondStoreBook).id,
 			table_alias: tables(:StoreBook).id,
-			user: klaus
+			user_id: klaus.id
 		)
+		user_access.save
 
 		# Create a UsersApp for another app
-		UsersApp.create(app: apps(:Cards), user: klaus)
+		users_app = UsersAppDelegate.new(app_id: apps(:Cards).id, user_id: klaus.id)
+		users_app.save
 
 		# Get the customer
 		payment_method = Stripe::PaymentMethod.list({
@@ -329,20 +338,20 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 
 		# Get the transfers
 		transfers = Stripe::Transfer.list({limit: 2})
-		firstTransfer = transfers.data[0]	# -> hindenburg
-		secondTransfer = transfers.data[1]	# -> snicket
+		first_transfer = transfers.data[0]	# -> hindenburg
+		second_transfer = transfers.data[1]	# -> snicket
 
 		assert_equal(133, transferred_amount)
-		assert_equal(transferred_amount, firstTransfer.amount)
-		assert_equal(transferred_amount * 2, secondTransfer.amount)
+		assert_equal(transferred_amount * 2, first_transfer.amount)
+		assert_equal(transferred_amount, second_transfer.amount)
 
-		assert_equal("eur", secondTransfer.currency)
-		assert_equal(providers(:snicket).stripe_account_id, secondTransfer.destination)
-		assert_equal(payment_intent.charges.data[0].id, secondTransfer.source_transaction)
+		assert_equal("eur", first_transfer.currency)
+		assert_equal(providers(:snicket).stripe_account_id, first_transfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, first_transfer.source_transaction)
 
-		assert_equal("eur", firstTransfer.currency)
-		assert_equal(providers(:hindenburg).stripe_account_id, firstTransfer.destination)
-		assert_equal(payment_intent.charges.data[0].id, firstTransfer.source_transaction)
+		assert_equal("eur", second_transfer.currency)
+		assert_equal(providers(:hindenburg).stripe_account_id, second_transfer.destination)
+		assert_equal(payment_intent.charges.data[0].id, second_transfer.source_transaction)
 	end
    # end InvoicePaymentSucceededEvent tests
 
@@ -384,7 +393,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		StripeWebhooksService.InvoicePaymentFailedEvent(event)
 
 		# The user should now be on the active free plan and no period_end
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		assert_equal(0, torera.plan)
 		assert_equal(0, torera.subscription_status)
 		assert_nil(torera.period_end)
@@ -406,7 +415,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		StripeWebhooksService.CustomerSubscriptionCreatedEvent(event)
 
 		# The user should now be on the plus plan
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		assert_equal(1, torera.plan)
 		assert_equal(0, torera.subscription_status)
 		assert_equal(period_end, torera.period_end.to_i)
@@ -426,7 +435,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		StripeWebhooksService.CustomerSubscriptionCreatedEvent(event)
 
 		# The user should now be on the pro plan
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		assert_equal(2, torera.plan)
 		assert_equal(0, torera.subscription_status)
 		assert_equal(period_end, torera.period_end.to_i)
@@ -453,7 +462,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
       StripeWebhooksService.CustomerSubscriptionUpdatedEvent(event)
 
       # The user should now have the same plan, but updated subscription_status and updated period_end
-      torera = User.find_by_id(torera.id)
+      torera = UserDelegate.find_by(id: torera.id)
       assert_equal(1, torera.plan)
       assert_equal(1, torera.subscription_status)
       assert_equal(period_end.to_i, torera.period_end.to_i)
@@ -478,7 +487,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
       StripeWebhooksService.CustomerSubscriptionUpdatedEvent(event)
 
       # The user should now have the same plan, but updated subscription_status and updated period_end
-      torera = User.find_by_id(torera.id)
+      torera = UserDelegate.find_by(id: torera.id)
       assert_equal(2, torera.plan)
       assert_equal(1, torera.subscription_status)
       assert_equal(period_end.to_i, torera.period_end.to_i)
@@ -503,7 +512,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
       StripeWebhooksService.CustomerSubscriptionUpdatedEvent(event)
 
       # The user should now have the same plan, but with updated subscription_status and updated period_end
-      torera = User.find_by_id(torera.id)
+      torera = UserDelegate.find_by(id: torera.id)
       assert_equal(1, torera.plan)
       assert_equal(0, torera.subscription_status)
       assert_equal(period_end.to_i, torera.period_end.to_i)
@@ -528,7 +537,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
       StripeWebhooksService.CustomerSubscriptionUpdatedEvent(event)
 
       # The user should now have the same plan, but the new subscription_status and period_end
-      torera = User.find_by_id(torera.id)
+      torera = UserDelegate.find_by(id: torera.id)
       assert_equal(2, torera.plan)
       assert_equal(0, torera.subscription_status)
       assert_equal(period_end.to_i, torera.period_end.to_i)
@@ -555,7 +564,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
       StripeWebhooksService.CustomerSubscriptionUpdatedEvent(event)
 
       # The user should have the same plan and subscription_status, but the new period_end
-      torera = User.find_by_id(torera.id)
+      torera = UserDelegate.find_by(id: torera.id)
       assert_equal(plan, torera.plan)
       assert_equal(subscription_status, torera.subscription_status)
       assert_equal(period_end.to_i, torera.period_end.to_i)
@@ -580,7 +589,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
       StripeWebhooksService.CustomerSubscriptionDeletedEvent(event)
 
       # The user should now have a free plan with no period_end and active subscription_status
-      torera = User.find_by_id(torera.id)
+      torera = UserDelegate.find_by(id: torera.id)
       assert_equal(0, torera.plan)
       assert_equal(0, torera.subscription_status)
       assert_nil(torera.period_end)
@@ -602,7 +611,7 @@ class StripeWebhooksServiceTest < ActiveSupport::TestCase
 		StripeWebhooksService.CustomerSubscriptionDeletedEvent(event)
 		
 		# The user should now have a free plan with no period_end and active_subscription_status
-		torera = User.find_by_id(torera.id)
+		torera = UserDelegate.find_by(id: torera.id)
 		assert_equal(0, torera.plan)
 		assert_equal(0, torera.subscription_status)
 		assert_nil(torera.period_end)

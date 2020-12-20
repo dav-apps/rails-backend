@@ -23,7 +23,7 @@ module ApplicationCable
 			secret = ENV['JWT_SECRET']
 
 			if session_id != 0
-				session = Session.find_by_id(session_id)
+				session = SessionDelegate.find_by(id: session_id)
 
 				if !session
 					# Session does not exist
@@ -36,7 +36,7 @@ module ApplicationCable
 			# Validate the JWT
 			begin
 				decoded_jwt = JWT.decode jwt, secret, true, { :algorithm => ENV['JWT_ALGORITHM'] }
-				user = User.find_by_id(decoded_jwt[0]["user_id"])
+				user = UserDelegate.find_by(id: decoded_jwt[0]["user_id"])
 
 				if(!user)
 					reject_unauthorized_connection
@@ -48,7 +48,7 @@ module ApplicationCable
 			end
 
 			# Get the app
-			self.current_app = App.find_by_id(app_id)
+			self.current_app = AppDelegate.find_by(id: app_id)
 
 			if !self.current_app
 				reject_unauthorized_connection
