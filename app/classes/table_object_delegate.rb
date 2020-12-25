@@ -5,6 +5,7 @@ class TableObjectDelegate
 		:table_id,
 		:uuid,
 		:file,
+		:etag,
 		:created_at,
 		:updated_at
 
@@ -16,6 +17,7 @@ class TableObjectDelegate
 		@table_id = attributes[:table_id]
 		@uuid = attributes[:uuid]
 		@file = attributes[:file]
+		@etag = attributes[:etag]
 		@created_at = attributes[:created_at]
 		@updated_at = attributes[:updated_at]
 
@@ -30,6 +32,7 @@ class TableObjectDelegate
 			table_id: @table_id,
 			uuid: @uuid,
 			file: @file,
+			etag: @etag,
 			created_at: @created_at,
 			updated_at: @updated_at
 		}
@@ -41,6 +44,7 @@ class TableObjectDelegate
 		@table_object.table_id = @table_id
 		@table_object.uuid = @uuid
 		@table_object.file = @file.nil? ? false : @file
+		@table_object.etag = @etag
 		@table_object.created_at = @created_at
 		@table_object.updated_at = @updated_at
 		delete_old = false

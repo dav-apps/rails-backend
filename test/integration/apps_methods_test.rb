@@ -2432,12 +2432,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		count = 1
 		page = 1
+		uuid = table_objects(:first).uuid
 		
 		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&count=#{count}&page=#{page}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_equal(count, resp["table_objects"].count)
-		assert_equal(table_objects(:first).uuid, resp["table_objects"][0]["uuid"])
+		assert_equal(uuid, resp["table_objects"][0]["uuid"])
 	end
 
 	test "Can get the second page of a table" do
@@ -2445,12 +2446,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		count = 1
 		page = 2
+		uuid = table_objects(:third).uuid
 		
 		get "/v1/apps/table?table_name=#{tables(:card).name}&app_id=#{apps(:Cards).id}&count=#{count}&page=#{page}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_equal(count, resp["table_objects"].count)
-		assert_equal(table_objects(:third).uuid, resp["table_objects"][0]["uuid"])
+		assert_equal(uuid, resp["table_objects"][0]["uuid"])
 	end
 
 	test "get_table should update the last_active fields of the user and the users_app" do
@@ -2553,10 +2555,10 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_response 200
       assert_equal(apps(:Cards).id, resp["app_id"])
       resp["table_objects"].each do |e|
-         obj = TableObject.find_by_id(e["id"])
+         obj = TableObjectDelegate.find_by(id: e["id"])
 			assert_not_nil(obj)
 			assert_equal(generate_table_object_etag(obj), e["etag"])
-			assert_equal(users(:matt).id, obj.user_id)
+			assert_equal(matt.id, obj.user_id)
       end
 	end
 	
@@ -2596,12 +2598,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		count = 1
 		page = 1
+		uuid = table_objects(:first).uuid
 		
 		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&count=#{count}&page=#{page}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_equal(count, resp["table_objects"].count)
-		assert_equal(table_objects(:first).uuid, resp["table_objects"][0]["uuid"])
+		assert_equal(uuid, resp["table_objects"][0]["uuid"])
 	end
 
 	test "Can get the second page of a table by id" do
@@ -2609,12 +2612,13 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		jwt = (JSON.parse login_user(matt, "schachmatt", devs(:sherlock)).body)["jwt"]
 		count = 1
 		page = 2
+		uuid = table_objects(:third).uuid
 		
 		get "/v1/apps/table/#{tables(:card).id}?app_id=#{apps(:Cards).id}&count=#{count}&page=#{page}", headers: {'Authorization' => jwt}
 		resp = JSON.parse response.body
 
 		assert_equal(count, resp["table_objects"].count)
-		assert_equal(table_objects(:third).uuid, resp["table_objects"][0]["uuid"])
+		assert_equal(uuid, resp["table_objects"][0]["uuid"])
 	end
 
 	test "get_table_by_id should update the last_active fields of the user and the users_app" do
