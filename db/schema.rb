@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_10_20_215445) do
+ActiveRecord::Schema.define(version: 2020_12_25_122335) do
 
   create_table "access_tokens", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.string "token"
@@ -272,6 +272,7 @@ ActiveRecord::Schema.define(version: 2020_10_20_215445) do
     t.integer "visibility", default: 0
     t.string "uuid"
     t.boolean "file", default: false
+    t.string "etag"
     t.index ["uuid"], name: "index_table_objects_on_uuid"
   end
 

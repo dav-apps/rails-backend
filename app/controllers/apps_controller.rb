@@ -506,6 +506,10 @@ class AppsController < ApplicationController
 					properties[name] = value
 				end
 
+				# Generate the etag
+				obj.etag = generate_table_object_etag(obj)
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(obj.save))
+
 				# Save that user uses the app
 				users_app = UsersAppDelegate.find_by(app_id: app.id, user_id: user.id)
 				if !users_app
@@ -526,7 +530,7 @@ class AppsController < ApplicationController
 				# Return the data
 				result = obj.attributes
 				result["properties"] = properties
-				result["etag"] = generate_table_object_etag(obj)
+				result["etag"] = obj.etag
 
 				render json: result, status: 201
 			else
@@ -582,6 +586,10 @@ class AppsController < ApplicationController
 						properties[prop.name] = prop.value
 					end
 
+					# Generate the etag
+					obj.etag = generate_table_object_etag(obj)
+					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(obj.save))
+
 					# Save that the user was active
 					user.last_active = Time.now
 					user.save
@@ -593,7 +601,7 @@ class AppsController < ApplicationController
 					TableObjectUpdateChannel.broadcast_to("#{user.id},#{app.id}", uuid: obj.uuid, change: 0, session_id: session_id)
 
 					result["properties"] = properties
-					result["etag"] = generate_table_object_etag(obj)
+					result["etag"] = obj.etag
 					render json: result, status: 201
 				rescue Exception => e
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(false))
@@ -696,6 +704,12 @@ class AppsController < ApplicationController
 				response.headers['Content-Length'] = result.size.to_s
 				send_data(result, status: 200, type: type, filename: filename)
 			else
+				# Generate the etag if the table object has none
+				if obj.etag.nil?
+					obj.etag = generate_table_object_etag(obj)
+					obj.save
+				end
+
 				# Return the object data
 				result = obj.attributes
 				property_types = PropertyTypeDelegate.where(table_id: table.id)
@@ -707,7 +721,7 @@ class AppsController < ApplicationController
 				end
 
 				result["properties"] = properties
-				result["etag"] = generate_table_object_etag(obj)
+				result["etag"] = obj.etag
 				result["table_id"] = table_id
 
 				render json: result, status: 200
@@ -780,6 +794,12 @@ class AppsController < ApplicationController
 				response.headers['Content-Length'] = result.size.to_s
 				send_data(result, status: 200, type: type, filename: filename)
 			else
+				# Generate the etag if the table object has none
+				if obj.etag.nil?
+					obj.etag = generate_table_object_etag(obj)
+					obj.save
+				end
+
 				# Return the data
 				result = obj.attributes
 				property_types = PropertyTypeDelegate.where(table_id: table.id)
@@ -791,7 +811,7 @@ class AppsController < ApplicationController
 				end
 
 				result["properties"] = properties
-				result["etag"] = generate_table_object_etag(obj)
+				result["etag"] = obj.etag
 
 				render json: result, status: 200
 			end
@@ -905,6 +925,10 @@ class AppsController < ApplicationController
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(size_prop.save))
 				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(etag_prop.save))
 
+				# Update the etag
+				obj.etag = generate_table_object_etag(obj)
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(obj.save))
+
 				# Save that the user was active
 				user.last_active = Time.now
 				user.save
@@ -927,7 +951,7 @@ class AppsController < ApplicationController
 				end
 
 				result["properties"] = properties
-				result["etag"] = generate_table_object_etag(obj)
+				result["etag"] = obj.etag
 				render json: result, status: 200
 			else
 				# The object is not a file
@@ -975,6 +999,10 @@ class AppsController < ApplicationController
 				# Reload the table object
 				obj = TableObjectDelegate.find_by(id: obj.id)
 
+				# Update the etag
+				obj.etag = generate_table_object_etag(obj)
+				ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(obj.save))
+
 				# Save that the user was active
 				user.last_active = Time.now
 				user.save
@@ -999,7 +1027,7 @@ class AppsController < ApplicationController
 				end
 
 				result["properties"] = properties
-				result["etag"] = generate_table_object_etag(obj)
+				result["etag"] = obj.etag
 
 				render json: result, status: 200
 			end
@@ -1325,11 +1353,17 @@ class AppsController < ApplicationController
 				
 				if selected_table_objects
 					selected_table_objects.each do |table_object|
+						# Generate the etag if the table object has none
+						if table_object.etag.nil?
+							table_object.etag = generate_table_object_etag(table_object)
+							table_object.save
+						end
+
 						object = Hash.new
 						object["id"] = table_object.id
 						object["table_id"] = table_object.table_id
 						object["uuid"] = table_object.uuid
-						object["etag"] = generate_table_object_etag(table_object)
+						object["etag"] = table_object.etag
 						
 						array.push(object)
 					end
@@ -1421,11 +1455,17 @@ class AppsController < ApplicationController
 
 				if selected_table_objects
 					selected_table_objects.each do |table_object|
+						# Generate the etag if the table object has none
+						if table_object.etag.nil?
+							table_object.etag = generate_table_object_etag(table_object)
+							table_object.save
+						end
+
 						object = Hash.new
 						object["id"] = table_object.id
 						object["table_id"] = table_object.table_id
 						object["uuid"] = table_object.uuid
-						object["etag"] = generate_table_object_etag(table_object)
+						object["etag"] = table_object.etag
 						
 						array.push(object)
 					end
@@ -1481,18 +1521,17 @@ class AppsController < ApplicationController
 			end
 
 			all_table_objects.each do |obj|
+				# Generate the etag if the table object has none
+				if obj.etag.nil?
+					obj.etag = generate_table_object_etag(obj)
+					obj.save
+				end
+
 				object = Hash.new
 				object["id"] = obj.id
 				object["table_id"] = table_object.table_id
 				object["uuid"] = obj.uuid
-				object["etag"] = generate_table_object_etag(obj)
-
-				properties = Hash.new
-				obj.properties.each do |prop|
-					properties[prop.name] = prop.value
-				end
-
-				object["properties"] = properties
+				object["etag"] = obj.etag
 
 				array.push(object)
 			end
