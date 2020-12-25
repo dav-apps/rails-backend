@@ -2,15 +2,15 @@
 # of editing this file, please use the migrations feature of Active Record to
 # incrementally modify your database, and then regenerate this schema definition.
 #
-# Note that this schema.rb definition is the authoritative source for your
-# database schema. If you need to create the application database on another
-# system, you should be using db:schema:load, not running all the migrations
-# from scratch. The latter is a flawed and unsustainable approach (the more migrations
-# you'll amass, the slower it'll run and the greater likelihood for issues).
+# This file is the source Rails uses to define your schema when running `rails
+# db:schema:load`. When creating a new database, `rails db:schema:load` tends to
+# be faster and is potentially less error prone than running all of your
+# migrations from scratch. Old migrations may fail to apply correctly if those
+# migrations use external dependencies or application code.
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_10_20_215445) do
+ActiveRecord::Schema.define(version: 2020_12_25_122335) do
 
   create_table "access_tokens", id: :integer, options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.string "token"
@@ -160,7 +160,7 @@ ActiveRecord::Schema.define(version: 2020_10_20_215445) do
     t.datetime "updated_at"
   end
 
-  create_table "exception_events", options: "ENGINE=InnoDB DEFAULT CHARSET=latin1", force: :cascade do |t|
+  create_table "exception_events", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.integer "app_id"
     t.datetime "created_at"
     t.string "name"
@@ -192,7 +192,7 @@ ActiveRecord::Schema.define(version: 2020_10_20_215445) do
     t.text "value"
   end
 
-  create_table "property_types", options: "ENGINE=InnoDB DEFAULT CHARSET=latin1", force: :cascade do |t|
+  create_table "property_types", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.integer "table_id"
     t.string "name"
     t.integer "data_type", default: 0
@@ -272,6 +272,7 @@ ActiveRecord::Schema.define(version: 2020_10_20_215445) do
     t.integer "visibility", default: 0
     t.string "uuid"
     t.boolean "file", default: false
+    t.string "etag"
     t.index ["uuid"], name: "index_table_objects_on_uuid"
   end
 
