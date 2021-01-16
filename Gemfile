@@ -14,6 +14,7 @@ gem 'jwt'
 
 gem 'tiny_tds', '~> 1.3'
 gem 'activerecord-sqlserver-adapter', '6.0.0'
+gem 'pg'
 
 gem 'rack-cors', :require => 'rack/cors'
 
