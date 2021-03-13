@@ -374,7 +374,7 @@ class AppsController < ApplicationController
 			])
 
 			# Create the exception event
-			exception = ExceptionEventDelegate.new(
+			exception = ExceptionEvent.new(
 				app_id: app.id,
 				name: name,
 				message: message,
@@ -1704,7 +1704,7 @@ class AppsController < ApplicationController
 			properties = Hash.new
 			body.each do |key, value|
 				if value && value.length > 0
-					property = NotificationPropertyDelegate.new(notification_id: notification.id, name: key, value: value)
+					property = NotificationProperty.new(notification_id: notification.id, name: key, value: value)
 					ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(property.save))
 					properties[key] = value
 				end
@@ -1756,7 +1756,7 @@ class AppsController < ApplicationController
 
 			# Get the properties
 			properties = Hash.new
-			NotificationPropertyDelegate.where(notification_id: notification.id).each do |property|
+			NotificationProperty.where(notification_id: notification.id).each do |property|
 				properties[property.name] = property.value
 			end
 			result["properties"] = properties
@@ -1803,7 +1803,7 @@ class AppsController < ApplicationController
 
 				# Get the properties
 				properties = Hash.new
-				NotificationPropertyDelegate.where(notification_id: notification.id).each do |property|
+				NotificationProperty.where(notification_id: notification.id).each do |property|
 					properties[property.name] = property.value
 				end
 				hash["properties"] = properties
@@ -1877,11 +1877,11 @@ class AppsController < ApplicationController
 
 			# Update the properties
 			body.each do |key, value|
-				prop = NotificationPropertyDelegate.find_by(name: key, notification_id: notification.id)
+				prop = NotificationProperty.find_by(name: key, notification_id: notification.id)
 
 				if value
 					if !prop && value.length > 0			# If the property does not exist and there is a value, create the property
-						new_prop = NotificationPropertyDelegate.new(notification_id: notification.id, name: key, value: value)
+						new_prop = NotificationProperty.new(notification_id: notification.id, name: key, value: value)
 						ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(new_prop.save))
 					elsif prop && value.length == 0		# If there is a property and the length of the value is 0, delete the property
 						prop.destroy
@@ -1894,7 +1894,7 @@ class AppsController < ApplicationController
 
 			# Return the data
 			properties = Hash.new
-			NotificationPropertyDelegate.where(notification_id: notification.id).each do |property|
+			NotificationProperty.where(notification_id: notification.id).each do |property|
 				properties[property.name] = property.value
 			end
 
@@ -1994,7 +1994,7 @@ class AppsController < ApplicationController
 			])
 
 			# Create the subscription
-			subscription = WebPushSubscriptionDelegate.new(user_id: user.id, uuid: uuid, endpoint: endpoint, p256dh: p256dh, auth: auth)
+			subscription = WebPushSubscription.new(user_id: user.id, uuid: uuid, endpoint: endpoint, p256dh: p256dh, auth: auth)
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(subscription.save))
 
 			# Return the data
@@ -2027,7 +2027,7 @@ class AppsController < ApplicationController
 			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			subscription = WebPushSubscriptionDelegate.find_by(uuid: uuid)
+			subscription = WebPushSubscription.find_by(uuid: uuid)
 			ValidationService.raise_validation_error(ValidationService.validate_web_push_subscription_does_not_exist(subscription))
 			ValidationService.raise_validation_error(ValidationService.validate_web_push_subscription_belongs_to_user(subscription, user))
 
@@ -2061,7 +2061,7 @@ class AppsController < ApplicationController
 			dev = DevDelegate.find_by(id: dev_id)
 			ValidationService.raise_validation_error(ValidationService.validate_dev_does_not_exist(dev))
 
-			subscription = WebPushSubscriptionDelegate.find_by(uuid: uuid)
+			subscription = WebPushSubscription.find_by(uuid: uuid)
 			ValidationService.raise_validation_error(ValidationService.validate_web_push_subscription_does_not_exist(subscription))
 			ValidationService.raise_validation_error(ValidationService.validate_web_push_subscription_belongs_to_user(subscription, user))
 

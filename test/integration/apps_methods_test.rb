@@ -702,7 +702,7 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
 		assert_equal(device_family, resp["device_family"])
 		assert_equal(locale, resp["locale"])
 
-		exception = ExceptionEventDelegate.find_by(id: resp["id"])
+		exception = ExceptionEvent.find_by(id: resp["id"])
 		assert_not_nil(exception)
 		assert_equal(app.id, exception.app_id)
 		assert_equal(name, exception.name)
@@ -2929,8 +2929,8 @@ class AppsMethodsTest < ActionDispatch::IntegrationTest
       assert_not_nil(resp["uuid"])
 		assert_equal(interval, resp["interval"])
 
-		assert_equal(first_property_value, NotificationPropertyDelegate.find_by(notification_id: notification.id, name: first_property_name).value)
-		assert_equal(second_property_value, NotificationPropertyDelegate.find_by(notification_id: notification.id, name: second_property_name).value)
+		assert_equal(first_property_value, NotificationProperty.find_by(notification_id: notification.id, name: first_property_name).value)
+		assert_equal(second_property_value, NotificationProperty.find_by(notification_id: notification.id, name: second_property_name).value)
    end
    
    test "Can create a notification with uuid" do

@@ -79,7 +79,7 @@ class NotificationDelegate
 
 	def destroy
 		# Delete the notification_properties of the notification
-		NotificationPropertyDelegate.where(notification_id: @id).each { |property| property.destroy }
+		NotificationProperty.where(notification_id: @id).each { |property| property.destroy }
 
 		# Delete the notification in the old database
 		notification = Notification.find_by(id: @id)
