@@ -153,7 +153,7 @@ class UserDelegate
 		UsersAppDelegate.where(user_id: @id).each { |users_app| users_app.destroy }
 
 		# Delete the web_push_subscriptions of the user
-		WebPushSubscriptionDelegate.where(user_id: @id).each { |web_push_subscription| web_push_subscription.destroy }
+		WebPushSubscription.where(user_id: @id).each { |web_push_subscription| web_push_subscription.destroy }
 
 		# Delete the user in the old database
 		user = User.find_by(id: @id)

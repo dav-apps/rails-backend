@@ -886,7 +886,7 @@ class ValidationService
 
 	def self.validate_subscription_uuid_taken(uuid)
 		error_code = 2704
-		(WebPushSubscription.exists?(uuid: uuid) || WebPushSubscriptionMigration.exists?(uuid: uuid)) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
+		WebPushSubscription.exists?(uuid: uuid) ? {success: false, error: [error_code, get_error_message(error_code)], status: 400} : {success: true}
 	end
 
 	def self.validate_notification_uuid_taken(uuid)

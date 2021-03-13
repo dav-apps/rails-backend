@@ -106,7 +106,7 @@ class AppDelegate
 		ActiveAppUserDelegate.where(app_id: @id).each { |active_app_user| active_app_user.destroy }
 
 		# Delete the exception_events of the app
-		ExceptionEventDelegate.where(app_id: @id).each { |exception_event| exception_event.destroy }
+		ExceptionEvent.where(app_id: @id).each { |exception_event| exception_event.destroy }
 
 		# Delete the notifications of the app
 		NotificationDelegate.where(app_id: @id).each { |notification| notification.destroy }
