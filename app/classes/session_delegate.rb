@@ -43,8 +43,20 @@ class SessionDelegate
 
 	def save
 		# Copy the values of the session
+		user = UserDelegate.find_by(id: @user_id)
+		app = AppDelegate.find_by(id: @app_id)
+
+		payload = {
+			email: user.email,
+			user_id: user.id,
+			dev_id: app.dev_id,
+			exp: @exp.to_i
+		}
+		token = JWT.encode(payload, @secret, ENV['JWT_ALGORITHM'])
+
 		@session.user_id = @user_id
 		@session.app_id = @app_id
+		@session.token = "#{token}.#{@id}"
 		@session.secret = @secret
 		@session.exp = @exp
 		@session.device_name = @device_name

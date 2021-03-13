@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_12_24_154815) do
+ActiveRecord::Schema.define(version: 2021_02_01_230149) do
 
   create_table "api_endpoint_request_cache_params", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.bigint "api_endpoint_request_cache_id"
@@ -109,31 +109,16 @@ ActiveRecord::Schema.define(version: 2020_12_24_154815) do
     t.datetime "updated_at", precision: 6, null: false
   end
 
-  create_table "exception_events", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
-    t.bigint "app_id"
-    t.string "name"
-    t.string "message"
-    t.text "stack_trace"
-    t.string "app_version"
-    t.string "os_version"
-    t.string "device_family"
-    t.string "locale"
-    t.datetime "created_at", precision: 6, null: false
-  end
-
-  create_table "notification_properties", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
-    t.bigint "notification_id"
-    t.string "name"
-    t.text "value"
-  end
-
   create_table "notifications", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "app_id"
     t.string "uuid"
     t.datetime "time"
     t.integer "interval"
+    t.string "title"
+    t.string "body"
     t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
     t.index ["uuid"], name: "index_notifications_on_uuid", unique: true
   end
 
@@ -162,18 +147,29 @@ ActiveRecord::Schema.define(version: 2020_12_24_154815) do
   create_table "sessions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.bigint "user_id"
     t.bigint "app_id"
-    t.string "secret"
-    t.datetime "exp"
+    t.string "token"
+    t.string "old_token"
     t.string "device_name"
     t.string "device_type"
     t.string "device_os"
     t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+	 t.string "secret"
+    t.datetime "exp"
+    t.index ["old_token"], name: "index_sessions_on_old_token", unique: true
+    t.index ["token"], name: "index_sessions_on_token", unique: true
   end
 
   create_table "table_object_collections", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.bigint "table_object_id"
     t.bigint "collection_id"
     t.datetime "created_at", precision: 6, null: false
+  end
+
+  create_table "table_object_prices", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.bigint "table_object_id"
+    t.integer "price", default: 0
+    t.string "currency", default: "eur"
   end
 
   create_table "table_object_properties", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
@@ -220,6 +216,15 @@ ActiveRecord::Schema.define(version: 2020_12_24_154815) do
     t.integer "count_yearly", default: 0
   end
 
+  create_table "user_profile_images", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "ext"
+    t.string "mime_type"
+    t.string "etag"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
   create_table "users", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
     t.string "email"
     t.string "first_name"
@@ -241,13 +246,20 @@ ActiveRecord::Schema.define(version: 2020_12_24_154815) do
   end
 
   create_table "web_push_subscriptions", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
-    t.bigint "user_id"
+    t.bigint "session_id"
     t.string "uuid"
     t.string "endpoint"
     t.string "p256dh"
     t.string "auth"
     t.datetime "created_at", precision: 6, null: false
     t.index ["uuid"], name: "index_web_push_subscriptions_on_uuid", unique: true
+  end
+
+  create_table "websocket_connections", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8", force: :cascade do |t|
+    t.bigint "user_id"
+    t.bigint "app_id"
+    t.string "token", null: false
+    t.datetime "created_at", precision: 6, null: false
   end
 
 end
