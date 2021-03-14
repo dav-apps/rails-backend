@@ -85,10 +85,11 @@ namespace :migration do
 	task migrate_sessions: :environment do
 		Session.all.each do |session|
 			next if SessionMigration.exists?(id: session.id)
+			user = UserDelegate.find_by(id: session.user_id)
 
 			payload = {
-				email: session.user.email,
-				user_id: session.user.id,
+				email: user.email,
+				user_id: user.id,
 				dev_id: session.app.dev.id,
 				exp: session.exp.to_i
 			}
@@ -103,7 +104,9 @@ namespace :migration do
 				device_name: session.device_name,
 				device_type: session.device_type,
 				device_os: session.device_os,
-				created_at: session.created_at
+				created_at: session.created_at,
+				secret: session.secret,
+				exp: session.exp
 			)
 
 			if created
