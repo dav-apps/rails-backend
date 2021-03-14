@@ -25,7 +25,7 @@ namespace :migration do
 			)
 
 			if created
-				#user.destroy!
+				user.destroy!
 			else
 				puts "Error in migrating User"
 				break
@@ -48,7 +48,7 @@ namespace :migration do
 			)
 
 			if created
-				#dev.destroy!
+				dev.destroy!
 			else
 				puts "Error in migrating Dev"
 				break
@@ -74,7 +74,7 @@ namespace :migration do
 			)
 
 			if created
-				#app.destroy!
+				app.destroy!
 			else
 				puts "Error in migrating App"
 				break
@@ -110,7 +110,7 @@ namespace :migration do
 			)
 
 			if created
-				#session.destroy!
+				session.destroy!
 			else
 				puts "Error in migrating Session"
 				break
@@ -131,7 +131,7 @@ namespace :migration do
 			)
 
 			if created
-				#table.destroy!
+				table.destroy!
 			else
 				puts "Error in migrating Table"
 				break
@@ -151,7 +151,7 @@ namespace :migration do
 			)
 
 			if created
-				#type.destroy!
+				type.destroy!
 			else
 				puts "Error in migrating PropertyType"
 				break
@@ -160,7 +160,7 @@ namespace :migration do
 	end
 
 	task migrate_table_objects: :environment do
-		TableObject.all.each do |obj|
+		TableObject.all.limit(1000).each do |obj|
 			next if TableObjectMigration.exists?(id: obj.id)
 
 			created = TableObjectMigration.create(
@@ -175,7 +175,7 @@ namespace :migration do
 			)
 
 			if created
-				#obj.destroy!
+				obj.destroy!
 			else
 				puts "Error in migrating TableObject"
 				break
@@ -184,7 +184,7 @@ namespace :migration do
 	end
 
 	task migrate_properties: :environment do
-		Property.all.each do |prop|
+		Property.all.limit(1000).each do |prop|
 			next if PropertyMigration.exists?(id: prop.id)
 
 			created = PropertyMigration.create(
@@ -195,7 +195,7 @@ namespace :migration do
 			)
 
 			if created
-				#prop.destroy!
+				prop.destroy!
 			else
 				puts "Error in migrating Property"
 				break
@@ -216,7 +216,7 @@ namespace :migration do
 			)
 
 			if created
-				#active_user.destroy!
+				active_user.destroy!
 			else
 				puts "Error in migrating ActiveUser"
 				break
@@ -238,7 +238,7 @@ namespace :migration do
 			)
 
 			if created
-				#active_app_user.destroy!
+				active_app_user.destroy!
 			else
 				puts "Error in migrating ActiveAppUser"
 				break
@@ -259,7 +259,7 @@ namespace :migration do
 			)
 
 			if created
-				#collection.destroy!
+				collection.destroy!
 			else
 				puts "Error in migrating Collection"
 				break
@@ -280,6 +280,7 @@ namespace :migration do
 				id: notification.id,
 				user_id: notification.user_id,
 				app_id: notification.app_id,
+				uuid: notification.uuid,
 				time: notification.time,
 				interval: notification.interval,
 				title: title,
@@ -287,7 +288,7 @@ namespace :migration do
 			)
 
 			if created
-				#notification.destroy!
+				notification.destroy!
 			else
 				puts "Error in migrating Notification"
 				break
@@ -308,7 +309,7 @@ namespace :migration do
 			)
 
 			if created
-				#provider.destroy!
+				provider.destroy!
 			else
 				puts "Error in migrating Provider"
 				break
@@ -337,7 +338,7 @@ namespace :migration do
 			)
 
 			if created
-				#purchase.destroy!
+				purchase.destroy!
 			else
 				puts "Error in migrating Purchase"
 				break
@@ -357,7 +358,7 @@ namespace :migration do
 			)
 
 			if created
-				#obj_collection.destroy!
+				obj_collection.destroy!
 			else
 				puts "Error in migrating TableObjectCollection"
 				break
@@ -378,7 +379,7 @@ namespace :migration do
 			)
 
 			if created
-				#access.destroy!
+				access.destroy!
 			else
 				puts "Error in migrating TableObjectUserAccess"
 				break
@@ -401,7 +402,7 @@ namespace :migration do
 			)
 
 			if created
-				#users_app.destroy!
+				users_app.destroy!
 			else
 				puts "Error in migrating UsersApp"
 				break
@@ -420,7 +421,7 @@ namespace :migration do
 			)
 
 			if created
-				#api.destroy!
+				api.destroy!
 			else
 				puts "Error in migrating Api"
 				break
@@ -442,7 +443,7 @@ namespace :migration do
 			)
 
 			if created
-				#api_endpoint.destroy!
+				api_endpoint.destroy!
 			else
 				puts "Error in migrating ApiEndpoint"
 				break
@@ -463,7 +464,7 @@ namespace :migration do
 			)
 
 			if created
-				#api_function.destroy!
+				api_function.destroy!
 			else
 				puts "Error in migrating ApiFunction"
 				break
@@ -483,7 +484,7 @@ namespace :migration do
 			)
 
 			if created
-				#api_error.destroy!
+				api_error.destroy!
 			else
 				puts "Error in migrating ApiError"
 				break
@@ -504,7 +505,7 @@ namespace :migration do
 			)
 
 			if created
-				#api_env_var.destroy!
+				api_env_var.destroy!
 			else
 				puts "Error in migrating ApiEnvVar"
 				break
