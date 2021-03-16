@@ -160,7 +160,7 @@ namespace :migration do
 	end
 
 	task migrate_table_objects: :environment do
-		TableObject.all.limit(100).each do |obj|
+		TableObject.all.limit(1000).each do |obj|
 			next if TableObjectMigration.exists?(id: obj.id)
 
 			begin
