@@ -1,6 +1,6 @@
 namespace :migration do
 	task migrate_users: :environment do
-		User.all.each do |user|
+		User.all.limit(5).each do |user|
 			next if UserMigration.exists?(id: user.id)
 
 			created = UserMigration.create(
@@ -83,7 +83,7 @@ namespace :migration do
 	end
 
 	task migrate_sessions: :environment do
-		Session.all.each do |session|
+		Session.all.limit(5).each do |session|
 			next if SessionMigration.exists?(id: session.id)
 			user = UserDelegate.find_by(id: session.user_id)
 
@@ -140,7 +140,7 @@ namespace :migration do
 	end
 
 	task migrate_property_types: :environment do
-		PropertyType.all.each do |type|
+		PropertyType.all.limit(10).each do |type|
 			next if PropertyTypeMigration.exists?(id: type.id)
 
 			created = PropertyTypeMigration.create(
