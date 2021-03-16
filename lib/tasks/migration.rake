@@ -83,7 +83,7 @@ namespace :migration do
 	end
 
 	task migrate_sessions: :environment do
-		Session.all.limit(5).each do |session|
+		Session.all.each do |session|
 			next if SessionMigration.exists?(id: session.id)
 			user = UserDelegate.find_by(id: session.user_id)
 
