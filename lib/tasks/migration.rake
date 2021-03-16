@@ -181,8 +181,23 @@ namespace :migration do
 					puts "Error in migrating TableObject"
 					break
 				end
-			rescue => exception
-				puts exception.message
+			rescue exception
+				# Check if the table object already exists in the new database
+				obj_migration = TableObjectMigration.find_by(uuid: obj.uuid)
+
+				if !obj_migration.nil?
+					# Check if the table objects have the same amount of properties
+					migration_props = Property.where(table_object_id: obj_migration.id)
+					next if migration_props.size != obj.properties.size
+
+					# Delete the table object in the old database
+					obj.properties.each do |prop|
+						prop.destroy!
+					end
+
+					obj.destroy!
+				end
+
 				next
 			end
 		end
