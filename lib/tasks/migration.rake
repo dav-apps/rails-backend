@@ -204,7 +204,7 @@ namespace :migration do
 	end
 
 	task migrate_properties: :environment do
-		Property.all.limit(1000).each do |prop|
+		Property.all.limit(10000).each do |prop|
 			next if PropertyMigration.exists?(id: prop.id)
 
 			created = PropertyMigration.create(
