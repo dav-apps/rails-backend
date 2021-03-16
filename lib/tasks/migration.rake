@@ -160,25 +160,30 @@ namespace :migration do
 	end
 
 	task migrate_table_objects: :environment do
-		TableObject.all.limit(1000).each do |obj|
+		TableObject.all.limit(100).each do |obj|
 			next if TableObjectMigration.exists?(id: obj.id)
 
-			created = TableObjectMigration.create(
-				id: obj.id,
-				user_id: obj.user_id,
-				table_id: obj.table_id,
-				uuid: obj.uuid,
-				file: obj.file,
-				etag: obj.etag,
-				created_at: obj.created_at,
-				updated_at: obj.updated_at
-			)
+			begin
+				created = TableObjectMigration.create(
+					id: obj.id,
+					user_id: obj.user_id,
+					table_id: obj.table_id,
+					uuid: obj.uuid,
+					file: obj.file,
+					etag: obj.etag,
+					created_at: obj.created_at,
+					updated_at: obj.updated_at
+				)
 
-			if created
-				obj.destroy!
-			else
-				puts "Error in migrating TableObject"
-				break
+				if created
+					obj.destroy!
+				else
+					puts "Error in migrating TableObject"
+					break
+				end
+			rescue => exception
+				puts exception.message
+				next
 			end
 		end
 	end
