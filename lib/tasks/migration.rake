@@ -181,7 +181,7 @@ namespace :migration do
 					puts "Error in migrating TableObject"
 					break
 				end
-			rescue exception
+			rescue => e
 				# Check if the table object already exists in the new database
 				obj_migration = TableObjectMigration.find_by(uuid: obj.uuid)
 
