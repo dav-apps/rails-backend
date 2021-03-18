@@ -68,7 +68,7 @@ class UsersController < ApplicationController
 			end
 
 			# Create the new user
-			user = UserDelegate.new(email: email, password: password, username: username)
+			user = UserDelegate.new(email: email, password_digest: BCrypt::Password.create(password), username: username, plan: 0)
 			user.email_confirmation_token = generate_token
 			ValidationService.raise_validation_error(ValidationService.validate_unknown_validation_error(user.save))
 
