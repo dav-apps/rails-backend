@@ -24,8 +24,6 @@ namespace :push_notification_sender do
 			messageJson = JSON.generate(message)
 
 			# Send the notification
-			PushNotificationChannel.broadcast_to("#{notification.user.id},#{notification.app.id}", messageJson)
-
 			WebPushSubscription.where(user_id: notification.user_id).each do |subscription|
 				send_web_push_notification(subscription, messageJson)
 			end
