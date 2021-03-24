@@ -35,6 +35,9 @@ namespace :push_notification_sender do
 				notification.destroy!
 			end
 		end
+
+		# Send the notifications on the new backend
+		RestClient.put("https://dav-backend-tfpik.ondigitalocean.app/v1/tasks/send_notifications", {}, {})
 	end
 
 	def send_web_push_notification(subscription, message)
