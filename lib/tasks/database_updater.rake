@@ -86,42 +86,8 @@ namespace :database_updater do
 
 	desc "Updates all caches by executing each cached endpoint with the saved combination of params"
 	task update_caches: :environment do
-		ApiMigration.all.each do |api|
-			ApiEndpointMigration.where(api_id: api.id, caching: true).each do |api_endpoint|
-				# Get the environment variables of the api
-				env_vars = Hash.new
-				ApiEnvVarMigration.where(api_id: api.id).each do |env_var|
-					env_vars[env_var.name] = UtilsService.convert_env_value(env_var.class_name, env_var.value)
-				end
-
-				ApiEndpointRequestCacheMigration.where(api_endpoint_id: api_endpoint.id).each do |cache|
-					vars = Hash.new
-					vars["env"] = env_vars
-
-					# Get the params
-					ApiEndpointRequestCacheParamMigration.where(api_endpoint_request_cache_id: cache.id).each do |param|
-						vars[param.name] = param.value
-					end
-
-					runner = DavExpressionRunner.new
-					result = runner.run({
-						api: api,
-						vars: vars,
-						commands: api_endpoint.commands,
-						request: {
-							headers: Hash.new,
-							body: nil
-						}
-					})
-
-					if result[:status] == 200 && !result[:file]
-						# Update the cache
-						cache.response = result[:data].to_json
-						cache.save
-					end
-				end
-			end
-		end
+		# Call the appropriate endpoint on the new backend
+		RestClient.put("https://dav-backend-tfpik.ondigitalocean.app/v1/tasks/update_api_caches", {}, {})
 	end
 
 	desc "Create EventSummaries with the count of the values"
@@ -247,13 +213,8 @@ namespace :database_updater do
 
 	desc "Get the current active users and create the active user objects in the database"
 	task create_active_users: :environment do
-		# Create active users for each app
-		AppDelegate.all.each do |app|
-			create_active_user(app.id, UsersAppDelegate.where(app_id: app.id))
-		end
-
-		# Create active user for all users
-		create_active_user(-1, UserDelegate.all)
+		# Call the appropriate endpoint on the new backend
+		RestClient.put("https://dav-backend-tfpik.ondigitalocean.app/v1/tasks/create_user_activities", {}, {})
 	end
 
 	def create_active_user(app_id, users)
