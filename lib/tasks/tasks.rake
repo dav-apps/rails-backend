@@ -18,4 +18,9 @@ namespace :tasks do
 		# Call the appropriate endpoint on the new backend
 		RestClient.put("https://dav-backend-tfpik.ondigitalocean.app/v1/tasks/delete_purchases", {}, {})
 	end
+
+	task update_redis_caches: :environment do
+		# Call the appropriate endpoint on the new backend
+		RestClient.put("https://dav-backend-tfpik.ondigitalocean.app/v1/tasks/update_redis_caches", {}, {})
+	end
 end
