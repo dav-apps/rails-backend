@@ -1,7 +1,7 @@
 namespace :tasks do
-	task create_active_users: :environment do
+	task create_user_snapshots: :environment do
 		# Call the appropriate endpoint on the new backend
-		RestClient.put("https://dav-backend-tfpik.ondigitalocean.app/v1/tasks/create_user_activities", {}, {})
+		RestClient.put("https://dav-backend-tfpik.ondigitalocean.app/v1/tasks/create_user_snapshots", {}, {})
 	end
 
 	task send_notifications: :environment do
